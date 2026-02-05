@@ -6,21 +6,21 @@ import { Header } from '@/components/Header';
 import { useAccount } from 'wagmi';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import Link from 'next/link';
+import Image from 'next/image';
 import { 
-  Image, 
+  Image as ImageIcon, 
   Grid3X3, 
   Layout, 
   Target, 
   Trophy,
   Sparkles,
-  ArrowRight,
-  Zap
+  ArrowRight
 } from 'lucide-react';
 
 const features = [
   {
     href: '/gallery',
-    icon: Image,
+    icon: ImageIcon,
     title: 'Gallery',
     description: 'View all your NODES NFTs in one place',
   },
@@ -66,21 +66,32 @@ export default function Home() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         {/* Hero Section */}
         <section className="text-center mb-10 sm:mb-16">
+          {/* NODES Logo */}
+          <div className="flex justify-center mb-6 sm:mb-8">
+            <div className="relative w-24 h-24 sm:w-32 sm:h-32 animate-pulse-glow rounded-2xl overflow-hidden">
+              <Image
+                src="/nodes-logo.png"
+                alt="NODES"
+                fill
+                className="object-cover"
+                priority
+              />
+            </div>
+          </div>
+          
           <div className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-[#00D4FF]/10 border border-[#00D4FF]/30 mb-4 sm:mb-6">
             <span className="text-[#00D4FF] text-xs sm:text-sm font-medium tracking-wide">
-              ⚡️ NODES Community Hub
+              NODES Community Hub
             </span>
           </div>
           
           <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold mb-4 sm:mb-6 tracking-tight">
             <span className="gradient-text">DIGITAL RENAISSANCE</span>
-            <br />
-            <span className="text-white">Awaits</span>
           </h1>
           
-          <p className="text-base sm:text-xl text-gray-400 max-w-2xl mx-auto mb-6 sm:mb-8 px-4">
-            The ultimate toolkit for NODES holders. Create content,
-            track your Full Sets, and experience the Interference.
+          <p className="text-base sm:text-lg text-gray-400 max-w-2xl mx-auto mb-6 sm:mb-8 px-4">
+            3,333 digital identities — retro-inspired characters born from internet culture.
+            Full Circle, Skull, and Ghost forms brought to life through colors, symbols, and motion.
           </p>
 
           {!isConnected ? (
@@ -145,9 +156,24 @@ export default function Home() {
               <div className="text-gray-500 text-xs sm:text-sm uppercase tracking-wide">Blockchain</div>
             </div>
             <div className="p-2 sm:p-0">
-              <div className="text-xl sm:text-3xl font-bold text-[#4FFFDF]">~0.01 ETH</div>
+              <div className="text-xl sm:text-3xl font-bold text-[#4FFFDF]">~0.015 ETH</div>
               <div className="text-gray-500 text-xs sm:text-sm uppercase tracking-wide">Floor Price</div>
             </div>
+          </div>
+        </section>
+
+        {/* Character Forms */}
+        <section className="mt-10 sm:mt-16">
+          <h2 className="section-title text-center text-lg sm:text-2xl">Character Forms</h2>
+          <div className="flex flex-wrap justify-center gap-3 sm:gap-4">
+            {['Full Circle', 'Skull', 'Ghost'].map((form) => (
+              <span 
+                key={form}
+                className="px-4 py-2 sm:px-6 sm:py-3 bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg text-sm sm:text-base text-white hover:border-[#00D4FF]/50 hover:text-[#00D4FF] transition-all cursor-default font-medium"
+              >
+                {form}
+              </span>
+            ))}
           </div>
         </section>
 
@@ -155,7 +181,7 @@ export default function Home() {
         <section className="mt-10 sm:mt-16">
           <h2 className="section-title text-center text-lg sm:text-2xl">Inner States</h2>
           <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
-            {['Awakened', 'Calm', 'Curious', 'Determined', 'Ethereal', 'Hopeful', 'Radiant', 'Ascended'].map((state) => (
+            {['Awakened', 'Ascended', 'Calm', 'Curious', 'Determined', 'Ethereal', 'Hopeful', 'Radiant'].map((state) => (
               <span 
                 key={state}
                 className="px-3 py-1.5 sm:px-4 sm:py-2 bg-[#0a0a0a] border border-[#1a1a1a] rounded-full text-xs sm:text-sm text-gray-400 hover:border-[#00D4FF]/50 hover:text-[#00D4FF] transition-all cursor-default"
@@ -179,7 +205,7 @@ export default function Home() {
               OpenSea
             </a>
             <a 
-              href="https://x.com/nodesonbase" 
+              href="https://x.com/NODESonBase" 
               target="_blank" 
               rel="noopener noreferrer"
               className="btn-secondary text-sm sm:text-base py-2.5 px-4"
@@ -209,10 +235,18 @@ export default function Home() {
       {/* Footer */}
       <footer className="border-t border-[#1a1a1a] mt-10 sm:mt-16 py-6 sm:py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-gray-600">
-          <p className="text-sm sm:text-base flex items-center justify-center gap-2">
-            Built with <span className="text-[#00D4FF]">⚡️</span> for the NODES community
-          </p>
-          <p className="text-xs sm:text-sm mt-2">
+          <div className="flex items-center justify-center gap-3 mb-3">
+            <div className="relative w-6 h-6">
+              <Image
+                src="/nodes-logo.png"
+                alt="NODES"
+                fill
+                className="object-cover rounded"
+              />
+            </div>
+            <span className="text-sm sm:text-base text-gray-400">NODES Community Hub</span>
+          </div>
+          <p className="text-xs sm:text-sm">
             Not affiliated with NODES or gmhunterart. Community project.
           </p>
         </div>

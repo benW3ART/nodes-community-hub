@@ -294,8 +294,14 @@ export default function GridCreatorPage() {
                       }}
                     >
                       {cell === 'logo' ? (
-                        <div className="w-full h-full flex items-center justify-center bg-[#00D4FF]/20">
-                          <span className="text-2xl">⚡️</span>
+                        <div className="w-full h-full flex items-center justify-center bg-[#00D4FF]/10 p-2">
+                          <Image
+                            src="/nodes-logo.png"
+                            alt="NODES"
+                            width={cellSize - 16}
+                            height={cellSize - 16}
+                            className="object-contain"
+                          />
                         </div>
                       ) : cell ? (
                         <Image

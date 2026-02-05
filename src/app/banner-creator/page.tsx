@@ -296,7 +296,14 @@ export default function BannerCreatorPage() {
         {/* NODES Branding */}
         {showBranding && (
           <div className="absolute top-4 right-4 flex items-center gap-2">
-            <span className="text-lg">⚡️</span>
+            <div className="w-6 h-6 relative">
+              <Image
+                src="/nodes-logo.png"
+                alt="NODES"
+                fill
+                className="object-cover rounded"
+              />
+            </div>
             <span className="text-[#00D4FF]/80 text-sm font-medium tracking-widest uppercase">NODES</span>
           </div>
         )}

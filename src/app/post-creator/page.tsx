@@ -243,8 +243,15 @@ export default function PostCreatorPage() {
         )}
 
         {/* NODES Watermark */}
-        <div className="absolute top-2 right-2 sm:top-4 sm:right-4 flex items-center gap-1 text-[#00D4FF]/50 text-xs sm:text-sm font-medium">
-          <span>⚡️</span>
+        <div className="absolute top-2 right-2 sm:top-4 sm:right-4 flex items-center gap-1.5 text-[#00D4FF]/50 text-xs sm:text-sm font-medium">
+          <div className="w-4 h-4 sm:w-5 sm:h-5 relative opacity-50">
+            <Image
+              src="/nodes-logo.png"
+              alt="NODES"
+              fill
+              className="object-cover rounded"
+            />
+          </div>
           <span className="uppercase tracking-widest">NODES</span>
         </div>
       </div>
