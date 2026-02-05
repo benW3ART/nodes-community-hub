@@ -6,14 +6,13 @@ export const ALCHEMY_RPC_URL = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL || '';
 
 // Inner State values for Full Set tracking (8 states for complete set)
 export const INNER_STATES = [
-  'Awakened',
   'Ascended',
-  'Calm',
-  'Curious', 
-  'Determined',
-  'Ethereal',
-  'Hopeful',
-  'Radiant'
+  'Diamond Hand',
+  'Enlightened',
+  'Equilibrium',
+  'HyperConnected',
+  'Uncoded',
+  'Verified'
 ] as const;
 
 export type InnerState = typeof INNER_STATES[number];
