@@ -15,18 +15,42 @@ interface GridConfig {
   name: string;
 }
 
-// Helper to fetch and parse GIF frames
+// Helper to fetch and parse GIF frames with error handling
 async function fetchGifFrames(url: string) {
-  const response = await fetch(url);
-  const buffer = await response.arrayBuffer();
-  const gif = parseGIF(buffer);
-  const frames = decompressFrames(gif, true);
-  
-  return {
-    frames,
-    width: gif.lsd.width,
-    height: gif.lsd.height
-  };
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    const buffer = await response.arrayBuffer();
+    const gif = parseGIF(buffer);
+    const frames = decompressFrames(gif, true);
+    
+    if (!frames || frames.length === 0) {
+      throw new Error('No frames found');
+    }
+    
+    return {
+      frames,
+      width: gif.lsd.width,
+      height: gif.lsd.height,
+      isAnimated: true
+    };
+  } catch (error) {
+    console.error('GIF parsing failed for', url, error);
+    return null;
+  }
+}
+
+// Fallback: load image as static
+async function loadStaticImage(url: string) {
+  try {
+    const img = await loadImage(url);
+    return img;
+  } catch (error) {
+    console.error('Static image load failed for', url, error);
+    return null;
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -44,43 +68,56 @@ export async function POST(request: NextRequest) {
     const totalWidth = gridConfig.cols * cellSize + (gridConfig.cols - 1) * gap + padding * 2;
     const totalHeight = gridConfig.rows * cellSize + (gridConfig.rows - 1) * gap + padding * 2;
     
-    // Fetch all GIF data
+    // Try to fetch GIF frames, fallback to static images
     const gifDataList = await Promise.all(
       cells.map(async (cell) => {
-        try {
-          const data = await fetchGifFrames(cell.image);
-          return { ...cell, ...data };
-        } catch (err) {
-          console.error('Failed to fetch GIF:', cell.image, err);
-          return null;
+        const gifData = await fetchGifFrames(cell.image);
+        if (gifData) {
+          return { ...cell, ...gifData };
         }
+        // Fallback to static image
+        const staticImg = await loadStaticImage(cell.image);
+        if (staticImg) {
+          return { ...cell, staticImg, isAnimated: false };
+        }
+        return null;
       })
     );
     
-    const validGifs = gifDataList.filter(g => g !== null);
+    const validData = gifDataList.filter(g => g !== null);
     
-    if (validGifs.length === 0) {
-      return NextResponse.json({ error: 'Could not load any GIFs' }, { status: 400 });
+    if (validData.length === 0) {
+      return NextResponse.json({ error: 'Could not load any images' }, { status: 400 });
     }
     
-    // Find max frames
-    const maxFrames = Math.min(30, Math.max(...validGifs.map(g => g!.frames.length)));
+    // Check if we have any animated GIFs
+    const hasAnimated = validData.some(d => d!.isAnimated);
+    
+    // Determine number of frames
+    const animatedData = validData.filter(d => d!.isAnimated && 'frames' in d!);
+    const maxFrames = animatedData.length > 0
+      ? Math.min(30, Math.max(...animatedData.map(d => (d as any).frames?.length || 1)))
+      : 1;
     
     // Create GIF encoder
     const encoder = new GIFEncoder(totalWidth, totalHeight);
     encoder.setDelay(100);
-    encoder.setRepeat(0); // Loop forever
+    encoder.setRepeat(0);
     encoder.setQuality(10);
     encoder.start();
     
-    // Create canvas
+    // Create main canvas
     const canvas = createCanvas(totalWidth, totalHeight);
     const ctx = canvas.getContext('2d');
     
-    // Create frame canvases for each GIF
-    const gifCanvases = validGifs.map(gifData => {
-      const frameCanvas = createCanvas(gifData!.width, gifData!.height);
-      return { gifData, canvas: frameCanvas, ctx: frameCanvas.getContext('2d') };
+    // Create frame canvases for animated GIFs
+    const frameCanvases = validData.map(data => {
+      const d = data as any;
+      if (d.isAnimated && d.frames) {
+        const frameCanvas = createCanvas(d.width, d.height);
+        return { data: d, canvas: frameCanvas, ctx: frameCanvas.getContext('2d') };
+      }
+      return { data: d, canvas: null, ctx: null };
     });
     
     // Generate each frame
@@ -100,32 +137,45 @@ export async function POST(request: NextRequest) {
         }
       }
       
-      // Draw each GIF's current frame
-      for (const { gifData, canvas: frameCanvas, ctx: frameCtx } of gifCanvases) {
-        if (!gifData || !frameCtx) continue;
+      // Draw each image
+      for (const { data, canvas: frameCanvas, ctx: frameCtx } of frameCanvases) {
+        if (!data) continue;
         
-        const frameIndex = frameIdx % gifData.frames.length;
-        const frame = gifData.frames[frameIndex];
+        const x = padding + data.col * (cellSize + gap);
+        const y = padding + data.row * (cellSize + gap);
         
-        // Create ImageData from frame
-        const imageData = frameCtx.createImageData(frame.dims.width, frame.dims.height);
-        imageData.data.set(new Uint8ClampedArray(frame.patch));
-        
-        // Handle disposal
-        if (frame.disposalType === 2) {
-          frameCtx.clearRect(0, 0, gifData.width, gifData.height);
+        if (data.isAnimated && data.frames && frameCtx && frameCanvas) {
+          // Animated GIF frame
+          const frameIndex = frameIdx % data.frames.length;
+          const frame = data.frames[frameIndex];
+          
+          if (frame && frame.dims && frame.patch) {
+            try {
+              // Create ImageData from frame
+              const imageData = frameCtx.createImageData(frame.dims.width, frame.dims.height);
+              imageData.data.set(new Uint8ClampedArray(frame.patch));
+              
+              // Handle disposal
+              if (frame.disposalType === 2) {
+                frameCtx.clearRect(0, 0, data.width!, data.height!);
+              }
+              
+              // Draw frame patch
+              const patchCanvas = createCanvas(frame.dims.width, frame.dims.height);
+              const patchCtx = patchCanvas.getContext('2d');
+              patchCtx.putImageData(imageData, 0, 0);
+              frameCtx.drawImage(patchCanvas, frame.dims.left, frame.dims.top);
+              
+              // Draw to main canvas
+              ctx.drawImage(frameCanvas, 0, 0, data.width!, data.height!, x, y, cellSize, cellSize);
+            } catch (err) {
+              console.error('Frame rendering error:', err);
+            }
+          }
+        } else if (data.staticImg) {
+          // Static image
+          ctx.drawImage(data.staticImg, x, y, cellSize, cellSize);
         }
-        
-        // Draw frame patch
-        const patchCanvas = createCanvas(frame.dims.width, frame.dims.height);
-        const patchCtx = patchCanvas.getContext('2d');
-        patchCtx.putImageData(imageData, 0, 0);
-        frameCtx.drawImage(patchCanvas, frame.dims.left, frame.dims.top);
-        
-        // Draw to main canvas
-        const x = padding + gifData.col * (cellSize + gap);
-        const y = padding + gifData.row * (cellSize + gap);
-        ctx.drawImage(frameCanvas, 0, 0, gifData.width, gifData.height, x, y, cellSize, cellSize);
       }
       
       encoder.addFrame(ctx as any);
@@ -144,6 +194,6 @@ export async function POST(request: NextRequest) {
     
   } catch (error) {
     console.error('Create GIF error:', error);
-    return NextResponse.json({ error: 'Failed to create GIF' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to create GIF: ' + (error instanceof Error ? error.message : 'Unknown') }, { status: 500 });
   }
 }
