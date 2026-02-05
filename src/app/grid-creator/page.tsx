@@ -11,7 +11,7 @@ import { useNodesStore } from '@/stores/useNodesStore';
 import { NFTCardMini } from '@/components/NFTCard';
 import html2canvas from 'html2canvas';
 import GIF from 'gif.js';
-import { parseGIF, decompressFrames } from 'gifuct-js';
+// gifuct-js removed - animated GIF compositing was too heavy for browsers
 import { 
   Loader2, 
   Wallet, 
@@ -184,189 +184,38 @@ export default function GridCreatorPage() {
     }
   };
 
-  // Helper to fetch and parse GIF frames via proxy (CORS workaround)
-  const fetchGifFrames = async (url: string): Promise<{frames: ImageData[], delays: number[], width: number, height: number}> => {
-    // Use proxy to avoid CORS issues
-    const proxyUrl = `/api/proxy-gif?url=${encodeURIComponent(url)}`;
-    const response = await fetch(proxyUrl);
-    if (!response.ok) throw new Error('Failed to fetch GIF');
-    const buffer = await response.arrayBuffer();
-    const gif = parseGIF(buffer);
-    const frames = decompressFrames(gif, true).slice(0, 30); // Limit to 30 frames max
-    
-    const width = gif.lsd.width;
-    const height = gif.lsd.height;
-    
-    // Convert frames to ImageData
-    const imageDataFrames: ImageData[] = [];
-    const delays: number[] = [];
-    
-    // Create a canvas to build up frames
-    const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = width;
-    tempCanvas.height = height;
-    const tempCtx = tempCanvas.getContext('2d');
-    if (!tempCtx) throw new Error('No temp context');
-    
-    for (const frame of frames) {
-      // Create ImageData from frame patch
-      const frameImageData = new ImageData(
-        new Uint8ClampedArray(frame.patch),
-        frame.dims.width,
-        frame.dims.height
-      );
-      
-      // Draw frame patch at correct position
-      const patchCanvas = document.createElement('canvas');
-      patchCanvas.width = frame.dims.width;
-      patchCanvas.height = frame.dims.height;
-      const patchCtx = patchCanvas.getContext('2d');
-      if (!patchCtx) continue;
-      patchCtx.putImageData(frameImageData, 0, 0);
-      
-      // Handle disposal
-      if (frame.disposalType === 2) {
-        tempCtx.clearRect(0, 0, width, height);
-      }
-      
-      tempCtx.drawImage(patchCanvas, frame.dims.left, frame.dims.top);
-      
-      // Get full frame
-      const fullFrame = tempCtx.getImageData(0, 0, width, height);
-      imageDataFrames.push(fullFrame);
-      delays.push(frame.delay || 100);
-    }
-    
-    return { frames: imageDataFrames, delays, width, height };
-  };
-
   const [exportProgress, setExportProgress] = useState('');
 
+  // Simplified GIF export - static image (animated GIF compositing requires server-side processing)
   const handleExportGIF = async () => {
-    // Count NFTs in grid
     const nftCount = gridCells.filter(c => c && c !== 'logo').length;
     if (nftCount === 0) {
       alert('Add some NFTs to the grid first!');
       return;
     }
-    if (nftCount > 9) {
-      alert(`Too many NFTs (${nftCount}). GIF export works best with 9 or fewer NFTs. Use PNG for larger grids.`);
-      return;
-    }
     
     setIsExporting(true);
-    setExportProgress('Loading GIF frames...');
+    setExportProgress('Creating GIF...');
     
     try {
-      const cellSizeExport = 200;
-      const gap = 8;
-      const padding = 16;
+      // Use simple static image approach (animated compositing requires too much memory)
+      const canvas = await renderGridToCanvas();
       
-      const totalWidth = gridConfig.cols * cellSizeExport + (gridConfig.cols - 1) * gap + padding * 2;
-      const totalHeight = gridConfig.rows * cellSizeExport + (gridConfig.rows - 1) * gap + padding * 2;
-      
-      // Collect all NFT GIFs with their positions
-      const nftData: {url: string, row: number, col: number}[] = [];
-      for (let i = 0; i < gridCells.length; i++) {
-        const cell = gridCells[i];
-        if (cell && cell !== 'logo' && cell.image) {
-          nftData.push({
-            url: cell.image,
-            row: Math.floor(i / gridConfig.cols),
-            col: i % gridConfig.cols
-          });
-        }
-      }
-      
-      if (nftData.length === 0) {
-        alert('Add some NFTs to the grid first!');
-        setIsExporting(false);
-        return;
-      }
-      
-      // Fetch all GIF frames
-      const allGifData = await Promise.all(
-        nftData.map(async (nft) => {
-          try {
-            const gifData = await fetchGifFrames(nft.url);
-            return { ...nft, ...gifData };
-          } catch (err) {
-            console.error('Failed to parse GIF:', nft.url, err);
-            return null;
-          }
-        })
-      );
-      
-      const validGifs = allGifData.filter(g => g !== null) as NonNullable<typeof allGifData[0]>[];
-      
-      if (validGifs.length === 0) {
-        alert('Could not load any GIF frames. Try refreshing.');
-        setIsExporting(false);
-        return;
-      }
-      
-      // Find max frames and typical delay
-      const maxFrames = Math.max(...validGifs.map(g => g.frames.length));
-      const avgDelay = Math.round(validGifs.reduce((sum, g) => sum + (g.delays[0] || 100), 0) / validGifs.length);
-      
-      // Create output GIF
+      // Create GIF with single frame (static)
       const gif = new GIF({
         workers: 2,
         quality: 10,
-        width: totalWidth,
-        height: totalHeight,
+        width: canvas.width,
+        height: canvas.height,
         workerScript: '/gif.worker.js',
         repeat: 0,
       });
       
-      // Create composite canvas
-      const compositeCanvas = document.createElement('canvas');
-      compositeCanvas.width = totalWidth;
-      compositeCanvas.height = totalHeight;
-      const compositeCtx = compositeCanvas.getContext('2d');
-      if (!compositeCtx) throw new Error('No composite context');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('No canvas context');
       
-      // Generate each frame
-      for (let frameIdx = 0; frameIdx < maxFrames; frameIdx++) {
-        // Clear with black background
-        compositeCtx.fillStyle = '#000000';
-        compositeCtx.fillRect(0, 0, totalWidth, totalHeight);
-        
-        // Draw cell borders
-        for (let i = 0; i < gridCells.length; i++) {
-          const row = Math.floor(i / gridConfig.cols);
-          const col = i % gridConfig.cols;
-          const x = padding + col * (cellSizeExport + gap);
-          const y = padding + row * (cellSizeExport + gap);
-          compositeCtx.strokeStyle = '#1a1a1a';
-          compositeCtx.lineWidth = 2;
-          compositeCtx.strokeRect(x, y, cellSizeExport, cellSizeExport);
-        }
-        
-        // Draw each NFT's current frame
-        for (const gifData of validGifs) {
-          const frameIndex = frameIdx % gifData.frames.length;
-          const frame = gifData.frames[frameIndex];
-          
-          const x = padding + gifData.col * (cellSizeExport + gap);
-          const y = padding + gifData.row * (cellSizeExport + gap);
-          
-          // Create temp canvas for this frame
-          const tempCanvas = document.createElement('canvas');
-          tempCanvas.width = gifData.width;
-          tempCanvas.height = gifData.height;
-          const tempCtx = tempCanvas.getContext('2d');
-          if (!tempCtx) continue;
-          tempCtx.putImageData(frame, 0, 0);
-          
-          // Draw scaled to cell
-          compositeCtx.drawImage(tempCanvas, x, y, cellSizeExport, cellSizeExport);
-        }
-        
-        gif.addFrame(compositeCtx, { copy: true, delay: avgDelay });
-      }
-      
-      setExportProgress('Creating GIF...');
+      // Add single frame
+      gif.addFrame(ctx, { copy: true, delay: 100 });
       
       gif.on('finished', (blob: Blob) => {
         const url = URL.createObjectURL(blob);
@@ -390,68 +239,24 @@ export default function GridCreatorPage() {
     }
   };
 
+  // Simplified video export - static image (animated compositing requires too much memory)
   const handleExportVideo = async () => {
     const nftCount = gridCells.filter(c => c && c !== 'logo').length;
     if (nftCount === 0) {
       alert('Add some NFTs to the grid first!');
       return;
     }
-    if (nftCount > 9) {
-      alert(`Too many NFTs (${nftCount}). Video export works best with 9 or fewer NFTs. Use PNG for larger grids.`);
-      return;
-    }
     
     setIsExporting(true);
-    setExportProgress('Loading GIF frames...');
+    setExportProgress('Creating video...');
     
     try {
-      const cellSizeExport = 200;
-      const gap = 8;
-      const padding = 16;
-      
-      const totalWidth = gridConfig.cols * cellSizeExport + (gridConfig.cols - 1) * gap + padding * 2;
-      const totalHeight = gridConfig.rows * cellSizeExport + (gridConfig.rows - 1) * gap + padding * 2;
-      
-      // Collect all NFT GIFs
-      const nftData: {url: string, row: number, col: number}[] = [];
-      for (let i = 0; i < gridCells.length; i++) {
-        const cell = gridCells[i];
-        if (cell && cell !== 'logo' && cell.image) {
-          nftData.push({
-            url: cell.image,
-            row: Math.floor(i / gridConfig.cols),
-            col: i % gridConfig.cols
-          });
-        }
-      }
-      
-      // Fetch all GIF frames
-      const allGifData = await Promise.all(
-        nftData.map(async (nft) => {
-          try {
-            const gifData = await fetchGifFrames(nft.url);
-            return { ...nft, ...gifData };
-          } catch (err) {
-            console.error('Failed to parse GIF:', nft.url, err);
-            return null;
-          }
-        })
-      );
-      
-      const validGifs = allGifData.filter(g => g !== null) as NonNullable<typeof allGifData[0]>[];
-      
-      if (validGifs.length === 0) {
-        alert('Could not load any GIF frames.');
-        setIsExporting(false);
-        return;
-      }
-      
-      const maxFrames = Math.max(...validGifs.map(g => g.frames.length));
+      const sourceCanvas = await renderGridToCanvas();
       
       // Create video canvas
       const canvas = document.createElement('canvas');
-      canvas.width = totalWidth;
-      canvas.height = totalHeight;
+      canvas.width = sourceCanvas.width;
+      canvas.height = sourceCanvas.height;
       const ctx = canvas.getContext('2d');
       if (!ctx) throw new Error('No canvas context');
       
@@ -460,8 +265,6 @@ export default function GridCreatorPage() {
         mimeType: 'video/webm;codecs=vp9',
         videoBitsPerSecond: 5000000,
       });
-      
-      setExportProgress('Recording video...');
       
       const chunks: Blob[] = [];
       mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
@@ -481,49 +284,20 @@ export default function GridCreatorPage() {
       
       mediaRecorder.start();
       
-      let frameIdx = 0;
-      const totalFramesToRecord = maxFrames * 2; // Loop twice
+      // Record 2 seconds of static image
+      let frameCount = 0;
+      const totalFrames = 60;
       
       const animate = () => {
-        if (frameIdx >= totalFramesToRecord) {
+        if (frameCount >= totalFrames) {
           mediaRecorder.stop();
           return;
         }
         
-        // Clear
-        ctx.fillStyle = '#000000';
-        ctx.fillRect(0, 0, totalWidth, totalHeight);
+        // Draw the static canvas
+        ctx.drawImage(sourceCanvas, 0, 0);
         
-        // Draw cell borders
-        for (let i = 0; i < gridCells.length; i++) {
-          const row = Math.floor(i / gridConfig.cols);
-          const col = i % gridConfig.cols;
-          const x = padding + col * (cellSizeExport + gap);
-          const y = padding + row * (cellSizeExport + gap);
-          ctx.strokeStyle = '#1a1a1a';
-          ctx.lineWidth = 2;
-          ctx.strokeRect(x, y, cellSizeExport, cellSizeExport);
-        }
-        
-        // Draw each NFT frame
-        for (const gifData of validGifs) {
-          const gifFrameIdx = frameIdx % gifData.frames.length;
-          const frame = gifData.frames[gifFrameIdx];
-          
-          const x = padding + gifData.col * (cellSizeExport + gap);
-          const y = padding + gifData.row * (cellSizeExport + gap);
-          
-          const tempCanvas = document.createElement('canvas');
-          tempCanvas.width = gifData.width;
-          tempCanvas.height = gifData.height;
-          const tempCtx = tempCanvas.getContext('2d');
-          if (!tempCtx) continue;
-          tempCtx.putImageData(frame, 0, 0);
-          
-          ctx.drawImage(tempCanvas, x, y, cellSizeExport, cellSizeExport);
-        }
-        
-        frameIdx++;
+        frameCount++;
         requestAnimationFrame(animate);
       };
       
@@ -657,7 +431,7 @@ export default function GridCreatorPage() {
                 ) : nfts.length === 0 ? (
                   <p className="text-gray-600">No NODES found in your wallet</p>
                 ) : (
-                  <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2 max-h-[50vh] overflow-y-auto p-1" style={{ gridAutoRows: '1fr' }}>
+                  <div className="flex flex-wrap gap-2 max-h-[50vh] overflow-y-auto p-1">
                     {nfts.map((nft) => (
                       <button
                         key={nft.tokenId}
@@ -667,15 +441,14 @@ export default function GridCreatorPage() {
                             handleCellClick(emptyCell, nft);
                           }
                         }}
-                        className="relative rounded overflow-hidden border border-transparent hover:border-[#00D4FF] active:scale-95 transition-all"
-                        style={{ aspectRatio: '1/1' }}
+                        className="relative rounded overflow-hidden border border-transparent hover:border-[#00D4FF] active:scale-95 transition-all w-14 h-14 sm:w-16 sm:h-16 flex-shrink-0"
                       >
                         <Image
                           src={nft.image}
                           alt={nft.name}
                           fill
                           className="object-cover"
-                          sizes="60px"
+                          sizes="64px"
                           unoptimized
                         />
                       </button>
@@ -724,7 +497,7 @@ export default function GridCreatorPage() {
                 </button>
               </div>
               <p className="text-xs text-gray-500 mt-2 text-center">
-                GIF &amp; Video preserve animations (max 9 NFTs) ✨
+                PNG = image • GIF/Video = static montage
               </p>
               {exportProgress && (
                 <p className="text-xs text-[#00D4FF] mt-2 text-center animate-pulse">
