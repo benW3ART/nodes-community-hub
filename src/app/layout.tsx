@@ -7,24 +7,32 @@ const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'NODES Community Hub',
-  description: '3,333 digital identities - retro-inspired characters born from internet culture. Features three iconic forms: Full Circle, Skull, and Ghost, each brought to life through a universe of colors, symbols, and dynamic motion.',
-  metadataBase: new URL('https://nodes-hub.vercel.app'),
+  description: '3,333 digital identities on Base - retro-inspired characters born from internet culture. Gallery, Grid Creator, Banner Creator, Leaderboard & Full Sets tracker.',
+  metadataBase: new URL('https://nodes-community-hub-production.up.railway.app'),
   icons: {
     icon: '/favicon.png',
     shortcut: '/favicon.png',
-    apple: '/nodes-logo.png',
+    apple: '/favicon.png',
   },
   openGraph: {
     title: 'NODES Community Hub',
-    description: '3,333 digital identities - retro-inspired characters born from internet culture. Features three iconic forms: Full Circle, Skull, and Ghost.',
-    images: ['/nodes-banner.png'],
+    description: '3,333 digital identities on Base - Gallery, Grid Creator, Banner Creator, Leaderboard & Full Sets tracker for NODES holders.',
+    images: [
+      {
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'NODES Community Hub',
+      }
+    ],
     siteName: 'NODES Community Hub',
+    type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
     title: 'NODES Community Hub',
-    description: '3,333 digital identities - retro-inspired characters born from internet culture.',
-    images: ['/nodes-banner.png'],
+    description: '3,333 digital identities on Base - Gallery, Grid Creator, Banner Creator, Leaderboard & Full Sets.',
+    images: ['/og-image.png'],
     creator: '@gmhunterart',
   },
 };
