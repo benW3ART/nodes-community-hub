@@ -10,6 +10,7 @@ import { getNFTsForOwner } from '@/lib/alchemy';
 import { useNodesStore } from '@/stores/useNodesStore';
 import { NFTCardMini } from '@/components/NFTCard';
 import html2canvas from 'html2canvas';
+import GIF from 'gif.js';
 import { 
   Loader2, 
   Wallet, 
@@ -187,6 +188,69 @@ export default function GridCreatorPage() {
     }
   };
 
+  const handleExportGIF = async () => {
+    if (!canvasRef.current) return;
+    
+    setIsExporting(true);
+    try {
+      const element = canvasRef.current;
+      const screenshot = await html2canvas(element, {
+        scale: 2,
+        backgroundColor: '#000000',
+        useCORS: true,
+        allowTaint: true,
+      });
+
+      const gif = new GIF({
+        workers: 2,
+        quality: 10,
+        width: screenshot.width,
+        height: screenshot.height,
+        workerScript: '/gif.worker.js',
+        repeat: 0, // 0 = loop forever
+      });
+
+      const canvas = document.createElement('canvas');
+      canvas.width = screenshot.width;
+      canvas.height = screenshot.height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('No canvas context');
+
+      // Generate frames for ~1.1 seconds at 30fps with subtle pulse animation
+      const totalFrames = 33;
+      for (let frame = 0; frame < totalFrames; frame++) {
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        const scale = 1 + Math.sin(frame * 0.1) * 0.02;
+        const offsetX = (canvas.width - screenshot.width * scale) / 2;
+        const offsetY = (canvas.height - screenshot.height * scale) / 2;
+        
+        ctx.drawImage(screenshot, offsetX, offsetY, screenshot.width * scale, screenshot.height * scale);
+        
+        gif.addFrame(ctx, { copy: true, delay: 33 }); // ~30fps
+      }
+
+      gif.on('finished', (blob: Blob) => {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.download = `nodes-grid-${gridConfig.name}-${Date.now()}.gif`;
+        link.href = url;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        setIsExporting(false);
+      });
+
+      gif.render();
+    } catch (err) {
+      console.error('GIF export failed:', err);
+      alert('GIF export failed. Please try again.');
+      setIsExporting(false);
+    }
+  };
+
   const cellSize = Math.floor(600 / Math.max(gridConfig.rows, gridConfig.cols));
 
   return (
@@ -326,30 +390,42 @@ export default function GridCreatorPage() {
               </div>
 
               {/* Export Buttons */}
-              <div className="flex gap-3">
+              <div className="grid grid-cols-3 gap-2">
                 <button
                   onClick={handleExportPNG}
                   disabled={isExporting}
-                  className="btn-primary flex-1 flex items-center justify-center gap-2"
+                  className="btn-primary flex items-center justify-center gap-2 text-sm"
                 >
                   {isExporting ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
-                    <Download className="w-5 h-5" />
+                    <Download className="w-4 h-4" />
                   )}
-                  Export PNG
+                  PNG
+                </button>
+                <button
+                  onClick={handleExportGIF}
+                  disabled={isExporting}
+                  className="btn-secondary flex items-center justify-center gap-2 text-sm"
+                >
+                  {isExporting ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Download className="w-4 h-4" />
+                  )}
+                  GIF
                 </button>
                 <button
                   onClick={handleExportVideo}
                   disabled={isExporting}
-                  className="btn-secondary flex-1 flex items-center justify-center gap-2"
+                  className="btn-secondary flex items-center justify-center gap-2 text-sm"
                 >
                   {isExporting ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
-                    <Download className="w-5 h-5" />
+                    <Download className="w-4 h-4" />
                   )}
-                  Export Video
+                  Video
                 </button>
               </div>
             </div>
