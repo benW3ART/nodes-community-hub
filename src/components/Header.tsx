@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -10,7 +11,8 @@ import {
   Layout, 
   Target, 
   Trophy,
-  Settings
+  Menu,
+  X
 } from 'lucide-react';
 
 const navItems = [
@@ -25,17 +27,18 @@ const navItems = [
 
 export function Header() {
   const pathname = usePathname();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
     <header className="sticky top-0 z-50 bg-gray-950/80 backdrop-blur-xl border-b border-gray-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-14 sm:h-16">
           {/* Logo */}
-          <Link href="/" className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
-              <span className="text-xl font-bold">N</span>
+          <Link href="/" className="flex items-center space-x-2 sm:space-x-3">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg sm:rounded-xl flex items-center justify-center">
+              <span className="text-lg sm:text-xl font-bold">N</span>
             </div>
-            <span className="text-xl font-bold gradient-text hidden sm:block">
+            <span className="text-lg sm:text-xl font-bold gradient-text hidden xs:block">
               NODES Hub
             </span>
           </Link>
@@ -60,8 +63,8 @@ export function Header() {
             })}
           </nav>
 
-          {/* Connect Button */}
-          <div className="flex items-center space-x-4">
+          {/* Right side: Connect + Mobile menu button */}
+          <div className="flex items-center space-x-2 sm:space-x-4">
             <ConnectButton 
               chainStatus="icon"
               accountStatus={{
@@ -73,29 +76,49 @@ export function Header() {
                 largeScreen: true,
               }}
             />
+            
+            {/* Mobile menu button */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="lg:hidden p-2 rounded-lg bg-gray-800/50 hover:bg-gray-700/50 transition-colors"
+              aria-label="Toggle menu"
+            >
+              {mobileMenuOpen ? (
+                <X className="w-5 h-5" />
+              ) : (
+                <Menu className="w-5 h-5" />
+              )}
+            </button>
           </div>
         </div>
-
-        {/* Navigation - Mobile */}
-        <nav className="lg:hidden flex items-center space-x-1 pb-3 overflow-x-auto scrollbar-hide">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = pathname === item.href;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`nav-link flex items-center space-x-2 whitespace-nowrap ${
-                  isActive ? 'nav-link-active' : ''
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                <span className="text-sm">{item.label}</span>
-              </Link>
-            );
-          })}
-        </nav>
       </div>
+
+      {/* Mobile Navigation Menu */}
+      {mobileMenuOpen && (
+        <div className="lg:hidden border-t border-gray-800 bg-gray-950/95 backdrop-blur-xl">
+          <nav className="max-w-7xl mx-auto px-4 py-4 space-y-1">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = pathname === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all active:scale-98 ${
+                    isActive 
+                      ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' 
+                      : 'hover:bg-gray-800/50 text-gray-300'
+                  }`}
+                >
+                  <Icon className="w-5 h-5" />
+                  <span className="font-medium">{item.label}</span>
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
+      )}
     </header>
   );
 }

@@ -19,7 +19,9 @@ import {
   Type,
   Palette,
   Layout,
-  Sparkles
+  Sparkles,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import Image from 'next/image';
 import type { NodeNFT } from '@/types/nft';
@@ -81,6 +83,8 @@ export default function BannerCreatorPage() {
   const [selectedPattern, setSelectedPattern] = useState<PatternOption>(PATTERN_OPTIONS[0]);
   const [isExporting, setIsExporting] = useState(false);
   const [isLoadingNfts, setIsLoadingNfts] = useState(false);
+  const [showNftPicker, setShowNftPicker] = useState(false);
+  const [activeSlot, setActiveSlot] = useState<number | null>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
 
   // Initialize slots when template changes
@@ -109,12 +113,19 @@ export default function BannerCreatorPage() {
     const newSelection = [...selectedNfts];
     newSelection[index] = nft;
     setSelectedNfts(newSelection);
+    setShowNftPicker(false);
+    setActiveSlot(null);
   };
 
   const clearSlot = (index: number) => {
     const newSelection = [...selectedNfts];
     newSelection[index] = null;
     setSelectedNfts(newSelection);
+  };
+
+  const openNftPicker = (slotIndex: number) => {
+    setActiveSlot(slotIndex);
+    setShowNftPicker(true);
   };
 
   const autoFillSlots = () => {
@@ -193,7 +204,7 @@ export default function BannerCreatorPage() {
     return (
       <div 
         ref={canvasRef}
-        className="w-[750px] h-[250px] relative overflow-hidden"
+        className="w-[750px] h-[250px] relative overflow-hidden flex-shrink-0"
         style={patternStyle}
       >
         {/* Ambient glow effects */}
@@ -243,7 +254,6 @@ export default function BannerCreatorPage() {
 
           {selectedTemplate.layout === 'spread' && (
             <div className="relative w-full h-full">
-              {/* Artistic spread - NFTs at different positions */}
               {slots[0] && (
                 <div className="absolute left-8 top-1/2 -translate-y-1/2 rotate-[-5deg]">
                   {renderNftSlot(slots[0], 0, 120)}
@@ -297,38 +307,39 @@ export default function BannerCreatorPage() {
     <div className="min-h-screen">
       <Header />
       
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <h1 className="section-title">Banner Creator</h1>
-        <p className="text-gray-400 mb-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-12">
+        <h1 className="section-title text-xl sm:text-2xl md:text-3xl">Banner Creator</h1>
+        <p className="text-gray-400 text-sm sm:text-base mb-6 sm:mb-8">
           Create X/Twitter header banners (1500×500) featuring your NODES NFTs
         </p>
 
         {!isConnected ? (
-          <div className="card text-center py-16">
-            <Wallet className="w-16 h-16 mx-auto mb-6 text-gray-600" />
-            <h2 className="text-2xl font-semibold mb-4">Connect Your Wallet</h2>
-            <p className="text-gray-400 mb-6">Connect to access your NODES NFTs</p>
+          <div className="card text-center py-12 sm:py-16">
+            <Wallet className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 sm:mb-6 text-gray-600" />
+            <h2 className="text-xl sm:text-2xl font-semibold mb-3 sm:mb-4">Connect Your Wallet</h2>
+            <p className="text-gray-400 text-sm sm:text-base mb-4 sm:mb-6">Connect to access your NODES NFTs</p>
             <ConnectButton />
           </div>
         ) : (
-          <div className="space-y-8">
-            {/* Preview */}
+          <div className="space-y-6 sm:space-y-8">
+            {/* Preview - Scrollable on mobile */}
             <div className="card">
-              <h3 className="font-semibold mb-4 flex items-center gap-2">
-                <ImageIcon className="w-5 h-5 text-purple-400" />
-                Preview (750×250 - exports at 1500×500)
+              <h3 className="font-semibold mb-3 sm:mb-4 flex items-center gap-2 text-sm sm:text-base">
+                <ImageIcon className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400" />
+                Preview
+                <span className="text-xs text-gray-500 font-normal">(scroll to see full banner)</span>
               </h3>
-              <div className="flex justify-center overflow-x-auto pb-4">
-                <div className="rounded-xl overflow-hidden shadow-2xl border border-gray-800">
+              <div className="overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
+                <div className="rounded-xl overflow-hidden shadow-2xl border border-gray-800 inline-block">
                   {renderPreview()}
                 </div>
               </div>
               
-              <div className="flex justify-center gap-4 mt-4">
+              <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 mt-4">
                 <button
                   onClick={autoFillSlots}
                   disabled={nfts.length === 0}
-                  className="btn-secondary flex items-center gap-2"
+                  className="btn-secondary flex items-center justify-center gap-2 w-full sm:w-auto py-3 sm:py-2"
                 >
                   <Sparkles className="w-4 h-4" />
                   Auto Fill
@@ -336,7 +347,7 @@ export default function BannerCreatorPage() {
                 <button
                   onClick={handleExport}
                   disabled={isExporting}
-                  className="btn-primary flex items-center gap-2"
+                  className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto py-3 sm:py-2"
                 >
                   {isExporting ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
@@ -348,21 +359,21 @@ export default function BannerCreatorPage() {
               </div>
             </div>
 
-            <div className="grid lg:grid-cols-2 gap-8">
+            <div className="grid lg:grid-cols-2 gap-6 sm:gap-8">
               {/* Controls */}
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 {/* Template Selection */}
                 <div className="card">
-                  <h3 className="font-semibold mb-4 flex items-center gap-2">
-                    <Layout className="w-5 h-5 text-purple-400" />
+                  <h3 className="font-semibold mb-3 sm:mb-4 flex items-center gap-2 text-sm sm:text-base">
+                    <Layout className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400" />
                     Template
                   </h3>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  <div className="grid grid-cols-3 sm:grid-cols-3 gap-2">
                     {BANNER_TEMPLATES.map((template) => (
                       <button
                         key={template.id}
                         onClick={() => setSelectedTemplate(template)}
-                        className={`p-3 rounded-lg text-sm transition-all ${
+                        className={`p-2 sm:p-3 rounded-lg text-xs sm:text-sm transition-all active:scale-95 ${
                           selectedTemplate.id === template.id
                             ? 'bg-purple-600 text-white'
                             : 'bg-gray-800 hover:bg-gray-700'
@@ -377,19 +388,19 @@ export default function BannerCreatorPage() {
 
                 {/* Background */}
                 <div className="card">
-                  <h3 className="font-semibold mb-4 flex items-center gap-2">
-                    <Palette className="w-5 h-5 text-purple-400" />
+                  <h3 className="font-semibold mb-3 sm:mb-4 flex items-center gap-2 text-sm sm:text-base">
+                    <Palette className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400" />
                     Background
                   </h3>
                   
                   <div className="mb-4">
-                    <label className="text-sm text-gray-400 mb-2 block">Gradient</label>
-                    <div className="grid grid-cols-3 gap-2">
+                    <label className="text-xs sm:text-sm text-gray-400 mb-2 block">Gradient</label>
+                    <div className="grid grid-cols-6 sm:grid-cols-6 gap-2">
                       {GRADIENT_OPTIONS.map((gradient) => (
                         <button
                           key={gradient.id}
                           onClick={() => setSelectedGradient(gradient)}
-                          className={`h-12 rounded-lg border-2 transition-all ${
+                          className={`h-10 sm:h-12 rounded-lg border-2 transition-all active:scale-95 ${
                             selectedGradient.id === gradient.id
                               ? 'border-purple-500 scale-105'
                               : 'border-gray-700'
@@ -402,13 +413,13 @@ export default function BannerCreatorPage() {
                   </div>
                   
                   <div>
-                    <label className="text-sm text-gray-400 mb-2 block">Pattern Overlay</label>
-                    <div className="flex gap-2">
+                    <label className="text-xs sm:text-sm text-gray-400 mb-2 block">Pattern Overlay</label>
+                    <div className="grid grid-cols-4 gap-2">
                       {PATTERN_OPTIONS.map((pattern) => (
                         <button
                           key={pattern.id}
                           onClick={() => setSelectedPattern(pattern)}
-                          className={`px-3 py-2 rounded-lg text-sm transition-all ${
+                          className={`px-2 sm:px-3 py-2 rounded-lg text-xs sm:text-sm transition-all active:scale-95 ${
                             selectedPattern.id === pattern.id
                               ? 'bg-purple-600 text-white'
                               : 'bg-gray-800 hover:bg-gray-700'
@@ -423,8 +434,8 @@ export default function BannerCreatorPage() {
 
                 {/* Custom Text */}
                 <div className="card">
-                  <h3 className="font-semibold mb-4 flex items-center gap-2">
-                    <Type className="w-5 h-5 text-purple-400" />
+                  <h3 className="font-semibold mb-3 sm:mb-4 flex items-center gap-2 text-sm sm:text-base">
+                    <Type className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400" />
                     Text & Branding
                   </h3>
                   <input
@@ -432,7 +443,7 @@ export default function BannerCreatorPage() {
                     value={customText}
                     onChange={(e) => setCustomText(e.target.value)}
                     placeholder="Add your message (optional)..."
-                    className="input mb-4"
+                    className="input text-sm sm:text-base mb-4"
                     maxLength={40}
                   />
                   <label className="flex items-center gap-2 cursor-pointer">
@@ -440,7 +451,7 @@ export default function BannerCreatorPage() {
                       type="checkbox"
                       checked={showBranding}
                       onChange={(e) => setShowBranding(e.target.checked)}
-                      className="w-4 h-4 rounded border-gray-600 bg-gray-800 text-purple-500 focus:ring-purple-500"
+                      className="w-5 h-5 rounded border-gray-600 bg-gray-800 text-purple-500 focus:ring-purple-500"
                     />
                     <span className="text-sm">Show NODES branding</span>
                   </label>
@@ -449,63 +460,94 @@ export default function BannerCreatorPage() {
 
               {/* NFT Selection */}
               <div className="card">
-                <h3 className="font-semibold mb-4">Select NFTs for Slots</h3>
+                <h3 className="font-semibold mb-3 sm:mb-4 text-sm sm:text-base">Select NFTs for Slots</h3>
                 
-                <div className="space-y-3 mb-6">
+                {/* Slot buttons - Mobile friendly */}
+                <div className="space-y-2 mb-4">
                   {selectedNfts.map((selected, slotIndex) => (
-                    <div key={slotIndex} className="flex items-center gap-4 p-3 bg-gray-800/50 rounded-lg">
-                      <span className="text-sm text-gray-400 w-16">Slot {slotIndex + 1}:</span>
+                    <div 
+                      key={slotIndex} 
+                      className="flex items-center gap-3 p-3 bg-gray-800/50 rounded-lg"
+                    >
+                      <span className="text-xs sm:text-sm text-gray-400 w-14 sm:w-16 flex-shrink-0">
+                        Slot {slotIndex + 1}
+                      </span>
                       {selected ? (
-                        <div className="flex items-center gap-2 flex-1">
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
                           <Image
                             src={selected.image}
                             alt={selected.name}
                             width={40}
                             height={40}
-                            className="rounded"
+                            className="rounded flex-shrink-0"
                           />
-                          <span className="text-sm truncate">{selected.name}</span>
+                          <span className="text-xs sm:text-sm truncate">{selected.name}</span>
                           <button
                             onClick={() => clearSlot(slotIndex)}
-                            className="ml-auto text-gray-500 hover:text-red-400 p-1"
+                            className="ml-auto text-gray-500 hover:text-red-400 p-2 -mr-1 flex-shrink-0"
                           >
                             <RotateCcw className="w-4 h-4" />
                           </button>
                         </div>
                       ) : (
-                        <div className="flex-1 text-sm text-gray-500">
-                          Click an NFT below to fill
-                        </div>
+                        <button
+                          onClick={() => openNftPicker(slotIndex)}
+                          className="flex-1 text-left text-xs sm:text-sm text-purple-400 hover:text-purple-300 py-2"
+                        >
+                          Tap to select NFT →
+                        </button>
                       )}
                     </div>
                   ))}
                 </div>
                 
-                {/* NFT Gallery */}
+                {/* NFT Gallery - Collapsible on mobile */}
                 <div className="border-t border-gray-800 pt-4">
-                  <h4 className="text-sm text-gray-400 mb-3">Your NODES ({nfts.length}):</h4>
-                  {isLoadingNfts ? (
-                    <div className="flex items-center gap-2 text-gray-500">
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Loading...
-                    </div>
-                  ) : nfts.length === 0 ? (
-                    <p className="text-gray-500 text-sm">No NODES found in your wallet</p>
-                  ) : (
-                    <div className="grid grid-cols-6 gap-2 max-h-64 overflow-y-auto">
-                      {nfts.map((nft) => (
-                        <NFTCardMini
-                          key={nft.tokenId}
-                          nft={nft}
-                          onClick={() => {
-                            const emptySlot = selectedNfts.findIndex(s => s === null);
-                            if (emptySlot !== -1) {
-                              handleSlotClick(emptySlot, nft);
-                            }
-                          }}
-                        />
-                      ))}
-                    </div>
+                  <button
+                    onClick={() => setShowNftPicker(!showNftPicker)}
+                    className="w-full flex items-center justify-between text-sm text-gray-400 mb-3 py-2"
+                  >
+                    <span>Your NODES ({nfts.length})</span>
+                    {showNftPicker ? (
+                      <ChevronUp className="w-4 h-4" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4" />
+                    )}
+                  </button>
+                  
+                  {showNftPicker && (
+                    <>
+                      {activeSlot !== null && (
+                        <div className="mb-3 p-2 bg-purple-500/20 rounded-lg text-sm text-purple-400">
+                          Selecting for Slot {activeSlot + 1}
+                        </div>
+                      )}
+                      {isLoadingNfts ? (
+                        <div className="flex items-center gap-2 text-gray-500 py-4">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Loading...
+                        </div>
+                      ) : nfts.length === 0 ? (
+                        <p className="text-gray-500 text-sm py-4">No NODES found in your wallet</p>
+                      ) : (
+                        <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2 max-h-64 overflow-y-auto">
+                          {nfts.map((nft) => (
+                            <NFTCardMini
+                              key={nft.tokenId}
+                              nft={nft}
+                              onClick={() => {
+                                const targetSlot = activeSlot !== null 
+                                  ? activeSlot 
+                                  : selectedNfts.findIndex(s => s === null);
+                                if (targetSlot !== -1) {
+                                  handleSlotClick(targetSlot, nft);
+                                }
+                              }}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
