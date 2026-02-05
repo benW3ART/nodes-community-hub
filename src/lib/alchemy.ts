@@ -1,4 +1,4 @@
-import { ALCHEMY_API_KEY, NODES_CONTRACT, INNER_STATES } from './wagmi';
+import { ALCHEMY_API_KEY, NODES_CONTRACT, INNER_STATES } from './constants';
 import type { NodeNFT, NFTMetadata, FullSetStatus } from '@/types/nft';
 
 const ALCHEMY_BASE_URL = `https://base-mainnet.g.alchemy.com/nft/v3/${ALCHEMY_API_KEY}`;

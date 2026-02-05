@@ -2,14 +2,28 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useEffect } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Header } from '@/components/Header';
 import { useAccount } from 'wagmi';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { getNFTsForOwner, analyzeFullSets } from '@/lib/alchemy';
+import { calculateCollectionRarity, calculatePortfolioRarity, getRarityTier } from '@/lib/rarity';
+import type { RarityScore } from '@/lib/rarity';
 import { useNodesStore } from '@/stores/useNodesStore';
 import { NFTCard } from '@/components/NFTCard';
-import { Loader2, Wallet } from 'lucide-react';
+import { INNER_STATES } from '@/lib/wagmi';
+import { 
+  Loader2, 
+  Wallet, 
+  Sparkles, 
+  Filter,
+  SortAsc,
+  SortDesc,
+  BarChart3
+} from 'lucide-react';
+
+type SortOption = 'tokenId' | 'innerState' | 'rarity';
+type SortDirection = 'asc' | 'desc';
 
 export default function GalleryPage() {
   const { address, isConnected } = useAccount();
@@ -22,6 +36,12 @@ export default function GalleryPage() {
     setError,
     setFullSetAnalysis 
   } = useNodesStore();
+
+  const [showRarity, setShowRarity] = useState(false);
+  const [rarityMap, setRarityMap] = useState<Map<string, RarityScore>>(new Map());
+  const [filterState, setFilterState] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<SortOption>('tokenId');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
   useEffect(() => {
     async function fetchNFTs() {
@@ -37,6 +57,12 @@ export default function GalleryPage() {
         // Analyze full sets
         const analysis = analyzeFullSets(fetchedNfts);
         setFullSetAnalysis(analysis.status, analysis.completeSets, analysis.missingStates);
+        
+        // Calculate rarity for user's collection
+        if (fetchedNfts.length > 0) {
+          const rarity = calculateCollectionRarity(fetchedNfts);
+          setRarityMap(rarity);
+        }
       } catch (err) {
         setError('Failed to fetch NFTs. Please try again.');
         console.error(err);
@@ -49,6 +75,49 @@ export default function GalleryPage() {
       fetchNFTs();
     }
   }, [address, isConnected, setNfts, setLoading, setError, setFullSetAnalysis]);
+
+  // Portfolio rarity stats
+  const portfolioStats = useMemo(() => {
+    if (nfts.length === 0 || rarityMap.size === 0) return null;
+    return calculatePortfolioRarity(nfts, rarityMap);
+  }, [nfts, rarityMap]);
+
+  // Filter and sort NFTs
+  const displayedNfts = useMemo(() => {
+    let filtered = [...nfts];
+    
+    // Apply filter
+    if (filterState) {
+      filtered = filtered.filter(nft => nft.innerState === filterState);
+    }
+    
+    // Apply sort
+    filtered.sort((a, b) => {
+      let comparison = 0;
+      
+      switch (sortBy) {
+        case 'tokenId':
+          comparison = parseInt(a.tokenId) - parseInt(b.tokenId);
+          break;
+        case 'innerState':
+          comparison = a.innerState.localeCompare(b.innerState);
+          break;
+        case 'rarity':
+          const rarityA = rarityMap.get(a.tokenId)?.totalScore || 0;
+          const rarityB = rarityMap.get(b.tokenId)?.totalScore || 0;
+          comparison = rarityB - rarityA; // Higher is rarer
+          break;
+      }
+      
+      return sortDirection === 'asc' ? comparison : -comparison;
+    });
+    
+    return filtered;
+  }, [nfts, filterState, sortBy, sortDirection, rarityMap]);
+
+  const toggleSortDirection = () => {
+    setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+  };
 
   return (
     <div className="min-h-screen">
@@ -108,18 +177,143 @@ export default function GalleryPage() {
           </div>
         ) : (
           <>
-            {/* Filter Tabs */}
-            <div className="flex flex-wrap gap-2 mb-6">
-              <button className="badge-purple">All ({nfts.length})</button>
-              {/* Add filter by Inner State */}
+            {/* Portfolio Rarity Stats */}
+            {showRarity && portfolioStats && (
+              <div className="card mb-6 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-purple-500/30">
+                <h3 className="font-semibold mb-4 flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5 text-purple-400" />
+                  Portfolio Rarity Stats
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-400">Average Score</p>
+                    <p className="text-2xl font-bold text-purple-400">
+                      {portfolioStats.averageScore.toFixed(1)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-400">Total Rarity</p>
+                    <p className="text-2xl font-bold text-pink-400">
+                      {portfolioStats.totalRarityScore.toFixed(1)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-400">Average Rank</p>
+                    <p className="text-2xl font-bold">
+                      #{portfolioStats.averageRank}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-400">Best NFT</p>
+                    <p className="text-2xl font-bold text-yellow-400">
+                      #{portfolioStats.bestNft?.tokenId || 'N/A'}
+                    </p>
+                  </div>
+                </div>
+                
+                {portfolioStats.rarestTraits.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-purple-500/30">
+                    <p className="text-sm text-gray-400 mb-2">Rarest Traits in Collection:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {portfolioStats.rarestTraits.map((trait, i) => (
+                        <span 
+                          key={i}
+                          className="px-2 py-1 bg-gray-800/50 rounded text-xs"
+                        >
+                          {trait.traitType}: {trait.value} ({trait.percentage.toFixed(1)}%)
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Filter & Sort Controls */}
+            <div className="flex flex-wrap gap-4 mb-6">
+              {/* Filter by Inner State */}
+              <div className="flex items-center gap-2">
+                <Filter className="w-4 h-4 text-gray-400" />
+                <select
+                  value={filterState || ''}
+                  onChange={(e) => setFilterState(e.target.value || null)}
+                  className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm"
+                >
+                  <option value="">All Inner States</option>
+                  {INNER_STATES.map((state) => (
+                    <option key={state} value={state}>{state}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Sort Options */}
+              <div className="flex items-center gap-2">
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as SortOption)}
+                  className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm"
+                >
+                  <option value="tokenId">Token ID</option>
+                  <option value="innerState">Inner State</option>
+                  <option value="rarity">Rarity Score</option>
+                </select>
+                <button
+                  onClick={toggleSortDirection}
+                  className="p-2 bg-gray-800 border border-gray-700 rounded-lg hover:bg-gray-700"
+                >
+                  {sortDirection === 'asc' ? (
+                    <SortAsc className="w-4 h-4" />
+                  ) : (
+                    <SortDesc className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
+
+              {/* Rarity Toggle */}
+              <button
+                onClick={() => setShowRarity(!showRarity)}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all ${
+                  showRarity
+                    ? 'bg-purple-600 text-white'
+                    : 'bg-gray-800 border border-gray-700 text-gray-400 hover:bg-gray-700'
+                }`}
+              >
+                <Sparkles className="w-4 h-4" />
+                {showRarity ? 'Hide Rarity' : 'Show Rarity'}
+              </button>
+
+              {/* Count Display */}
+              <div className="ml-auto text-sm text-gray-400">
+                Showing {displayedNfts.length} of {nfts.length}
+              </div>
             </div>
 
             {/* NFT Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-              {nfts.map((nft) => (
-                <NFTCard key={nft.tokenId} nft={nft} selectable />
+              {displayedNfts.map((nft) => (
+                <NFTCard 
+                  key={nft.tokenId} 
+                  nft={nft} 
+                  selectable
+                  showRarity={showRarity}
+                  rarityScore={rarityMap.get(nft.tokenId)}
+                />
               ))}
             </div>
+
+            {displayedNfts.length === 0 && filterState && (
+              <div className="text-center py-12">
+                <p className="text-gray-400">
+                  No NFTs with Inner State &quot;{filterState}&quot; found.
+                </p>
+                <button
+                  onClick={() => setFilterState(null)}
+                  className="mt-4 text-purple-400 hover:text-purple-300"
+                >
+                  Clear filter
+                </button>
+              </div>
+            )}
           </>
         )}
       </main>
