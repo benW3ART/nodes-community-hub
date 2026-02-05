@@ -171,11 +171,11 @@ export default function GridCreatorPage() {
         setIsExporting(false);
       };
 
-      // Record for 3 seconds with a subtle animation
+      // Record for ~1.1 seconds to match NODES GIF duration
       mediaRecorder.start();
       
       let frame = 0;
-      const totalFrames = 90; // 3 seconds at 30fps
+      const totalFrames = 33; // ~1.1 seconds at 30fps (matching NODES GIF duration)
       
       const animate = () => {
         if (frame >= totalFrames) {
@@ -374,7 +374,7 @@ export default function GridCreatorPage() {
                   ) : (
                     <Download className="w-5 h-5" />
                   )}
-                  Export Video
+                  Export Video (1.1s)
                 </button>
               </div>
             </div>

@@ -56,7 +56,7 @@ function checkInterferenceEligibility(
   
   let nextClaimRequirement: string | null = null;
   if (!hasFullSet) {
-    nextClaimRequirement = 'Complete a Full Set (collect all 7 Inner States)';
+    nextClaimRequirement = 'Complete a Full Set (collect all 8 Inner States)';
   } else if (!canClaimMore) {
     nextClaimRequirement = `Collect another Full Set to claim more (need ${interferenceNftsOwned + 1} complete sets)`;
   }
@@ -145,57 +145,57 @@ export default function FullSetsPage() {
     fetchListings();
   }, [missingStates]);
 
-  const progressPercentage = ((7 - missingStates.length) / 7) * 100;
+  const progressPercentage = ((8 - missingStates.length) / 8) * 100;
 
   const getEligibilityIcon = (status: InterferenceEligibility['status']) => {
     switch (status) {
       case 'eligible':
-        return <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6 text-green-400" />;
+        return <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6 text-[#4FFFDF]" />;
       case 'has-interference':
-        return <Zap className="w-5 h-5 sm:w-6 sm:h-6 text-pink-400" />;
+        return <Zap className="w-5 h-5 sm:w-6 sm:h-6 text-[#00D4FF]" />;
       case 'maxed-out':
-        return <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-400" />;
+        return <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-[#00D4FF]" />;
       default:
-        return <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-400" />;
+        return <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-amber-400" />;
     }
   };
 
   const getEligibilityColor = (status: InterferenceEligibility['status']) => {
     switch (status) {
       case 'eligible':
-        return 'from-green-500/20 to-emerald-500/20 border-green-500/30';
+        return 'bg-[#4FFFDF]/10 border-[#4FFFDF]/30';
       case 'has-interference':
-        return 'from-pink-500/20 to-purple-500/20 border-pink-500/30';
+        return 'bg-[#00D4FF]/10 border-[#00D4FF]/30';
       case 'maxed-out':
-        return 'from-yellow-500/20 to-amber-500/20 border-yellow-500/30';
+        return 'bg-[#00D4FF]/10 border-[#00D4FF]/30';
       default:
-        return 'from-gray-500/20 to-gray-600/20 border-gray-500/30';
+        return 'bg-amber-500/10 border-amber-500/30';
     }
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-black">
       <Header />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-12">
         <h1 className="section-title text-xl sm:text-2xl md:text-3xl">Full Set Tracker</h1>
-        <p className="text-gray-400 text-sm sm:text-base mb-6 sm:mb-8">
-          Collect all 7 Inner States to complete a Full Set and become eligible for Interference!
+        <p className="text-gray-500 text-sm sm:text-base mb-6 sm:mb-8">
+          Collect all 8 Inner States to complete a Full Set and become eligible for Interference!
         </p>
 
         {!isConnected ? (
           <div className="card text-center py-12 sm:py-16">
-            <Wallet className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 sm:mb-6 text-gray-600" />
+            <Wallet className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 sm:mb-6 text-gray-700" />
             <h2 className="text-xl sm:text-2xl font-semibold mb-3 sm:mb-4">Connect Your Wallet</h2>
-            <p className="text-gray-400 text-sm sm:text-base mb-4 sm:mb-6">
+            <p className="text-gray-500 text-sm sm:text-base mb-4 sm:mb-6">
               Connect your wallet to track your Full Set progress
             </p>
             <ConnectButton />
           </div>
         ) : isLoading ? (
           <div className="card text-center py-12 sm:py-16">
-            <Loader2 className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-4 text-purple-500 animate-spin" />
-            <p className="text-gray-400 text-sm sm:text-base">Analyzing your collection...</p>
+            <Loader2 className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-4 text-[#00D4FF] animate-spin" />
+            <p className="text-gray-500 text-sm sm:text-base">Analyzing your collection...</p>
           </div>
         ) : (
           <>
@@ -205,17 +205,17 @@ export default function FullSetsPage() {
                 <div className="flex-1">
                   <h2 className="text-xl sm:text-2xl font-bold mb-2">
                     {completeSets > 0 ? (
-                      <span className="text-green-400 flex items-center gap-2">
+                      <span className="text-[#4FFFDF] flex items-center gap-2">
                         <Sparkles className="w-5 h-5 sm:w-6 sm:h-6" />
                         {completeSets} Complete Full Set{completeSets > 1 ? 's' : ''}!
                       </span>
                     ) : (
-                      <span className="text-yellow-400">
-                        {7 - missingStates.length}/7 Inner States
+                      <span className="text-[#00D4FF]">
+                        {8 - missingStates.length}/8 Inner States
                       </span>
                     )}
                   </h2>
-                  <p className="text-gray-400 text-sm sm:text-base">
+                  <p className="text-gray-500 text-sm sm:text-base">
                     {missingStates.length === 0 
                       ? '🎉 Congratulations! You have a complete Full Set!'
                       : `You need ${missingStates.length} more Inner State${missingStates.length > 1 ? 's' : ''}`
@@ -233,7 +233,7 @@ export default function FullSetsPage() {
                       stroke="currentColor"
                       strokeWidth="8"
                       fill="none"
-                      className="text-gray-800"
+                      className="text-[#1a1a1a]"
                     />
                     <circle
                       cx="50%"
@@ -247,13 +247,13 @@ export default function FullSetsPage() {
                     />
                     <defs>
                       <linearGradient id="progress-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stopColor="#8B5CF6" />
-                        <stop offset="100%" stopColor="#EC4899" />
+                        <stop offset="0%" stopColor="#00D4FF" />
+                        <stop offset="100%" stopColor="#4FFFDF" />
                       </linearGradient>
                     </defs>
                   </svg>
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-xl sm:text-2xl font-bold">{7 - missingStates.length}/7</span>
+                    <span className="text-xl sm:text-2xl font-bold">{8 - missingStates.length}/8</span>
                   </div>
                 </div>
               </div>
@@ -261,34 +261,34 @@ export default function FullSetsPage() {
 
             {/* Interference Eligibility Checker */}
             {interferenceEligibility && (
-              <div className={`card mb-6 sm:mb-8 bg-gradient-to-r ${getEligibilityColor(interferenceEligibility.status)}`}>
+              <div className={`card mb-6 sm:mb-8 ${getEligibilityColor(interferenceEligibility.status)}`}>
                 <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
                   <div className="flex-shrink-0">
                     {getEligibilityIcon(interferenceEligibility.status)}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h2 className="text-lg sm:text-xl font-bold mb-2 flex items-center gap-2">
-                      <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-pink-400" />
+                    <h2 className="text-lg sm:text-xl font-bold mb-2 flex items-center gap-2 uppercase tracking-wide">
+                      <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-[#00D4FF]" />
                       Interference Eligibility
                     </h2>
                     
                     {interferenceEligibility.status === 'not-eligible' && (
                       <>
-                        <p className="text-yellow-400 font-semibold mb-2 text-sm sm:text-base">
+                        <p className="text-amber-400 font-semibold mb-2 text-sm sm:text-base">
                           ⚠️ Not Yet Eligible
                         </p>
-                        <p className="text-gray-300 text-xs sm:text-sm mb-4">
-                          Complete at least one Full Set (all 7 Inner States) to become eligible.
+                        <p className="text-gray-400 text-xs sm:text-sm mb-4">
+                          Complete at least one Full Set (all 8 Inner States) to become eligible.
                         </p>
                       </>
                     )}
 
                     {interferenceEligibility.status === 'eligible' && (
                       <>
-                        <p className="text-green-400 font-semibold mb-2 text-sm sm:text-base">
-                          ✨ You Are Eligible!
+                        <p className="text-[#4FFFDF] font-semibold mb-2 text-sm sm:text-base">
+                          ⚡️ You Are Eligible!
                         </p>
-                        <p className="text-gray-300 text-xs sm:text-sm mb-4">
+                        <p className="text-gray-400 text-xs sm:text-sm mb-4">
                           With {interferenceEligibility.completeSets} complete Full Set{interferenceEligibility.completeSets > 1 ? 's' : ''}, 
                           you can claim {interferenceEligibility.completeSets} Interference NFT{interferenceEligibility.completeSets > 1 ? 's' : ''}.
                         </p>
@@ -297,13 +297,13 @@ export default function FullSetsPage() {
 
                     {interferenceEligibility.status === 'has-interference' && (
                       <>
-                        <p className="text-pink-400 font-semibold mb-2 text-sm sm:text-base">
+                        <p className="text-[#00D4FF] font-semibold mb-2 text-sm sm:text-base">
                           ⚡ Interference Holder
                         </p>
-                        <p className="text-gray-300 text-xs sm:text-sm mb-4">
+                        <p className="text-gray-400 text-xs sm:text-sm mb-4">
                           You own {interferenceEligibility.interferenceNftsOwned} Interference NFT{interferenceEligibility.interferenceNftsOwned > 1 ? 's' : ''}.
                           {interferenceEligibility.canClaimMore && (
-                            <span className="text-green-400"> You can claim {interferenceEligibility.completeSets - interferenceEligibility.interferenceNftsOwned} more!</span>
+                            <span className="text-[#4FFFDF]"> You can claim {interferenceEligibility.completeSets - interferenceEligibility.interferenceNftsOwned} more!</span>
                           )}
                         </p>
                       </>
@@ -311,10 +311,10 @@ export default function FullSetsPage() {
 
                     {interferenceEligibility.status === 'maxed-out' && (
                       <>
-                        <p className="text-yellow-400 font-semibold mb-2 text-sm sm:text-base">
+                        <p className="text-[#00D4FF] font-semibold mb-2 text-sm sm:text-base">
                           🏆 Maximum Reached
                         </p>
-                        <p className="text-gray-300 text-xs sm:text-sm mb-4">
+                        <p className="text-gray-400 text-xs sm:text-sm mb-4">
                           You&apos;ve claimed all available Interference NFTs ({interferenceEligibility.interferenceNftsOwned} total).
                         </p>
                       </>
@@ -322,24 +322,24 @@ export default function FullSetsPage() {
 
                     {/* Stats Grid */}
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 pt-3 sm:pt-4 border-t border-white/10">
-                      <div className="p-2 sm:p-3 bg-gray-800/30 rounded-lg">
-                        <p className="text-[10px] sm:text-xs text-gray-400">Full Sets</p>
+                      <div className="p-2 sm:p-3 bg-black/30 rounded-lg">
+                        <p className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide">Full Sets</p>
                         <p className="text-base sm:text-lg font-bold">{interferenceEligibility.completeSets}</p>
                       </div>
-                      <div className="p-2 sm:p-3 bg-gray-800/30 rounded-lg">
-                        <p className="text-[10px] sm:text-xs text-gray-400">Interference</p>
-                        <p className="text-base sm:text-lg font-bold text-pink-400">{interferenceEligibility.interferenceNftsOwned}</p>
+                      <div className="p-2 sm:p-3 bg-black/30 rounded-lg">
+                        <p className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide">Interference</p>
+                        <p className="text-base sm:text-lg font-bold text-[#00D4FF]">{interferenceEligibility.interferenceNftsOwned}</p>
                       </div>
-                      <div className="p-2 sm:p-3 bg-gray-800/30 rounded-lg">
-                        <p className="text-[10px] sm:text-xs text-gray-400">Can Claim</p>
-                        <p className="text-base sm:text-lg font-bold text-green-400">
+                      <div className="p-2 sm:p-3 bg-black/30 rounded-lg">
+                        <p className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide">Can Claim</p>
+                        <p className="text-base sm:text-lg font-bold text-[#4FFFDF]">
                           {Math.max(0, interferenceEligibility.completeSets - interferenceEligibility.interferenceNftsOwned)}
                         </p>
                       </div>
-                      <div className="p-2 sm:p-3 bg-gray-800/30 rounded-lg">
-                        <p className="text-[10px] sm:text-xs text-gray-400">Status</p>
+                      <div className="p-2 sm:p-3 bg-black/30 rounded-lg">
+                        <p className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide">Status</p>
                         <p className={`text-base sm:text-lg font-bold ${
-                          interferenceEligibility.eligible ? 'text-green-400' : 'text-yellow-400'
+                          interferenceEligibility.eligible ? 'text-[#4FFFDF]' : 'text-amber-400'
                         }`}>
                           {interferenceEligibility.eligible ? '✓' : '✗'}
                         </p>
@@ -348,10 +348,10 @@ export default function FullSetsPage() {
 
                     {/* Next Requirement */}
                     {interferenceEligibility.nextClaimRequirement && (
-                      <div className="mt-3 sm:mt-4 p-2 sm:p-3 bg-gray-800/50 rounded-lg flex items-start gap-2">
-                        <Info className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
-                        <p className="text-xs sm:text-sm text-gray-300">
-                          <span className="text-gray-400">Next:</span>{' '}
+                      <div className="mt-3 sm:mt-4 p-2 sm:p-3 bg-black/50 rounded-lg flex items-start gap-2">
+                        <Info className="w-4 h-4 text-[#00D4FF] mt-0.5 flex-shrink-0" />
+                        <p className="text-xs sm:text-sm text-gray-400">
+                          <span className="text-gray-500">Next:</span>{' '}
                           {interferenceEligibility.nextClaimRequirement}
                         </p>
                       </div>
@@ -377,7 +377,7 @@ export default function FullSetsPage() {
             )}
 
             {/* Inner States Grid */}
-            <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Inner States Collection</h3>
+            <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 uppercase tracking-wide">Inner States Collection</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
               {INNER_STATES.map((state) => {
                 const status = fullSetStatus.find(s => s.innerState === state);
@@ -395,7 +395,7 @@ export default function FullSetsPage() {
                       {owned ? (
                         <div className="flex items-center gap-2">
                           <span className="badge-green text-xs">×{count}</span>
-                          <Check className="w-4 h-4 sm:w-5 sm:h-5 text-green-400" />
+                          <Check className="w-4 h-4 sm:w-5 sm:h-5 text-[#4FFFDF]" />
                         </div>
                       ) : (
                         <X className="w-4 h-4 sm:w-5 sm:h-5 text-red-400" />
@@ -404,9 +404,9 @@ export default function FullSetsPage() {
                     
                     {!owned && (
                       <div className="mt-3 sm:mt-4">
-                        <p className="text-xs sm:text-sm text-gray-400 mb-2">Available on OpenSea:</p>
+                        <p className="text-xs sm:text-sm text-gray-500 mb-2">Available on OpenSea:</p>
                         {loadingListings ? (
-                          <div className="flex items-center gap-2 text-gray-500">
+                          <div className="flex items-center gap-2 text-gray-600">
                             <Loader2 className="w-4 h-4 animate-spin" />
                             <span className="text-xs sm:text-sm">Loading...</span>
                           </div>
@@ -418,7 +418,7 @@ export default function FullSetsPage() {
                                 href={listing.url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="flex items-center justify-between p-2 bg-gray-800/50 rounded-lg hover:bg-gray-700/50 active:bg-gray-600/50 transition-colors"
+                                className="flex items-center justify-between p-2 bg-black/50 rounded-lg hover:bg-[#00D4FF]/10 active:bg-[#00D4FF]/20 transition-colors"
                               >
                                 <div className="flex items-center gap-2">
                                   {listing.image && (
@@ -433,10 +433,10 @@ export default function FullSetsPage() {
                                   <span className="text-xs sm:text-sm">#{listing.tokenId}</span>
                                 </div>
                                 <div className="flex items-center gap-1 sm:gap-2">
-                                  <span className="text-xs sm:text-sm font-medium text-purple-400">
+                                  <span className="text-xs sm:text-sm font-medium text-[#00D4FF]">
                                     {listing.price} ETH
                                   </span>
-                                  <ExternalLink className="w-3 h-3 text-gray-500" />
+                                  <ExternalLink className="w-3 h-3 text-gray-600" />
                                 </div>
                               </a>
                             ))}
@@ -446,7 +446,7 @@ export default function FullSetsPage() {
                             href={`https://opensea.io/collection/nodes-by-hunter?search[stringTraits][0][name]=Inner%20State&search[stringTraits][0][values][0]=${encodeURIComponent(state)}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-2 text-xs sm:text-sm text-purple-400 hover:text-purple-300 active:text-purple-200 py-2"
+                            className="flex items-center gap-2 text-xs sm:text-sm text-[#00D4FF] hover:text-[#4FFFDF] active:text-[#4FFFDF] py-2"
                           >
                             <ShoppingCart className="w-4 h-4" />
                             Browse on OpenSea
@@ -463,13 +463,13 @@ export default function FullSetsPage() {
             {/* Interference NFTs Owned */}
             {interferenceEligibility && interferenceEligibility.interferenceNftsOwned > 0 && (
               <div className="card">
-                <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 flex items-center gap-2">
-                  <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-pink-400" />
+                <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 flex items-center gap-2 uppercase tracking-wide">
+                  <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-[#00D4FF]" />
                   Your Interference NFTs
                 </h3>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
                   {nfts.filter(nft => nft.interference).map((nft) => (
-                    <div key={nft.tokenId} className="relative rounded-lg overflow-hidden border-2 border-pink-500/50">
+                    <div key={nft.tokenId} className="relative rounded-lg overflow-hidden border-2 border-[#00D4FF]/50">
                       <div className="aspect-square relative">
                         {nft.image ? (
                           <Image
@@ -480,15 +480,15 @@ export default function FullSetsPage() {
                             sizes="200px"
                           />
                         ) : (
-                          <div className="w-full h-full bg-gray-800" />
+                          <div className="w-full h-full bg-[#0a0a0a]" />
                         )}
-                        <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 bg-pink-500 rounded-full p-1">
-                          <Zap className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white" />
+                        <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 bg-[#00D4FF] rounded-full p-1">
+                          <Zap className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-black" />
                         </div>
                       </div>
-                      <div className="p-2 bg-gray-800">
+                      <div className="p-2 bg-[#0a0a0a]">
                         <p className="text-xs sm:text-sm font-medium truncate">{nft.name}</p>
-                        <p className="text-[10px] sm:text-xs text-pink-400">Interference</p>
+                        <p className="text-[10px] sm:text-xs text-[#00D4FF]">Interference</p>
                       </div>
                     </div>
                   ))}
