@@ -139,25 +139,106 @@ export default function BannerCreatorPage() {
     setSelectedNfts(newSelection);
   };
 
+  // Helper to load image with CORS
+  const loadImage = (src: string): Promise<HTMLImageElement> => {
+    return new Promise((resolve, reject) => {
+      const img = new window.Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = src;
+    });
+  };
+
   const handleExport = async () => {
-    if (!canvasRef.current) return;
-    
     setIsExporting(true);
     try {
-      const canvas = await html2canvas(canvasRef.current, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#000000',
-        logging: false,
-        imageTimeout: 15000,
-        onclone: (clonedDoc) => {
-          const images = clonedDoc.querySelectorAll('img');
-          images.forEach((img) => {
-            img.crossOrigin = 'anonymous';
-          });
+      // Banner dimensions (Twitter header: 1500x500)
+      const width = 1500;
+      const height = 500;
+      
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('No canvas context');
+      
+      // Draw background (solid black for simplicity)
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(0, 0, width, height);
+      
+      // Get NFT positions based on template
+      const validNfts = selectedNfts.filter(n => n !== null) as NodeNFT[];
+      const nftSize = selectedTemplate.layout === 'single' ? 350 : 
+                      selectedTemplate.layout === 'duo' ? 280 :
+                      selectedTemplate.layout === 'trio' ? 220 :
+                      200;
+      
+      // Calculate positions based on layout
+      const centerY = height / 2 - nftSize / 2;
+      let positions: {x: number, y: number}[] = [];
+      
+      if (selectedTemplate.layout === 'single' && validNfts.length >= 1) {
+        positions = [{ x: width / 2 - nftSize / 2, y: centerY }];
+      } else if (selectedTemplate.layout === 'duo' && validNfts.length >= 2) {
+        const gap = 60;
+        positions = [
+          { x: width / 2 - nftSize - gap / 2, y: centerY },
+          { x: width / 2 + gap / 2, y: centerY }
+        ];
+      } else if (selectedTemplate.layout === 'trio' && validNfts.length >= 3) {
+        const gap = 40;
+        positions = [
+          { x: width / 2 - nftSize * 1.5 - gap, y: centerY },
+          { x: width / 2 - nftSize / 2, y: centerY },
+          { x: width / 2 + nftSize / 2 + gap, y: centerY }
+        ];
+      } else if ((selectedTemplate.layout === 'quad' || selectedTemplate.layout === 'five' || selectedTemplate.layout === 'spread') && validNfts.length >= 4) {
+        const count = Math.min(validNfts.length, selectedTemplate.slots);
+        const gap = 30;
+        const totalWidth = count * nftSize + (count - 1) * gap;
+        const startX = (width - totalWidth) / 2;
+        positions = Array.from({ length: count }, (_, i) => ({
+          x: startX + i * (nftSize + gap),
+          y: centerY
+        }));
+      }
+      
+      // Draw NFTs
+      for (let i = 0; i < Math.min(validNfts.length, positions.length); i++) {
+        const nft = validNfts[i];
+        const pos = positions[i];
+        if (nft && nft.image) {
+          try {
+            const img = await loadImage(nft.image);
+            // Draw rounded rect clip
+            ctx.save();
+            ctx.beginPath();
+            ctx.roundRect(pos.x, pos.y, nftSize, nftSize, 16);
+            ctx.clip();
+            ctx.drawImage(img, pos.x, pos.y, nftSize, nftSize);
+            ctx.restore();
+            
+            // Draw border
+            ctx.strokeStyle = 'rgba(0, 212, 255, 0.3)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.roundRect(pos.x, pos.y, nftSize, nftSize, 16);
+            ctx.stroke();
+          } catch (err) {
+            console.error('Failed to load NFT image:', nft.image);
+          }
         }
-      });
+      }
+      
+      // Draw custom text if present
+      if (customText) {
+        ctx.fillStyle = '#00D4FF';
+        ctx.font = 'bold 48px system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(customText, width / 2, height - 40);
+      }
       
       const link = document.createElement('a');
       link.download = `nodes-banner-${Date.now()}.png`;
@@ -167,7 +248,7 @@ export default function BannerCreatorPage() {
       document.body.removeChild(link);
     } catch (err) {
       console.error('Export failed:', err);
-      alert('Export failed. This may be due to image loading issues. Try refreshing the page and trying again.');
+      alert('Export failed. Please try again.');
     } finally {
       setIsExporting(false);
     }

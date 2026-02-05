@@ -10,7 +10,6 @@ import { getNFTsForOwner } from '@/lib/alchemy';
 import { useNodesStore } from '@/stores/useNodesStore';
 import { NFTCardMini } from '@/components/NFTCard';
 import html2canvas from 'html2canvas';
-import GIF from 'gif.js';
 import { 
   Loader2, 
   Wallet, 
@@ -176,124 +175,9 @@ export default function GridCreatorPage() {
     }
   };
 
-  const handleExportVideo = async () => {
-    setIsExporting(true);
-    try {
-      const screenshot = await renderGridToCanvas();
-
-      const canvas = document.createElement('canvas');
-      canvas.width = screenshot.width;
-      canvas.height = screenshot.height;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) throw new Error('No canvas context');
-
-      const stream = canvas.captureStream(30);
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'video/webm;codecs=vp9',
-        videoBitsPerSecond: 5000000,
-      });
-
-      const chunks: Blob[] = [];
-      mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
-      mediaRecorder.onstop = () => {
-        const blob = new Blob(chunks, { type: 'video/webm' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.download = `nodes-grid-${gridConfig.name}-${Date.now()}.webm`;
-        link.href = url;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        setIsExporting(false);
-      };
-
-      mediaRecorder.start();
-      
-      let frame = 0;
-      const totalFrames = 33; // ~1.1 seconds at 30fps (matching NODES GIF duration)
-      
-      const animate = () => {
-        if (frame >= totalFrames) {
-          mediaRecorder.stop();
-          return;
-        }
-        
-        ctx.fillStyle = '#000000';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        const scale = 1 + Math.sin(frame * 0.1) * 0.02;
-        const offsetX = (canvas.width - screenshot.width * scale) / 2;
-        const offsetY = (canvas.height - screenshot.height * scale) / 2;
-        
-        ctx.drawImage(screenshot, offsetX, offsetY, screenshot.width * scale, screenshot.height * scale);
-        
-        frame++;
-        requestAnimationFrame(animate);
-      };
-      
-      animate();
-    } catch (err) {
-      console.error('Video export failed:', err);
-      alert('Video export failed. Your browser may not support this feature.');
-      setIsExporting(false);
-    }
-  };
-
-  const handleExportGIF = async () => {
-    setIsExporting(true);
-    try {
-      const screenshot = await renderGridToCanvas();
-
-      const gif = new GIF({
-        workers: 2,
-        quality: 10,
-        width: screenshot.width,
-        height: screenshot.height,
-        workerScript: '/gif.worker.js',
-        repeat: 0, // 0 = loop forever
-      });
-
-      const canvas = document.createElement('canvas');
-      canvas.width = screenshot.width;
-      canvas.height = screenshot.height;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) throw new Error('No canvas context');
-
-      // Generate frames for ~1.1 seconds at 30fps with subtle pulse animation
-      const totalFrames = 33;
-      for (let frame = 0; frame < totalFrames; frame++) {
-        ctx.fillStyle = '#000000';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        const scale = 1 + Math.sin(frame * 0.1) * 0.02;
-        const offsetX = (canvas.width - screenshot.width * scale) / 2;
-        const offsetY = (canvas.height - screenshot.height * scale) / 2;
-        
-        ctx.drawImage(screenshot, offsetX, offsetY, screenshot.width * scale, screenshot.height * scale);
-        
-        gif.addFrame(ctx, { copy: true, delay: 33 }); // ~30fps
-      }
-
-      gif.on('finished', (blob: Blob) => {
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.download = `nodes-grid-${gridConfig.name}-${Date.now()}.gif`;
-        link.href = url;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        setIsExporting(false);
-      });
-
-      gif.render();
-    } catch (err) {
-      console.error('GIF export failed:', err);
-      alert('GIF export failed. Please try again.');
-      setIsExporting(false);
-    }
-  };
+  // Note: GIF/Video exports removed - NODES NFTs are already animated GIFs,
+  // capturing their animation in a composite would require complex GIF decoding.
+  // PNG export captures a static frame which works well for social media posts.
 
   const cellSize = Math.floor(600 / Math.max(gridConfig.rows, gridConfig.cols));
 
@@ -416,7 +300,7 @@ export default function GridCreatorPage() {
                 ) : nfts.length === 0 ? (
                   <p className="text-gray-600">No NODES found in your wallet</p>
                 ) : (
-                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 sm:gap-3 max-h-80 sm:max-h-96 overflow-y-auto p-1">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 max-h-[50vh] overflow-y-auto p-2">
                     {nfts.map((nft) => (
                       <NFTCardMini
                         key={nft.tokenId}
@@ -433,45 +317,22 @@ export default function GridCreatorPage() {
                 )}
               </div>
 
-              {/* Export Buttons */}
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  onClick={handleExportPNG}
-                  disabled={isExporting}
-                  className="btn-primary flex items-center justify-center gap-2 text-sm"
-                >
-                  {isExporting ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Download className="w-4 h-4" />
-                  )}
-                  PNG
-                </button>
-                <button
-                  onClick={handleExportGIF}
-                  disabled={isExporting}
-                  className="btn-secondary flex items-center justify-center gap-2 text-sm"
-                >
-                  {isExporting ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Download className="w-4 h-4" />
-                  )}
-                  GIF
-                </button>
-                <button
-                  onClick={handleExportVideo}
-                  disabled={isExporting}
-                  className="btn-secondary flex items-center justify-center gap-2 text-sm"
-                >
-                  {isExporting ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Download className="w-4 h-4" />
-                  )}
-                  Video
-                </button>
-              </div>
+              {/* Export Button */}
+              <button
+                onClick={handleExportPNG}
+                disabled={isExporting}
+                className="btn-primary w-full flex items-center justify-center gap-2"
+              >
+                {isExporting ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <Download className="w-5 h-5" />
+                )}
+                Export PNG
+              </button>
+              <p className="text-xs text-gray-500 mt-2 text-center">
+                Static image capture • NFTs animate in their original GIF form
+              </p>
             </div>
 
             {/* Preview */}
