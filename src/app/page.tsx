@@ -3,6 +3,7 @@
 export const dynamic = 'force-dynamic';
 
 import { Header } from '@/components/Header';
+import { NetworkHelper } from '@/components/NetworkHelper';
 import { useAccount } from 'wagmi';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import Link from 'next/link';
@@ -62,6 +63,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-black">
       <Header />
+      <NetworkHelper />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         {/* Hero Section with Banner */}
