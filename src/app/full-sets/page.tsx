@@ -20,7 +20,8 @@ import {
   AlertTriangle,
   CheckCircle2,
   Info,
-  Zap
+  Zap,
+  Target
 } from 'lucide-react';
 import Image from 'next/image';
 
@@ -145,7 +146,7 @@ export default function FullSetsPage() {
     fetchListings();
   }, [missingStates]);
 
-  const progressPercentage = ((7 - missingStates.length) / 8) * 100;
+  const progressPercentage = ((7 - missingStates.length) / 7) * 100;
 
   const getEligibilityIcon = (status: InterferenceEligibility['status']) => {
     switch (status) {
@@ -253,7 +254,7 @@ export default function FullSetsPage() {
                     </defs>
                   </svg>
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-xl sm:text-2xl font-bold">{7 - missingStates.length}/8</span>
+                    <span className="text-xl sm:text-2xl font-bold">{7 - missingStates.length}/7</span>
                   </div>
                 </div>
               </div>
@@ -372,6 +373,46 @@ export default function FullSetsPage() {
                       </div>
                     )}
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* Complete Your Next Full Set */}
+            {missingStates.length > 0 && missingStates.length < 7 && (
+              <div className="card mb-6 sm:mb-8 border border-[#00D4FF]/30">
+                <h2 className="text-lg sm:text-xl font-bold mb-4 flex items-center gap-2 uppercase tracking-wide">
+                  <Target className="w-5 h-5 text-[#00D4FF]" />
+                  Complete Your Next Full Set
+                </h2>
+                <p className="text-gray-400 text-sm mb-4">
+                  You need {missingStates.length} more Inner State{missingStates.length > 1 ? 's' : ''} to complete another Full Set:
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {missingStates.map((state) => {
+                    const listings = openSeaListings[state] || [];
+                    const cheapest = listings[0];
+                    return (
+                      <div key={state} className="flex items-center justify-between p-3 bg-[#0a0a0a] rounded-lg border border-[#1a1a1a]">
+                        <div>
+                          <span className="font-semibold text-white">{state}</span>
+                          {cheapest && (
+                            <p className="text-xs text-gray-500">
+                              From {cheapest.price} ETH
+                            </p>
+                          )}
+                        </div>
+                        <a
+                          href={`https://opensea.io/collection/nodes-by-hunter?search[stringTraits][0][name]=inner%20state&search[stringTraits][0][values][0]=${encodeURIComponent(state)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn-secondary text-xs py-1.5 px-3 flex items-center gap-1"
+                        >
+                          Buy on OpenSea
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
