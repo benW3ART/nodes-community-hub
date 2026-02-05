@@ -21,7 +21,8 @@ import {
   Layout,
   Sparkles,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Zap
 } from 'lucide-react';
 import Image from 'next/image';
 import type { NodeNFT } from '@/types/nft';
@@ -51,12 +52,12 @@ interface GradientOption {
 }
 
 const GRADIENT_OPTIONS: GradientOption[] = [
-  { id: 'dark', name: 'Dark', gradient: 'linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #0a0a0f 100%)', textColor: 'white' },
-  { id: 'purple', name: 'Purple Haze', gradient: 'linear-gradient(135deg, #1a0a2e 0%, #2d1b4e 50%, #1a0a2e 100%)', textColor: 'white' },
-  { id: 'cosmic', name: 'Cosmic', gradient: 'linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)', textColor: 'white' },
-  { id: 'sunset', name: 'Sunset', gradient: 'linear-gradient(135deg, #1a0a1a 0%, #3d1f3d 50%, #1a0a1a 100%)', textColor: 'white' },
-  { id: 'ocean', name: 'Ocean', gradient: 'linear-gradient(135deg, #0a1a1f 0%, #1a3a4f 50%, #0a1a1f 100%)', textColor: 'white' },
-  { id: 'forest', name: 'Forest', gradient: 'linear-gradient(135deg, #0a1a0f 0%, #1a3a2e 50%, #0a1a0f 100%)', textColor: 'white' },
+  { id: 'dark', name: 'Pure Black', gradient: 'linear-gradient(135deg, #000000 0%, #0a0a0a 50%, #000000 100%)', textColor: 'white' },
+  { id: 'midnight', name: 'Midnight', gradient: 'linear-gradient(135deg, #000000 0%, #111111 50%, #000000 100%)', textColor: 'white' },
+  { id: 'cyber', name: 'Cyber', gradient: 'linear-gradient(135deg, #000000 0%, #001a1a 50%, #000000 100%)', textColor: 'white' },
+  { id: 'void', name: 'Void', gradient: 'linear-gradient(135deg, #050505 0%, #0a0a0a 50%, #050505 100%)', textColor: 'white' },
+  { id: 'deep', name: 'Deep', gradient: 'linear-gradient(135deg, #000000 0%, #0a0a0f 50%, #000000 100%)', textColor: 'white' },
+  { id: 'carbon', name: 'Carbon', gradient: 'linear-gradient(135deg, #0a0a0a 0%, #151515 50%, #0a0a0a 100%)', textColor: 'white' },
 ];
 
 interface PatternOption {
@@ -67,9 +68,9 @@ interface PatternOption {
 
 const PATTERN_OPTIONS: PatternOption[] = [
   { id: 'none', name: 'None', pattern: '' },
-  { id: 'dots', name: 'Dots', pattern: 'radial-gradient(circle, rgba(139, 92, 246, 0.1) 1px, transparent 1px)' },
-  { id: 'grid', name: 'Grid', pattern: 'linear-gradient(rgba(139, 92, 246, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(139, 92, 246, 0.05) 1px, transparent 1px)' },
-  { id: 'diagonal', name: 'Diagonal', pattern: 'repeating-linear-gradient(45deg, rgba(139, 92, 246, 0.03), rgba(139, 92, 246, 0.03) 2px, transparent 2px, transparent 12px)' },
+  { id: 'dots', name: 'Dots', pattern: 'radial-gradient(circle, rgba(0, 212, 255, 0.1) 1px, transparent 1px)' },
+  { id: 'grid', name: 'Grid', pattern: 'linear-gradient(rgba(0, 212, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 212, 255, 0.05) 1px, transparent 1px)' },
+  { id: 'diagonal', name: 'Diagonal', pattern: 'repeating-linear-gradient(45deg, rgba(0, 212, 255, 0.03), rgba(0, 212, 255, 0.03) 2px, transparent 2px, transparent 12px)' },
 ];
 
 export default function BannerCreatorPage() {
@@ -170,11 +171,11 @@ export default function BannerCreatorPage() {
             alt={nft.name}
             width={size}
             height={size}
-            className="rounded-xl shadow-2xl border-2 border-purple-500/30"
+            className="rounded-xl shadow-2xl border border-[#00D4FF]/30"
             style={{ width: size, height: size, objectFit: 'cover' }}
           />
           {nft.interference && (
-            <div className="absolute -top-1 -right-1 w-6 h-6 bg-pink-500 rounded-full flex items-center justify-center text-xs">
+            <div className="absolute -top-1 -right-1 w-6 h-6 bg-[#4FFFDF] rounded-full flex items-center justify-center text-xs text-black">
               ⚡
             </div>
           )}
@@ -184,7 +185,7 @@ export default function BannerCreatorPage() {
     return (
       <div 
         key={index}
-        className={`border-2 border-dashed border-gray-600 rounded-xl flex items-center justify-center text-gray-500 ${className || ''}`}
+        className={`border-2 border-dashed border-[#1a1a1a] rounded-xl flex items-center justify-center text-gray-600 ${className || ''}`}
         style={{ width: size, height: size }}
       >
         {index + 1}
@@ -209,8 +210,8 @@ export default function BannerCreatorPage() {
       >
         {/* Ambient glow effects */}
         <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -top-20 -left-20 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl" />
-          <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-pink-500/10 rounded-full blur-3xl" />
+          <div className="absolute -top-20 -left-20 w-64 h-64 bg-[#00D4FF]/5 rounded-full blur-3xl" />
+          <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-[#4FFFDF]/5 rounded-full blur-3xl" />
         </div>
         
         {/* NFT Layout */}
@@ -286,7 +287,7 @@ export default function BannerCreatorPage() {
         {/* Custom Text Overlay (for non-single layouts) */}
         {customText && selectedTemplate.layout !== 'single' && (
           <div className="absolute bottom-4 left-0 right-0 text-center">
-            <div className="inline-block px-4 py-2 bg-black/50 backdrop-blur-sm rounded-full">
+            <div className="inline-block px-4 py-2 bg-black/50 backdrop-blur-sm rounded-full border border-[#00D4FF]/30">
               <span className="text-lg font-semibold text-white">{customText}</span>
             </div>
           </div>
@@ -295,8 +296,8 @@ export default function BannerCreatorPage() {
         {/* NODES Branding */}
         {showBranding && (
           <div className="absolute top-4 right-4 flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-purple-400" />
-            <span className="text-purple-400/80 text-sm font-medium tracking-wide">NODES</span>
+            <span className="text-lg">⚡️</span>
+            <span className="text-[#00D4FF]/80 text-sm font-medium tracking-widest uppercase">NODES</span>
           </div>
         )}
       </div>
@@ -304,33 +305,33 @@ export default function BannerCreatorPage() {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-black">
       <Header />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-12">
         <h1 className="section-title text-xl sm:text-2xl md:text-3xl">Banner Creator</h1>
-        <p className="text-gray-400 text-sm sm:text-base mb-6 sm:mb-8">
+        <p className="text-gray-500 text-sm sm:text-base mb-6 sm:mb-8">
           Create X/Twitter header banners (1500×500) featuring your NODES NFTs
         </p>
 
         {!isConnected ? (
           <div className="card text-center py-12 sm:py-16">
-            <Wallet className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 sm:mb-6 text-gray-600" />
+            <Wallet className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 sm:mb-6 text-gray-700" />
             <h2 className="text-xl sm:text-2xl font-semibold mb-3 sm:mb-4">Connect Your Wallet</h2>
-            <p className="text-gray-400 text-sm sm:text-base mb-4 sm:mb-6">Connect to access your NODES NFTs</p>
+            <p className="text-gray-500 text-sm sm:text-base mb-4 sm:mb-6">Connect to access your NODES NFTs</p>
             <ConnectButton />
           </div>
         ) : (
           <div className="space-y-6 sm:space-y-8">
             {/* Preview - Scrollable on mobile */}
             <div className="card">
-              <h3 className="font-semibold mb-3 sm:mb-4 flex items-center gap-2 text-sm sm:text-base">
-                <ImageIcon className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400" />
+              <h3 className="font-semibold mb-3 sm:mb-4 flex items-center gap-2 text-sm sm:text-base uppercase tracking-wide">
+                <ImageIcon className="w-4 h-4 sm:w-5 sm:h-5 text-[#00D4FF]" />
                 Preview
-                <span className="text-xs text-gray-500 font-normal">(scroll to see full banner)</span>
+                <span className="text-xs text-gray-600 font-normal normal-case">(scroll to see full banner)</span>
               </h3>
               <div className="overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
-                <div className="rounded-xl overflow-hidden shadow-2xl border border-gray-800 inline-block">
+                <div className="rounded-xl overflow-hidden shadow-2xl border border-[#1a1a1a] inline-block">
                   {renderPreview()}
                 </div>
               </div>
@@ -364,8 +365,8 @@ export default function BannerCreatorPage() {
               <div className="space-y-4 sm:space-y-6">
                 {/* Template Selection */}
                 <div className="card">
-                  <h3 className="font-semibold mb-3 sm:mb-4 flex items-center gap-2 text-sm sm:text-base">
-                    <Layout className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400" />
+                  <h3 className="font-semibold mb-3 sm:mb-4 flex items-center gap-2 text-sm sm:text-base uppercase tracking-wide">
+                    <Layout className="w-4 h-4 sm:w-5 sm:h-5 text-[#00D4FF]" />
                     Template
                   </h3>
                   <div className="grid grid-cols-3 sm:grid-cols-3 gap-2">
@@ -375,8 +376,8 @@ export default function BannerCreatorPage() {
                         onClick={() => setSelectedTemplate(template)}
                         className={`p-2 sm:p-3 rounded-lg text-xs sm:text-sm transition-all active:scale-95 ${
                           selectedTemplate.id === template.id
-                            ? 'bg-purple-600 text-white'
-                            : 'bg-gray-800 hover:bg-gray-700'
+                            ? 'bg-[#00D4FF] text-black'
+                            : 'bg-[#0a0a0a] border border-[#1a1a1a] hover:border-[#00D4FF]/50'
                         }`}
                       >
                         <div className="font-medium">{template.name}</div>
@@ -388,13 +389,13 @@ export default function BannerCreatorPage() {
 
                 {/* Background */}
                 <div className="card">
-                  <h3 className="font-semibold mb-3 sm:mb-4 flex items-center gap-2 text-sm sm:text-base">
-                    <Palette className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400" />
+                  <h3 className="font-semibold mb-3 sm:mb-4 flex items-center gap-2 text-sm sm:text-base uppercase tracking-wide">
+                    <Palette className="w-4 h-4 sm:w-5 sm:h-5 text-[#00D4FF]" />
                     Background
                   </h3>
                   
                   <div className="mb-4">
-                    <label className="text-xs sm:text-sm text-gray-400 mb-2 block">Gradient</label>
+                    <label className="text-xs sm:text-sm text-gray-500 mb-2 block uppercase tracking-wide">Gradient</label>
                     <div className="grid grid-cols-6 sm:grid-cols-6 gap-2">
                       {GRADIENT_OPTIONS.map((gradient) => (
                         <button
@@ -402,8 +403,8 @@ export default function BannerCreatorPage() {
                           onClick={() => setSelectedGradient(gradient)}
                           className={`h-10 sm:h-12 rounded-lg border-2 transition-all active:scale-95 ${
                             selectedGradient.id === gradient.id
-                              ? 'border-purple-500 scale-105'
-                              : 'border-gray-700'
+                              ? 'border-[#00D4FF] shadow-[0_0_10px_rgba(0,212,255,0.5)]'
+                              : 'border-[#1a1a1a]'
                           }`}
                           style={{ background: gradient.gradient }}
                           title={gradient.name}
@@ -413,7 +414,7 @@ export default function BannerCreatorPage() {
                   </div>
                   
                   <div>
-                    <label className="text-xs sm:text-sm text-gray-400 mb-2 block">Pattern Overlay</label>
+                    <label className="text-xs sm:text-sm text-gray-500 mb-2 block uppercase tracking-wide">Pattern Overlay</label>
                     <div className="grid grid-cols-4 gap-2">
                       {PATTERN_OPTIONS.map((pattern) => (
                         <button
@@ -421,8 +422,8 @@ export default function BannerCreatorPage() {
                           onClick={() => setSelectedPattern(pattern)}
                           className={`px-2 sm:px-3 py-2 rounded-lg text-xs sm:text-sm transition-all active:scale-95 ${
                             selectedPattern.id === pattern.id
-                              ? 'bg-purple-600 text-white'
-                              : 'bg-gray-800 hover:bg-gray-700'
+                              ? 'bg-[#00D4FF] text-black'
+                              : 'bg-[#0a0a0a] border border-[#1a1a1a] hover:border-[#00D4FF]/50'
                           }`}
                         >
                           {pattern.name}
@@ -434,8 +435,8 @@ export default function BannerCreatorPage() {
 
                 {/* Custom Text */}
                 <div className="card">
-                  <h3 className="font-semibold mb-3 sm:mb-4 flex items-center gap-2 text-sm sm:text-base">
-                    <Type className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400" />
+                  <h3 className="font-semibold mb-3 sm:mb-4 flex items-center gap-2 text-sm sm:text-base uppercase tracking-wide">
+                    <Type className="w-4 h-4 sm:w-5 sm:h-5 text-[#00D4FF]" />
                     Text & Branding
                   </h3>
                   <input
@@ -451,7 +452,7 @@ export default function BannerCreatorPage() {
                       type="checkbox"
                       checked={showBranding}
                       onChange={(e) => setShowBranding(e.target.checked)}
-                      className="w-5 h-5 rounded border-gray-600 bg-gray-800 text-purple-500 focus:ring-purple-500"
+                      className="w-5 h-5 rounded border-[#1a1a1a] bg-[#0a0a0a]"
                     />
                     <span className="text-sm">Show NODES branding</span>
                   </label>
@@ -460,16 +461,16 @@ export default function BannerCreatorPage() {
 
               {/* NFT Selection */}
               <div className="card">
-                <h3 className="font-semibold mb-3 sm:mb-4 text-sm sm:text-base">Select NFTs for Slots</h3>
+                <h3 className="font-semibold mb-3 sm:mb-4 text-sm sm:text-base uppercase tracking-wide">Select NFTs for Slots</h3>
                 
                 {/* Slot buttons - Mobile friendly */}
                 <div className="space-y-2 mb-4">
                   {selectedNfts.map((selected, slotIndex) => (
                     <div 
                       key={slotIndex} 
-                      className="flex items-center gap-3 p-3 bg-gray-800/50 rounded-lg"
+                      className="flex items-center gap-3 p-3 bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg"
                     >
-                      <span className="text-xs sm:text-sm text-gray-400 w-14 sm:w-16 flex-shrink-0">
+                      <span className="text-xs sm:text-sm text-gray-500 w-14 sm:w-16 flex-shrink-0">
                         Slot {slotIndex + 1}
                       </span>
                       {selected ? (
@@ -484,7 +485,7 @@ export default function BannerCreatorPage() {
                           <span className="text-xs sm:text-sm truncate">{selected.name}</span>
                           <button
                             onClick={() => clearSlot(slotIndex)}
-                            className="ml-auto text-gray-500 hover:text-red-400 p-2 -mr-1 flex-shrink-0"
+                            className="ml-auto text-gray-600 hover:text-red-400 p-2 -mr-1 flex-shrink-0"
                           >
                             <RotateCcw className="w-4 h-4" />
                           </button>
@@ -492,7 +493,7 @@ export default function BannerCreatorPage() {
                       ) : (
                         <button
                           onClick={() => openNftPicker(slotIndex)}
-                          className="flex-1 text-left text-xs sm:text-sm text-purple-400 hover:text-purple-300 py-2"
+                          className="flex-1 text-left text-xs sm:text-sm text-[#00D4FF] hover:text-[#4FFFDF] py-2"
                         >
                           Tap to select NFT →
                         </button>
@@ -502,10 +503,10 @@ export default function BannerCreatorPage() {
                 </div>
                 
                 {/* NFT Gallery - Collapsible on mobile */}
-                <div className="border-t border-gray-800 pt-4">
+                <div className="border-t border-[#1a1a1a] pt-4">
                   <button
                     onClick={() => setShowNftPicker(!showNftPicker)}
-                    className="w-full flex items-center justify-between text-sm text-gray-400 mb-3 py-2"
+                    className="w-full flex items-center justify-between text-sm text-gray-500 mb-3 py-2"
                   >
                     <span>Your NODES ({nfts.length})</span>
                     {showNftPicker ? (
@@ -518,17 +519,17 @@ export default function BannerCreatorPage() {
                   {showNftPicker && (
                     <>
                       {activeSlot !== null && (
-                        <div className="mb-3 p-2 bg-purple-500/20 rounded-lg text-sm text-purple-400">
+                        <div className="mb-3 p-2 bg-[#00D4FF]/10 border border-[#00D4FF]/30 rounded-lg text-sm text-[#00D4FF]">
                           Selecting for Slot {activeSlot + 1}
                         </div>
                       )}
                       {isLoadingNfts ? (
-                        <div className="flex items-center gap-2 text-gray-500 py-4">
+                        <div className="flex items-center gap-2 text-gray-600 py-4">
                           <Loader2 className="w-4 h-4 animate-spin" />
                           Loading...
                         </div>
                       ) : nfts.length === 0 ? (
-                        <p className="text-gray-500 text-sm py-4">No NODES found in your wallet</p>
+                        <p className="text-gray-600 text-sm py-4">No NODES found in your wallet</p>
                       ) : (
                         <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2 max-h-64 overflow-y-auto">
                           {nfts.map((nft) => (

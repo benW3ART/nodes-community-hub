@@ -89,24 +89,125 @@ export default function GridCreatorPage() {
     setGridCells(newCells);
   };
 
-  const handleExport = async () => {
+  const handleExportPNG = async () => {
     if (!canvasRef.current) return;
     
     setIsExporting(true);
     try {
-      const canvas = await html2canvas(canvasRef.current, {
+      // Clone the element to avoid CORS issues
+      const element = canvasRef.current;
+      const canvas = await html2canvas(element, {
         scale: 2,
-        backgroundColor: '#0a0a0f',
+        backgroundColor: '#000000',
         useCORS: true,
+        allowTaint: true,
+        logging: false,
+        imageTimeout: 15000,
+        onclone: (clonedDoc) => {
+          // Fix images in cloned document
+          const images = clonedDoc.querySelectorAll('img');
+          images.forEach((img) => {
+            img.crossOrigin = 'anonymous';
+          });
+        }
       });
       
       const link = document.createElement('a');
       link.download = `nodes-grid-${gridConfig.name}-${Date.now()}.png`;
-      link.href = canvas.toDataURL('image/png');
+      link.href = canvas.toDataURL('image/png', 1.0);
+      document.body.appendChild(link);
       link.click();
+      document.body.removeChild(link);
     } catch (err) {
       console.error('Export failed:', err);
+      alert('Export failed. Try refreshing the page and trying again.');
     } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleExportVideo = async () => {
+    if (!canvasRef.current) return;
+    
+    setIsExporting(true);
+    try {
+      // Create a canvas for video recording
+      const element = canvasRef.current;
+      const rect = element.getBoundingClientRect();
+      
+      const canvas = document.createElement('canvas');
+      canvas.width = rect.width * 2;
+      canvas.height = rect.height * 2;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('No canvas context');
+
+      // Capture the current state
+      const screenshot = await html2canvas(element, {
+        scale: 2,
+        backgroundColor: '#000000',
+        useCORS: true,
+        allowTaint: true,
+      });
+
+      // Set up MediaRecorder
+      const stream = canvas.captureStream(30);
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'video/webm;codecs=vp9',
+        videoBitsPerSecond: 5000000,
+      });
+
+      const chunks: Blob[] = [];
+      mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(chunks, { type: 'video/webm' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.download = `nodes-grid-${gridConfig.name}-${Date.now()}.webm`;
+        link.href = url;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        setIsExporting(false);
+      };
+
+      // Record for 3 seconds with a subtle animation
+      mediaRecorder.start();
+      
+      let frame = 0;
+      const totalFrames = 90; // 3 seconds at 30fps
+      
+      const animate = () => {
+        if (frame >= totalFrames) {
+          mediaRecorder.stop();
+          return;
+        }
+        
+        // Clear canvas
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Draw with subtle pulse effect
+        const scale = 1 + Math.sin(frame * 0.1) * 0.02;
+        const offsetX = (canvas.width - screenshot.width * scale) / 2;
+        const offsetY = (canvas.height - screenshot.height * scale) / 2;
+        
+        ctx.drawImage(
+          screenshot,
+          offsetX,
+          offsetY,
+          screenshot.width * scale,
+          screenshot.height * scale
+        );
+        
+        frame++;
+        requestAnimationFrame(animate);
+      };
+      
+      animate();
+    } catch (err) {
+      console.error('Video export failed:', err);
+      alert('Video export failed. Your browser may not support this feature.');
       setIsExporting(false);
     }
   };
@@ -249,19 +350,33 @@ export default function GridCreatorPage() {
                 )}
               </div>
 
-              {/* Export Button */}
-              <button
-                onClick={handleExport}
-                disabled={isExporting}
-                className="btn-primary w-full flex items-center justify-center gap-2"
-              >
-                {isExporting ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  <Download className="w-5 h-5" />
-                )}
-                Export PNG
-              </button>
+              {/* Export Buttons */}
+              <div className="flex gap-3">
+                <button
+                  onClick={handleExportPNG}
+                  disabled={isExporting}
+                  className="btn-primary flex-1 flex items-center justify-center gap-2"
+                >
+                  {isExporting ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <Download className="w-5 h-5" />
+                  )}
+                  Export PNG
+                </button>
+                <button
+                  onClick={handleExportVideo}
+                  disabled={isExporting}
+                  className="btn-secondary flex-1 flex items-center justify-center gap-2"
+                >
+                  {isExporting ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <Download className="w-5 h-5" />
+                  )}
+                  Export Video
+                </button>
+              </div>
             </div>
 
             {/* Preview */}

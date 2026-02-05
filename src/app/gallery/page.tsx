@@ -122,7 +122,7 @@ export default function GalleryPage() {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-black">
       <Header />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-12">
@@ -130,7 +130,7 @@ export default function GalleryPage() {
           <div>
             <h1 className="section-title text-xl sm:text-2xl md:text-3xl mb-1 sm:mb-2">My NODES Gallery</h1>
             {isConnected && nfts.length > 0 && (
-              <p className="text-gray-400 text-sm sm:text-base">
+              <p className="text-gray-500 text-sm sm:text-base">
                 You own {nfts.length} NODES NFT{nfts.length !== 1 ? 's' : ''}
               </p>
             )}
@@ -139,17 +139,17 @@ export default function GalleryPage() {
 
         {!isConnected ? (
           <div className="card text-center py-12 sm:py-16">
-            <Wallet className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 sm:mb-6 text-gray-600" />
+            <Wallet className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 sm:mb-6 text-gray-700" />
             <h2 className="text-xl sm:text-2xl font-semibold mb-3 sm:mb-4">Connect Your Wallet</h2>
-            <p className="text-gray-400 text-sm sm:text-base mb-4 sm:mb-6">
+            <p className="text-gray-500 text-sm sm:text-base mb-4 sm:mb-6">
               Connect your wallet to view your NODES NFTs
             </p>
             <ConnectButton />
           </div>
         ) : isLoading ? (
           <div className="card text-center py-12 sm:py-16">
-            <Loader2 className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-4 text-purple-500 animate-spin" />
-            <p className="text-gray-400 text-sm sm:text-base">Loading your NODES...</p>
+            <Loader2 className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-4 text-[#00D4FF] animate-spin" />
+            <p className="text-gray-500 text-sm sm:text-base">Loading your NODES...</p>
           </div>
         ) : error ? (
           <div className="card text-center py-12 sm:py-16">
@@ -165,7 +165,7 @@ export default function GalleryPage() {
           <div className="card text-center py-12 sm:py-16">
             <div className="text-5xl sm:text-6xl mb-4 sm:mb-6">🔍</div>
             <h2 className="text-xl sm:text-2xl font-semibold mb-3 sm:mb-4">No NODES Found</h2>
-            <p className="text-gray-400 text-sm sm:text-base mb-4 sm:mb-6">
+            <p className="text-gray-500 text-sm sm:text-base mb-4 sm:mb-6">
               You don&apos;t own any NODES NFTs yet.
             </p>
             <a 
@@ -181,46 +181,46 @@ export default function GalleryPage() {
           <>
             {/* Portfolio Rarity Stats */}
             {showRarity && portfolioStats && (
-              <div className="card mb-4 sm:mb-6 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-purple-500/30">
-                <h3 className="font-semibold mb-3 sm:mb-4 flex items-center gap-2 text-sm sm:text-base">
-                  <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400" />
+              <div className="card mb-4 sm:mb-6 bg-[#00D4FF]/5 border-[#00D4FF]/30">
+                <h3 className="font-semibold mb-3 sm:mb-4 flex items-center gap-2 text-sm sm:text-base uppercase tracking-wide">
+                  <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-[#00D4FF]" />
                   Portfolio Rarity Stats
                 </h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-                  <div className="p-2 sm:p-3 bg-gray-800/50 rounded-lg">
-                    <p className="text-xs sm:text-sm text-gray-400">Avg Score</p>
-                    <p className="text-xl sm:text-2xl font-bold text-purple-400">
+                  <div className="p-2 sm:p-3 bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg">
+                    <p className="text-xs sm:text-sm text-gray-500 uppercase tracking-wide">Avg Score</p>
+                    <p className="text-xl sm:text-2xl font-bold text-[#00D4FF]">
                       {portfolioStats.averageScore.toFixed(1)}
                     </p>
                   </div>
-                  <div className="p-2 sm:p-3 bg-gray-800/50 rounded-lg">
-                    <p className="text-xs sm:text-sm text-gray-400">Total Rarity</p>
-                    <p className="text-xl sm:text-2xl font-bold text-pink-400">
+                  <div className="p-2 sm:p-3 bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg">
+                    <p className="text-xs sm:text-sm text-gray-500 uppercase tracking-wide">Total Rarity</p>
+                    <p className="text-xl sm:text-2xl font-bold text-[#4FFFDF]">
                       {portfolioStats.totalRarityScore.toFixed(1)}
                     </p>
                   </div>
-                  <div className="p-2 sm:p-3 bg-gray-800/50 rounded-lg">
-                    <p className="text-xs sm:text-sm text-gray-400">Avg Rank</p>
+                  <div className="p-2 sm:p-3 bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg">
+                    <p className="text-xs sm:text-sm text-gray-500 uppercase tracking-wide">Avg Rank</p>
                     <p className="text-xl sm:text-2xl font-bold">
                       #{portfolioStats.averageRank}
                     </p>
                   </div>
-                  <div className="p-2 sm:p-3 bg-gray-800/50 rounded-lg">
-                    <p className="text-xs sm:text-sm text-gray-400">Best NFT</p>
-                    <p className="text-xl sm:text-2xl font-bold text-yellow-400">
+                  <div className="p-2 sm:p-3 bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg">
+                    <p className="text-xs sm:text-sm text-gray-500 uppercase tracking-wide">Best NFT</p>
+                    <p className="text-xl sm:text-2xl font-bold text-[#00D4FF]">
                       #{portfolioStats.bestNft?.tokenId || 'N/A'}
                     </p>
                   </div>
                 </div>
                 
                 {portfolioStats.rarestTraits.length > 0 && (
-                  <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-purple-500/30">
-                    <p className="text-xs sm:text-sm text-gray-400 mb-2">Rarest Traits:</p>
+                  <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-[#00D4FF]/30">
+                    <p className="text-xs sm:text-sm text-gray-500 mb-2 uppercase tracking-wide">Rarest Traits:</p>
                     <div className="flex flex-wrap gap-1.5 sm:gap-2">
                       {portfolioStats.rarestTraits.map((trait, i) => (
                         <span 
                           key={i}
-                          className="px-2 py-1 bg-gray-800/50 rounded text-xs"
+                          className="px-2 py-1 bg-[#0a0a0a] border border-[#1a1a1a] rounded text-xs"
                         >
                           {trait.traitType}: {trait.value} ({trait.percentage.toFixed(1)}%)
                         </span>
@@ -237,25 +237,25 @@ export default function GalleryPage() {
               <div className="sm:hidden">
                 <button
                   onClick={() => setShowFilters(!showFilters)}
-                  className="w-full flex items-center justify-between p-3 bg-gray-800/50 rounded-lg mb-2"
+                  className="w-full flex items-center justify-between p-3 bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg mb-2"
                 >
                   <span className="flex items-center gap-2 text-sm">
-                    <Filter className="w-4 h-4 text-gray-400" />
+                    <Filter className="w-4 h-4 text-gray-500" />
                     Filters & Sort
-                    {filterState && <span className="text-purple-400">• {filterState}</span>}
+                    {filterState && <span className="text-[#00D4FF]">• {filterState}</span>}
                   </span>
                   <ChevronDown className={`w-4 h-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
                 </button>
                 
                 {showFilters && (
-                  <div className="space-y-3 p-3 bg-gray-800/30 rounded-lg">
+                  <div className="space-y-3 p-3 bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg">
                     {/* Filter by Inner State */}
                     <div>
-                      <label className="text-xs text-gray-400 mb-1.5 block">Inner State</label>
+                      <label className="text-xs text-gray-500 mb-1.5 block uppercase tracking-wide">Inner State</label>
                       <select
                         value={filterState || ''}
                         onChange={(e) => setFilterState(e.target.value || null)}
-                        className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm"
+                        className="w-full bg-black border border-[#1a1a1a] rounded-lg px-3 py-2.5 text-sm"
                       >
                         <option value="">All States</option>
                         {INNER_STATES.map((state) => (
@@ -267,11 +267,11 @@ export default function GalleryPage() {
                     {/* Sort Options */}
                     <div className="flex gap-2">
                       <div className="flex-1">
-                        <label className="text-xs text-gray-400 mb-1.5 block">Sort by</label>
+                        <label className="text-xs text-gray-500 mb-1.5 block uppercase tracking-wide">Sort by</label>
                         <select
                           value={sortBy}
                           onChange={(e) => setSortBy(e.target.value as SortOption)}
-                          className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm"
+                          className="w-full bg-black border border-[#1a1a1a] rounded-lg px-3 py-2.5 text-sm"
                         >
                           <option value="tokenId">Token ID</option>
                           <option value="innerState">Inner State</option>
@@ -279,10 +279,10 @@ export default function GalleryPage() {
                         </select>
                       </div>
                       <div>
-                        <label className="text-xs text-gray-400 mb-1.5 block">Order</label>
+                        <label className="text-xs text-gray-500 mb-1.5 block uppercase tracking-wide">Order</label>
                         <button
                           onClick={toggleSortDirection}
-                          className="p-2.5 bg-gray-800 border border-gray-700 rounded-lg"
+                          className="p-2.5 bg-black border border-[#1a1a1a] rounded-lg"
                         >
                           {sortDirection === 'asc' ? (
                             <SortAsc className="w-5 h-5" />
@@ -298,8 +298,8 @@ export default function GalleryPage() {
                       onClick={() => setShowRarity(!showRarity)}
                       className={`w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm transition-all ${
                         showRarity
-                          ? 'bg-purple-600 text-white'
-                          : 'bg-gray-800 border border-gray-700 text-gray-400'
+                          ? 'bg-[#00D4FF] text-black'
+                          : 'bg-black border border-[#1a1a1a] text-gray-400'
                       }`}
                     >
                       <Sparkles className="w-4 h-4" />
@@ -313,11 +313,11 @@ export default function GalleryPage() {
               <div className="hidden sm:flex flex-wrap gap-4">
                 {/* Filter by Inner State */}
                 <div className="flex items-center gap-2">
-                  <Filter className="w-4 h-4 text-gray-400" />
+                  <Filter className="w-4 h-4 text-gray-500" />
                   <select
                     value={filterState || ''}
                     onChange={(e) => setFilterState(e.target.value || null)}
-                    className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm"
+                    className="bg-black border border-[#1a1a1a] rounded-lg px-3 py-2 text-sm"
                   >
                     <option value="">All Inner States</option>
                     {INNER_STATES.map((state) => (
@@ -331,7 +331,7 @@ export default function GalleryPage() {
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value as SortOption)}
-                    className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm"
+                    className="bg-black border border-[#1a1a1a] rounded-lg px-3 py-2 text-sm"
                   >
                     <option value="tokenId">Token ID</option>
                     <option value="innerState">Inner State</option>
@@ -339,7 +339,7 @@ export default function GalleryPage() {
                   </select>
                   <button
                     onClick={toggleSortDirection}
-                    className="p-2 bg-gray-800 border border-gray-700 rounded-lg hover:bg-gray-700"
+                    className="p-2 bg-black border border-[#1a1a1a] rounded-lg hover:border-[#00D4FF]/50"
                   >
                     {sortDirection === 'asc' ? (
                       <SortAsc className="w-4 h-4" />
@@ -354,8 +354,8 @@ export default function GalleryPage() {
                   onClick={() => setShowRarity(!showRarity)}
                   className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all ${
                     showRarity
-                      ? 'bg-purple-600 text-white'
-                      : 'bg-gray-800 border border-gray-700 text-gray-400 hover:bg-gray-700'
+                      ? 'bg-[#00D4FF] text-black'
+                      : 'bg-black border border-[#1a1a1a] text-gray-400 hover:border-[#00D4FF]/50'
                   }`}
                 >
                   <Sparkles className="w-4 h-4" />
@@ -363,13 +363,13 @@ export default function GalleryPage() {
                 </button>
 
                 {/* Count Display */}
-                <div className="ml-auto text-sm text-gray-400 flex items-center">
+                <div className="ml-auto text-sm text-gray-500 flex items-center">
                   Showing {displayedNfts.length} of {nfts.length}
                 </div>
               </div>
 
               {/* Mobile count */}
-              <div className="sm:hidden text-xs text-gray-400 text-center mt-2">
+              <div className="sm:hidden text-xs text-gray-500 text-center mt-2">
                 Showing {displayedNfts.length} of {nfts.length}
               </div>
             </div>
@@ -389,12 +389,12 @@ export default function GalleryPage() {
 
             {displayedNfts.length === 0 && filterState && (
               <div className="text-center py-12">
-                <p className="text-gray-400 text-sm sm:text-base">
+                <p className="text-gray-500 text-sm sm:text-base">
                   No NFTs with Inner State &quot;{filterState}&quot; found.
                 </p>
                 <button
                   onClick={() => setFilterState(null)}
-                  className="mt-4 text-purple-400 hover:text-purple-300 text-sm sm:text-base"
+                  className="mt-4 text-[#00D4FF] hover:text-[#4FFFDF] text-sm sm:text-base"
                 >
                   Clear filter
                 </button>

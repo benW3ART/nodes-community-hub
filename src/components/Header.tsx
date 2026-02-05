@@ -12,12 +12,13 @@ import {
   Target, 
   Trophy,
   Menu,
-  X
+  X,
+  Zap
 } from 'lucide-react';
 
 const navItems = [
   { href: '/', label: 'Home', icon: Home },
-  { href: '/gallery', label: 'My NFTs', icon: Image },
+  { href: '/gallery', label: 'Gallery', icon: Image },
   { href: '/post-creator', label: 'Posts', icon: Layout },
   { href: '/grid-creator', label: 'Grids', icon: Grid3X3 },
   { href: '/banner-creator', label: 'Banners', icon: Layout },
@@ -30,16 +31,16 @@ export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 bg-gray-950/80 backdrop-blur-xl border-b border-gray-800">
+    <header className="sticky top-0 z-50 bg-black/90 backdrop-blur-xl border-b border-[#1a1a1a]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-14 sm:h-16">
           {/* Logo */}
-          <Link href="/" className="flex items-center space-x-2 sm:space-x-3">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg sm:rounded-xl flex items-center justify-center">
-              <span className="text-lg sm:text-xl font-bold">N</span>
+          <Link href="/" className="flex items-center space-x-2 sm:space-x-3 group">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-black border border-[#00D4FF] rounded-lg flex items-center justify-center group-hover:shadow-[0_0_20px_rgba(0,212,255,0.5)] transition-shadow">
+              <span className="text-lg sm:text-xl">⚡️</span>
             </div>
-            <span className="text-lg sm:text-xl font-bold gradient-text hidden xs:block">
-              NODES Hub
+            <span className="text-lg sm:text-xl font-bold text-white hidden xs:block tracking-wider">
+              NODES
             </span>
           </Link>
 
@@ -80,7 +81,7 @@ export function Header() {
             {/* Mobile menu button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 rounded-lg bg-gray-800/50 hover:bg-gray-700/50 transition-colors"
+              className="lg:hidden p-2 rounded-lg bg-[#0a0a0a] border border-[#1a1a1a] hover:border-[#00D4FF]/50 transition-colors"
               aria-label="Toggle menu"
             >
               {mobileMenuOpen ? (
@@ -95,7 +96,7 @@ export function Header() {
 
       {/* Mobile Navigation Menu */}
       {mobileMenuOpen && (
-        <div className="lg:hidden border-t border-gray-800 bg-gray-950/95 backdrop-blur-xl">
+        <div className="lg:hidden border-t border-[#1a1a1a] bg-black/95 backdrop-blur-xl">
           <nav className="max-w-7xl mx-auto px-4 py-4 space-y-1">
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -105,10 +106,10 @@ export function Header() {
                   key={item.href}
                   href={item.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all active:scale-98 ${
+                  className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all active:scale-98 ${
                     isActive 
-                      ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' 
-                      : 'hover:bg-gray-800/50 text-gray-300'
+                      ? 'bg-[#00D4FF]/10 text-[#00D4FF] border border-[#00D4FF]/30' 
+                      : 'hover:bg-white/5 text-gray-300'
                   }`}
                 >
                   <Icon className="w-5 h-5" />
