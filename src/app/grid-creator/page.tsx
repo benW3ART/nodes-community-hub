@@ -372,7 +372,7 @@ export default function GridCreatorPage() {
                 ) : nfts.length === 0 ? (
                   <p className="text-gray-600">No NODES found in your wallet</p>
                 ) : (
-                  <div className="grid grid-cols-6 gap-2 max-h-64 overflow-y-auto">
+                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 sm:gap-3 max-h-80 sm:max-h-96 overflow-y-auto p-1">
                     {nfts.map((nft) => (
                       <NFTCardMini
                         key={nft.tokenId}
