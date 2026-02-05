@@ -1,7 +1,36 @@
 import { ALCHEMY_API_KEY, NODES_CONTRACT, INNER_STATES } from './constants';
-import type { NodeNFT, NFTMetadata, FullSetStatus } from '@/types/nft';
+import type { NodeNFT, FullSetStatus } from '@/types/nft';
 
 const ALCHEMY_BASE_URL = `https://base-mainnet.g.alchemy.com/nft/v3/${ALCHEMY_API_KEY}`;
+
+// Alchemy API response types
+interface AlchemyAttribute {
+  trait_type?: string;
+  value?: string;
+}
+
+interface AlchemyNFT {
+  tokenId?: string;
+  id?: { tokenId?: string };
+  raw?: {
+    metadata?: {
+      name?: string;
+      description?: string;
+      image?: string;
+      attributes?: AlchemyAttribute[];
+    };
+  };
+  metadata?: {
+    name?: string;
+    description?: string;
+    image?: string;
+    attributes?: AlchemyAttribute[];
+  };
+  image?: {
+    cachedUrl?: string;
+    originalUrl?: string;
+  };
+}
 
 export async function getNFTsForOwner(ownerAddress: string): Promise<NodeNFT[]> {
   try {
@@ -15,7 +44,7 @@ export async function getNFTsForOwner(ownerAddress: string): Promise<NodeNFT[]> 
     
     const data = await response.json();
     
-    return data.ownedNfts.map((nft: any) => parseNodeNFT(nft));
+    return data.ownedNfts.map((nft: AlchemyNFT) => parseNodeNFT(nft));
   } catch (error) {
     console.error('Error fetching NFTs:', error);
     return [];
@@ -40,16 +69,24 @@ export async function getNFTMetadata(tokenId: string): Promise<NodeNFT | null> {
   }
 }
 
-function parseNodeNFT(nft: any): NodeNFT {
+function parseNodeNFT(nft: AlchemyNFT): NodeNFT {
   const metadata = nft.raw?.metadata || nft.metadata || {};
-  const attributes = metadata.attributes || [];
+  const attributes: AlchemyAttribute[] = metadata.attributes || [];
   
   const getAttribute = (traitType: string): string => {
-    const attr = attributes.find((a: any) => 
+    const attr = attributes.find((a: AlchemyAttribute) => 
       a.trait_type?.toLowerCase() === traitType.toLowerCase()
     );
     return attr?.value || '';
   };
+  
+  // Convert AlchemyAttribute to NFTAttribute (ensure required fields)
+  const normalizedAttributes = attributes
+    .filter(a => a.trait_type && a.value)
+    .map(a => ({
+      trait_type: a.trait_type!,
+      value: a.value!,
+    }));
   
   return {
     tokenId: nft.tokenId || nft.id?.tokenId || '',
@@ -64,7 +101,7 @@ function parseNodeNFT(nft: any): NodeNFT {
       name: metadata.name || '',
       description: metadata.description || '',
       image: metadata.image || '',
-      attributes: attributes,
+      attributes: normalizedAttributes,
     },
   };
 }
@@ -101,7 +138,6 @@ export function analyzeFullSets(nfts: NodeNFT[]): {
     };
   });
   
-  const ownedStates = status.filter(s => s.owned).length;
   const missingStates = status.filter(s => !s.owned).map(s => s.innerState);
   
   // Calculate complete sets (min across all owned states)

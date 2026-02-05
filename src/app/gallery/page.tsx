@@ -7,7 +7,7 @@ import { Header } from '@/components/Header';
 import { useAccount } from 'wagmi';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { getNFTsForOwner, analyzeFullSets } from '@/lib/alchemy';
-import { calculateCollectionRarity, calculatePortfolioRarity, getRarityTier } from '@/lib/rarity';
+import { calculateCollectionRarity, calculatePortfolioRarity } from '@/lib/rarity';
 import type { RarityScore } from '@/lib/rarity';
 import { useNodesStore } from '@/stores/useNodesStore';
 import { NFTCard } from '@/components/NFTCard';

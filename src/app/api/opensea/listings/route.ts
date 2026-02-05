@@ -57,13 +57,25 @@ export async function GET(request: NextRequest) {
         const data = await response.json();
         
         // Filter by Inner State trait and map to our format
+        interface OpenSeaListingData {
+          protocol_data?: {
+            parameters?: {
+              offer?: Array<{ identifierOrCriteria?: string }>;
+            };
+          };
+          price?: {
+            current?: {
+              value?: string;
+            };
+          };
+        }
+        
         const filtered = data.listings
-          ?.filter((listing: any) => {
-            const traits = listing.protocol_data?.parameters?.consideration?.[0]?.identifierOrCriteria;
+          ?.filter(() => {
             // Note: This is simplified - actual filtering would require fetching token metadata
             return true;
           })
-          .map((listing: any) => ({
+          .map((listing: OpenSeaListingData) => ({
             tokenId: listing.protocol_data?.parameters?.offer?.[0]?.identifierOrCriteria || '',
             price: (parseFloat(listing.price?.current?.value || '0') / 1e18).toFixed(4),
             image: '',

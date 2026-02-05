@@ -28,7 +28,7 @@ export async function GET() {
     // Process owners and their token balances
     for (const owner of ownersData.owners || []) {
       const tokenBalances = owner.tokenBalances || [];
-      const tokenIds = tokenBalances.map((tb: any) => 
+      const tokenIds = tokenBalances.map((tb: { tokenId: string }) => 
         parseInt(tb.tokenId, 16).toString()
       );
       
@@ -73,7 +73,7 @@ export async function GET() {
           
           for (const nft of nftsData.ownedNfts || []) {
             const attributes = nft.raw?.metadata?.attributes || [];
-            const innerState = attributes.find((a: any) => 
+            const innerState = attributes.find((a: { trait_type?: string; value?: string }) => 
               a.trait_type?.toLowerCase() === 'inner state'
             )?.value;
             
@@ -113,7 +113,7 @@ export async function GET() {
     );
     
     let totalSupply = 0;
-    let uniqueHolders = owners.length;
+    const uniqueHolders = owners.length;
     
     if (statsResponse.ok) {
       const statsData = await statsResponse.json();

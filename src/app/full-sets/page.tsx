@@ -85,7 +85,14 @@ export default function FullSetsPage() {
     setFullSetAnalysis 
   } = useNodesStore();
 
-  const [openSeaListings, setOpenSeaListings] = useState<Record<string, any[]>>({});
+  interface OpenSeaListing {
+    tokenId: string;
+    price: string;
+    image: string;
+    url: string;
+  }
+  
+  const [openSeaListings, setOpenSeaListings] = useState<Record<string, OpenSeaListing[]>>({});
   const [loadingListings, setLoadingListings] = useState(false);
   const [interferenceEligibility, setInterferenceEligibility] = useState<InterferenceEligibility | null>(null);
 
@@ -405,7 +412,7 @@ export default function FullSetsPage() {
                           </div>
                         ) : listings.length > 0 ? (
                           <div className="space-y-2">
-                            {listings.slice(0, 2).map((listing: any) => (
+                            {listings.slice(0, 2).map((listing) => (
                               <a
                                 key={listing.tokenId}
                                 href={listing.url}
