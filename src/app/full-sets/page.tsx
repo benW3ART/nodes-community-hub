@@ -56,7 +56,7 @@ function checkInterferenceEligibility(
   
   let nextClaimRequirement: string | null = null;
   if (!hasFullSet) {
-    nextClaimRequirement = 'Complete a Full Set (collect all 8 Inner States)';
+    nextClaimRequirement = 'Complete a Full Set (collect all 7 Inner States)';
   } else if (!canClaimMore) {
     nextClaimRequirement = `Collect another Full Set to claim more (need ${interferenceNftsOwned + 1} complete sets)`;
   }
@@ -145,7 +145,7 @@ export default function FullSetsPage() {
     fetchListings();
   }, [missingStates]);
 
-  const progressPercentage = ((8 - missingStates.length) / 8) * 100;
+  const progressPercentage = ((7 - missingStates.length) / 8) * 100;
 
   const getEligibilityIcon = (status: InterferenceEligibility['status']) => {
     switch (status) {
@@ -180,7 +180,7 @@ export default function FullSetsPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-12">
         <h1 className="section-title text-xl sm:text-2xl md:text-3xl">Full Set Tracker</h1>
         <p className="text-gray-500 text-sm sm:text-base mb-6 sm:mb-8">
-          Collect all 8 Inner States to complete a Full Set and become eligible for Interference!
+          Collect all 7 Inner States to complete a Full Set and become eligible for Interference!
         </p>
 
         {!isConnected ? (
@@ -211,7 +211,7 @@ export default function FullSetsPage() {
                       </span>
                     ) : (
                       <span className="text-[#00D4FF]">
-                        {8 - missingStates.length}/8 Inner States
+                        {7 - missingStates.length}/7 Inner States
                       </span>
                     )}
                   </h2>
@@ -253,7 +253,7 @@ export default function FullSetsPage() {
                     </defs>
                   </svg>
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-xl sm:text-2xl font-bold">{8 - missingStates.length}/8</span>
+                    <span className="text-xl sm:text-2xl font-bold">{7 - missingStates.length}/8</span>
                   </div>
                 </div>
               </div>
@@ -278,7 +278,7 @@ export default function FullSetsPage() {
                           ⚠️ Not Yet Eligible
                         </p>
                         <p className="text-gray-400 text-xs sm:text-sm mb-4">
-                          Complete at least one Full Set (all 8 Inner States) to become eligible.
+                          Complete at least one Full Set (all 7 Inner States) to become eligible.
                         </p>
                       </>
                     )}
