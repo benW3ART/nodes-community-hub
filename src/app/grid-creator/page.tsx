@@ -186,54 +186,56 @@ export default function GridCreatorPage() {
 
   const [exportProgress, setExportProgress] = useState('');
 
-  // Simplified GIF export - static image (animated GIF compositing requires server-side processing)
+  // Server-side GIF export with real animations
   const handleExportGIF = async () => {
-    const nftCount = gridCells.filter(c => c && c !== 'logo').length;
-    if (nftCount === 0) {
+    // Collect NFT cells with positions
+    const cells: {image: string; row: number; col: number}[] = [];
+    for (let i = 0; i < gridCells.length; i++) {
+      const cell = gridCells[i];
+      if (cell && cell !== 'logo' && cell.image) {
+        cells.push({
+          image: cell.image,
+          row: Math.floor(i / gridConfig.cols),
+          col: i % gridConfig.cols
+        });
+      }
+    }
+    
+    if (cells.length === 0) {
       alert('Add some NFTs to the grid first!');
       return;
     }
     
     setIsExporting(true);
-    setExportProgress('Creating GIF...');
+    setExportProgress('Creating animated GIF (server-side)...');
     
     try {
-      // Use simple static image approach (animated compositing requires too much memory)
-      const canvas = await renderGridToCanvas();
-      
-      // Create GIF with single frame (static)
-      const gif = new GIF({
-        workers: 2,
-        quality: 10,
-        width: canvas.width,
-        height: canvas.height,
-        workerScript: '/gif.worker.js',
-        repeat: 0,
+      const response = await fetch('/api/create-gif', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gridConfig, cells }),
       });
       
-      const ctx = canvas.getContext('2d');
-      if (!ctx) throw new Error('No canvas context');
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to create GIF');
+      }
       
-      // Add single frame
-      gif.addFrame(ctx, { copy: true, delay: 100 });
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.download = `nodes-grid-${gridConfig.name}-${Date.now()}.gif`;
+      link.href = url;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
       
-      gif.on('finished', (blob: Blob) => {
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.download = `nodes-grid-${gridConfig.name}-${Date.now()}.gif`;
-        link.href = url;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        setIsExporting(false);
-        setExportProgress('');
-      });
-      
-      gif.render();
+      setIsExporting(false);
+      setExportProgress('');
     } catch (err) {
       console.error('GIF export failed:', err);
-      alert('GIF export failed. Try with fewer NFTs or use PNG export.');
+      alert('GIF export failed: ' + (err instanceof Error ? err.message : 'Unknown error'));
       setIsExporting(false);
       setExportProgress('');
     }

@@ -16,6 +16,8 @@
   "dependencies": {
     "@rainbow-me/rainbowkit": "^2.2.10",
     "@tanstack/react-query": "^5.90.20",
+    "canvas": "^3.2.1",
+    "gif-encoder-2": "^1.0.5",
     "gif.js": "^0.2.0",
     "gifuct-js": "^2.1.2",
     "html2canvas": "^1.4.1",
