@@ -90,17 +90,77 @@ export default function GridCreatorPage() {
     setGridCells(newCells);
   };
 
-  const handleExportPNG = async () => {
-    if (!canvasRef.current) return;
+  // Helper to load image with CORS
+  const loadImage = (src: string): Promise<HTMLImageElement> => {
+    return new Promise((resolve, reject) => {
+      const img = new window.Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      // Use Alchemy's CDN which supports CORS
+      img.src = src;
+    });
+  };
+
+  // Render grid to canvas manually (bypasses html2canvas CORS issues)
+  const renderGridToCanvas = async (): Promise<HTMLCanvasElement> => {
+    const cellSizeExport = 200; // Fixed size for export
+    const gap = 8;
+    const padding = 16;
     
+    const totalWidth = gridConfig.cols * cellSizeExport + (gridConfig.cols - 1) * gap + padding * 2;
+    const totalHeight = gridConfig.rows * cellSizeExport + (gridConfig.rows - 1) * gap + padding * 2;
+    
+    const canvas = document.createElement('canvas');
+    canvas.width = totalWidth;
+    canvas.height = totalHeight;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('No canvas context');
+    
+    // Background
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, totalWidth, totalHeight);
+    
+    // Draw each cell
+    for (let i = 0; i < gridCells.length; i++) {
+      const row = Math.floor(i / gridConfig.cols);
+      const col = i % gridConfig.cols;
+      const x = padding + col * (cellSizeExport + gap);
+      const y = padding + row * (cellSizeExport + gap);
+      
+      // Cell border
+      ctx.strokeStyle = '#1a1a1a';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x, y, cellSizeExport, cellSizeExport);
+      
+      const cell = gridCells[i];
+      if (cell && cell !== 'logo' && cell.image) {
+        try {
+          const img = await loadImage(cell.image);
+          ctx.drawImage(img, x, y, cellSizeExport, cellSizeExport);
+        } catch (err) {
+          console.error('Failed to load image:', cell.image);
+          // Draw placeholder
+          ctx.fillStyle = '#111111';
+          ctx.fillRect(x, y, cellSizeExport, cellSizeExport);
+        }
+      } else if (cell === 'logo') {
+        // Draw NODES logo placeholder
+        ctx.fillStyle = '#00D4FF';
+        ctx.font = 'bold 48px system-ui';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('N', x + cellSizeExport / 2, y + cellSizeExport / 2);
+      }
+    }
+    
+    return canvas;
+  };
+
+  const handleExportPNG = async () => {
     setIsExporting(true);
     try {
-      const canvas = await html2canvas(canvasRef.current, {
-        scale: 2,
-        backgroundColor: '#000000',
-        useCORS: true,
-        allowTaint: true,
-      });
+      const canvas = await renderGridToCanvas();
       
       const link = document.createElement('a');
       link.download = `nodes-grid-${gridConfig.name}-${Date.now()}.png`;
@@ -117,17 +177,9 @@ export default function GridCreatorPage() {
   };
 
   const handleExportVideo = async () => {
-    if (!canvasRef.current) return;
-    
     setIsExporting(true);
     try {
-      const element = canvasRef.current;
-      const screenshot = await html2canvas(element, {
-        scale: 2,
-        backgroundColor: '#000000',
-        useCORS: true,
-        allowTaint: true,
-      });
+      const screenshot = await renderGridToCanvas();
 
       const canvas = document.createElement('canvas');
       canvas.width = screenshot.width;
@@ -189,17 +241,9 @@ export default function GridCreatorPage() {
   };
 
   const handleExportGIF = async () => {
-    if (!canvasRef.current) return;
-    
     setIsExporting(true);
     try {
-      const element = canvasRef.current;
-      const screenshot = await html2canvas(element, {
-        scale: 2,
-        backgroundColor: '#000000',
-        useCORS: true,
-        allowTaint: true,
-      });
+      const screenshot = await renderGridToCanvas();
 
       const gif = new GIF({
         workers: 2,
