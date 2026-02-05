@@ -64,34 +64,48 @@ export default function Home() {
       <Header />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-        {/* Hero Section */}
+        {/* Hero Section with Banner */}
         <section className="text-center mb-10 sm:mb-16">
-          {/* NODES Logo */}
-          <div className="flex justify-center mb-6 sm:mb-8">
-            <div className="relative w-24 h-24 sm:w-32 sm:h-32 animate-pulse-glow rounded-2xl overflow-hidden">
-              <Image
-                src="/nodes-logo.png"
-                alt="NODES"
-                fill
-                className="object-cover"
-                priority
-              />
+          {/* Banner Image */}
+          <div className="relative w-full max-w-4xl mx-auto mb-6 sm:mb-8 rounded-2xl overflow-hidden border border-[#1a1a1a]">
+            <Image
+              src="/nodes-banner.png"
+              alt="NODES - Digital Renaissance"
+              width={1200}
+              height={400}
+              className="w-full h-auto object-cover"
+              priority
+            />
+            {/* Overlay gradient */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+            
+            {/* Logo overlay */}
+            <div className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6 flex items-center gap-3">
+              <div className="relative w-12 h-12 sm:w-16 sm:h-16 rounded-xl overflow-hidden shadow-[0_0_30px_rgba(0,212,255,0.5)]">
+                <Image
+                  src="/nodes-logo.png"
+                  alt="NODES"
+                  fill
+                  className="object-cover"
+                />
+              </div>
+              <div className="text-left">
+                <h1 className="text-xl sm:text-3xl font-bold text-white tracking-wider">NODES</h1>
+                <p className="text-xs sm:text-sm text-[#00D4FF]">Digital Renaissance</p>
+              </div>
             </div>
           </div>
           
           <div className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-[#00D4FF]/10 border border-[#00D4FF]/30 mb-4 sm:mb-6">
             <span className="text-[#00D4FF] text-xs sm:text-sm font-medium tracking-wide">
-              NODES Community Hub
+              Community Hub
             </span>
           </div>
           
-          <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold mb-4 sm:mb-6 tracking-tight">
-            <span className="gradient-text">DIGITAL RENAISSANCE</span>
-          </h1>
-          
           <p className="text-base sm:text-lg text-gray-400 max-w-2xl mx-auto mb-6 sm:mb-8 px-4">
             3,333 digital identities — retro-inspired characters born from internet culture.
-            Full Circle, Skull, and Ghost forms brought to life through colors, symbols, and motion.
+            Features three iconic forms: <span className="text-white">Full Circle</span>, <span className="text-white">Skull</span>, and <span className="text-white">Ghost</span>, 
+            each brought to life through colors, symbols, and dynamic motion.
           </p>
 
           {!isConnected ? (
@@ -205,14 +219,6 @@ export default function Home() {
               OpenSea
             </a>
             <a 
-              href="https://x.com/NODESonBase" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="btn-secondary text-sm sm:text-base py-2.5 px-4"
-            >
-              @NODESonBase
-            </a>
-            <a 
               href="https://x.com/gmhunterart" 
               target="_blank" 
               rel="noopener noreferrer"
@@ -234,21 +240,31 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="border-t border-[#1a1a1a] mt-10 sm:mt-16 py-6 sm:py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-gray-600">
-          <div className="flex items-center justify-center gap-3 mb-3">
-            <div className="relative w-6 h-6">
-              <Image
-                src="/nodes-logo.png"
-                alt="NODES"
-                fill
-                className="object-cover rounded"
-              />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col items-center text-center">
+            {/* Logo + Name */}
+            <div className="flex items-center gap-3 mb-4">
+              <div className="relative w-8 h-8 sm:w-10 sm:h-10 rounded-lg overflow-hidden">
+                <Image
+                  src="/nodes-logo.png"
+                  alt="NODES"
+                  fill
+                  className="object-cover"
+                />
+              </div>
+              <span className="text-lg sm:text-xl font-bold text-white tracking-wider">NODES</span>
             </div>
-            <span className="text-sm sm:text-base text-gray-400">NODES Community Hub</span>
+            
+            {/* Description */}
+            <p className="text-gray-500 text-sm max-w-md mb-4">
+              3,333 digital identities — retro-inspired characters born from internet culture.
+            </p>
+            
+            {/* Disclaimer */}
+            <p className="text-xs text-gray-600">
+              Community project. Not affiliated with NODES or gmhunterart.
+            </p>
           </div>
-          <p className="text-xs sm:text-sm">
-            Not affiliated with NODES or gmhunterart. Community project.
-          </p>
         </div>
       </footer>
     </div>

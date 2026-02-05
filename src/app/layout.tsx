@@ -7,15 +7,16 @@ const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'NODES Community Hub',
-  description: '3,333 digital identities - retro-inspired characters born from internet culture. Create content, track full sets, and experience the Digital Renaissance.',
+  description: '3,333 digital identities - retro-inspired characters born from internet culture. Features three iconic forms: Full Circle, Skull, and Ghost, each brought to life through a universe of colors, symbols, and dynamic motion.',
   metadataBase: new URL('https://nodes-hub.vercel.app'),
   icons: {
-    icon: '/nodes-logo.png',
+    icon: '/favicon.png',
+    shortcut: '/favicon.png',
     apple: '/nodes-logo.png',
   },
   openGraph: {
     title: 'NODES Community Hub',
-    description: '3,333 digital identities - retro-inspired characters born from internet culture. Create content, track full sets, and experience the Digital Renaissance.',
+    description: '3,333 digital identities - retro-inspired characters born from internet culture. Features three iconic forms: Full Circle, Skull, and Ghost.',
     images: ['/nodes-banner.png'],
     siteName: 'NODES Community Hub',
   },
@@ -24,7 +25,7 @@ export const metadata: Metadata = {
     title: 'NODES Community Hub',
     description: '3,333 digital identities - retro-inspired characters born from internet culture.',
     images: ['/nodes-banner.png'],
-    creator: '@NODESonBase',
+    creator: '@gmhunterart',
   },
 };
 
