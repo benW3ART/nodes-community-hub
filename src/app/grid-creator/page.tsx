@@ -91,15 +91,22 @@ export default function GridCreatorPage() {
     setGridCells(newCells);
   };
 
-  // Helper to load image with CORS
+  // Helper to load image via proxy (CORS workaround)
   const loadImage = (src: string): Promise<HTMLImageElement> => {
     return new Promise((resolve, reject) => {
       const img = new window.Image();
       img.crossOrigin = 'anonymous';
       img.onload = () => resolve(img);
-      img.onerror = reject;
-      // Use Alchemy's CDN which supports CORS
-      img.src = src;
+      img.onerror = () => {
+        // Try direct URL if proxy fails
+        const directImg = new window.Image();
+        directImg.crossOrigin = 'anonymous';
+        directImg.onload = () => resolve(directImg);
+        directImg.onerror = reject;
+        directImg.src = src;
+      };
+      // Use proxy to avoid CORS issues
+      img.src = `/api/proxy-gif?url=${encodeURIComponent(src)}`;
     });
   };
 
@@ -650,7 +657,7 @@ export default function GridCreatorPage() {
                 ) : nfts.length === 0 ? (
                   <p className="text-gray-600">No NODES found in your wallet</p>
                 ) : (
-                  <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-1 max-h-[50vh] overflow-y-auto p-1">
+                  <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2 max-h-[50vh] overflow-y-auto p-1" style={{ gridAutoRows: '1fr' }}>
                     {nfts.map((nft) => (
                       <button
                         key={nft.tokenId}
@@ -660,7 +667,8 @@ export default function GridCreatorPage() {
                             handleCellClick(emptyCell, nft);
                           }
                         }}
-                        className="aspect-square relative rounded overflow-hidden border border-transparent hover:border-[#00D4FF] active:scale-95 transition-all"
+                        className="relative rounded overflow-hidden border border-transparent hover:border-[#00D4FF] active:scale-95 transition-all"
+                        style={{ aspectRatio: '1/1' }}
                       >
                         <Image
                           src={nft.image}
