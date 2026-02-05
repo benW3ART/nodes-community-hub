@@ -177,12 +177,15 @@ export default function GridCreatorPage() {
     }
   };
 
-  // Helper to fetch and parse GIF frames
+  // Helper to fetch and parse GIF frames via proxy (CORS workaround)
   const fetchGifFrames = async (url: string): Promise<{frames: ImageData[], delays: number[], width: number, height: number}> => {
-    const response = await fetch(url);
+    // Use proxy to avoid CORS issues
+    const proxyUrl = `/api/proxy-gif?url=${encodeURIComponent(url)}`;
+    const response = await fetch(proxyUrl);
+    if (!response.ok) throw new Error('Failed to fetch GIF');
     const buffer = await response.arrayBuffer();
     const gif = parseGIF(buffer);
-    const frames = decompressFrames(gif, true);
+    const frames = decompressFrames(gif, true).slice(0, 30); // Limit to 30 frames max
     
     const width = gif.lsd.width;
     const height = gif.lsd.height;
@@ -230,8 +233,23 @@ export default function GridCreatorPage() {
     return { frames: imageDataFrames, delays, width, height };
   };
 
+  const [exportProgress, setExportProgress] = useState('');
+
   const handleExportGIF = async () => {
+    // Count NFTs in grid
+    const nftCount = gridCells.filter(c => c && c !== 'logo').length;
+    if (nftCount === 0) {
+      alert('Add some NFTs to the grid first!');
+      return;
+    }
+    if (nftCount > 9) {
+      alert(`Too many NFTs (${nftCount}). GIF export works best with 9 or fewer NFTs. Use PNG for larger grids.`);
+      return;
+    }
+    
     setIsExporting(true);
+    setExportProgress('Loading GIF frames...');
+    
     try {
       const cellSizeExport = 200;
       const gap = 8;
@@ -341,6 +359,8 @@ export default function GridCreatorPage() {
         gif.addFrame(compositeCtx, { copy: true, delay: avgDelay });
       }
       
+      setExportProgress('Creating GIF...');
+      
       gif.on('finished', (blob: Blob) => {
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -351,18 +371,32 @@ export default function GridCreatorPage() {
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
         setIsExporting(false);
+        setExportProgress('');
       });
       
       gif.render();
     } catch (err) {
       console.error('GIF export failed:', err);
-      alert('GIF export failed. Please try again.');
+      alert('GIF export failed. Try with fewer NFTs or use PNG export.');
       setIsExporting(false);
+      setExportProgress('');
     }
   };
 
   const handleExportVideo = async () => {
+    const nftCount = gridCells.filter(c => c && c !== 'logo').length;
+    if (nftCount === 0) {
+      alert('Add some NFTs to the grid first!');
+      return;
+    }
+    if (nftCount > 9) {
+      alert(`Too many NFTs (${nftCount}). Video export works best with 9 or fewer NFTs. Use PNG for larger grids.`);
+      return;
+    }
+    
     setIsExporting(true);
+    setExportProgress('Loading GIF frames...');
+    
     try {
       const cellSizeExport = 200;
       const gap = 8;
@@ -382,12 +416,6 @@ export default function GridCreatorPage() {
             col: i % gridConfig.cols
           });
         }
-      }
-      
-      if (nftData.length === 0) {
-        alert('Add some NFTs to the grid first!');
-        setIsExporting(false);
-        return;
       }
       
       // Fetch all GIF frames
@@ -426,6 +454,8 @@ export default function GridCreatorPage() {
         videoBitsPerSecond: 5000000,
       });
       
+      setExportProgress('Recording video...');
+      
       const chunks: Blob[] = [];
       mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
       mediaRecorder.onstop = () => {
@@ -439,6 +469,7 @@ export default function GridCreatorPage() {
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
         setIsExporting(false);
+        setExportProgress('');
       };
       
       mediaRecorder.start();
@@ -492,8 +523,9 @@ export default function GridCreatorPage() {
       animate();
     } catch (err) {
       console.error('Video export failed:', err);
-      alert('Video export failed.');
+      alert('Video export failed. Try with fewer NFTs or use PNG export.');
       setIsExporting(false);
+      setExportProgress('');
     }
   };
 
@@ -618,18 +650,27 @@ export default function GridCreatorPage() {
                 ) : nfts.length === 0 ? (
                   <p className="text-gray-600">No NODES found in your wallet</p>
                 ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 max-h-[50vh] overflow-y-auto p-2">
+                  <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-1 max-h-[50vh] overflow-y-auto p-1">
                     {nfts.map((nft) => (
-                      <NFTCardMini
+                      <button
                         key={nft.tokenId}
-                        nft={nft}
                         onClick={() => {
                           const emptyCell = gridCells.findIndex(c => c === null);
                           if (emptyCell !== -1) {
                             handleCellClick(emptyCell, nft);
                           }
                         }}
-                      />
+                        className="aspect-square relative rounded overflow-hidden border border-transparent hover:border-[#00D4FF] active:scale-95 transition-all"
+                      >
+                        <Image
+                          src={nft.image}
+                          alt={nft.name}
+                          fill
+                          className="object-cover"
+                          sizes="60px"
+                          unoptimized
+                        />
+                      </button>
                     ))}
                   </div>
                 )}
@@ -675,8 +716,13 @@ export default function GridCreatorPage() {
                 </button>
               </div>
               <p className="text-xs text-gray-500 mt-2 text-center">
-                GIF &amp; Video preserve NFT animations ✨
+                GIF &amp; Video preserve animations (max 9 NFTs) ✨
               </p>
+              {exportProgress && (
+                <p className="text-xs text-[#00D4FF] mt-2 text-center animate-pulse">
+                  {exportProgress}
+                </p>
+              )}
             </div>
 
             {/* Preview */}
