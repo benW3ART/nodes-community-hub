@@ -4,21 +4,21 @@ import { useState } from 'react';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import Image from 'next/image';
 import { 
   Home, 
-  Image, 
+  Image as ImageIcon, 
   Grid3X3, 
   Layout, 
   Target, 
   Trophy,
   Menu,
-  X,
-  Zap
+  X
 } from 'lucide-react';
 
 const navItems = [
   { href: '/', label: 'Home', icon: Home },
-  { href: '/gallery', label: 'Gallery', icon: Image },
+  { href: '/gallery', label: 'Gallery', icon: ImageIcon },
   { href: '/post-creator', label: 'Posts', icon: Layout },
   { href: '/grid-creator', label: 'Grids', icon: Grid3X3 },
   { href: '/banner-creator', label: 'Banners', icon: Layout },
@@ -36,8 +36,14 @@ export function Header() {
         <div className="flex items-center justify-between h-14 sm:h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2 sm:space-x-3 group">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-black border border-[#00D4FF] rounded-lg flex items-center justify-center group-hover:shadow-[0_0_20px_rgba(0,212,255,0.5)] transition-shadow">
-              <span className="text-lg sm:text-xl">⚡️</span>
+            <div className="w-8 h-8 sm:w-10 sm:h-10 relative rounded-lg overflow-hidden group-hover:shadow-[0_0_20px_rgba(0,212,255,0.5)] transition-shadow">
+              <Image
+                src="/nodes-logo.png"
+                alt="NODES"
+                fill
+                className="object-cover"
+                priority
+              />
             </div>
             <span className="text-lg sm:text-xl font-bold text-white hidden xs:block tracking-wider">
               NODES

@@ -89,125 +89,24 @@ export default function GridCreatorPage() {
     setGridCells(newCells);
   };
 
-  const handleExportPNG = async () => {
+  const handleExport = async () => {
     if (!canvasRef.current) return;
     
     setIsExporting(true);
     try {
-      // Clone the element to avoid CORS issues
-      const element = canvasRef.current;
-      const canvas = await html2canvas(element, {
+      const canvas = await html2canvas(canvasRef.current, {
         scale: 2,
         backgroundColor: '#000000',
         useCORS: true,
-        allowTaint: true,
-        logging: false,
-        imageTimeout: 15000,
-        onclone: (clonedDoc) => {
-          // Fix images in cloned document
-          const images = clonedDoc.querySelectorAll('img');
-          images.forEach((img) => {
-            img.crossOrigin = 'anonymous';
-          });
-        }
       });
       
       const link = document.createElement('a');
       link.download = `nodes-grid-${gridConfig.name}-${Date.now()}.png`;
-      link.href = canvas.toDataURL('image/png', 1.0);
-      document.body.appendChild(link);
+      link.href = canvas.toDataURL('image/png');
       link.click();
-      document.body.removeChild(link);
     } catch (err) {
       console.error('Export failed:', err);
-      alert('Export failed. Try refreshing the page and trying again.');
     } finally {
-      setIsExporting(false);
-    }
-  };
-
-  const handleExportVideo = async () => {
-    if (!canvasRef.current) return;
-    
-    setIsExporting(true);
-    try {
-      // Create a canvas for video recording
-      const element = canvasRef.current;
-      const rect = element.getBoundingClientRect();
-      
-      const canvas = document.createElement('canvas');
-      canvas.width = rect.width * 2;
-      canvas.height = rect.height * 2;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) throw new Error('No canvas context');
-
-      // Capture the current state
-      const screenshot = await html2canvas(element, {
-        scale: 2,
-        backgroundColor: '#000000',
-        useCORS: true,
-        allowTaint: true,
-      });
-
-      // Set up MediaRecorder
-      const stream = canvas.captureStream(30);
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'video/webm;codecs=vp9',
-        videoBitsPerSecond: 5000000,
-      });
-
-      const chunks: Blob[] = [];
-      mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
-      mediaRecorder.onstop = () => {
-        const blob = new Blob(chunks, { type: 'video/webm' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.download = `nodes-grid-${gridConfig.name}-${Date.now()}.webm`;
-        link.href = url;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        setIsExporting(false);
-      };
-
-      // Record for ~1.1 seconds to match NODES GIF duration
-      mediaRecorder.start();
-      
-      let frame = 0;
-      const totalFrames = 33; // ~1.1 seconds at 30fps (matching NODES GIF duration)
-      
-      const animate = () => {
-        if (frame >= totalFrames) {
-          mediaRecorder.stop();
-          return;
-        }
-        
-        // Clear canvas
-        ctx.fillStyle = '#000000';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        // Draw with subtle pulse effect
-        const scale = 1 + Math.sin(frame * 0.1) * 0.02;
-        const offsetX = (canvas.width - screenshot.width * scale) / 2;
-        const offsetY = (canvas.height - screenshot.height * scale) / 2;
-        
-        ctx.drawImage(
-          screenshot,
-          offsetX,
-          offsetY,
-          screenshot.width * scale,
-          screenshot.height * scale
-        );
-        
-        frame++;
-        requestAnimationFrame(animate);
-      };
-      
-      animate();
-    } catch (err) {
-      console.error('Video export failed:', err);
-      alert('Video export failed. Your browser may not support this feature.');
       setIsExporting(false);
     }
   };
@@ -215,20 +114,20 @@ export default function GridCreatorPage() {
   const cellSize = Math.floor(600 / Math.max(gridConfig.rows, gridConfig.cols));
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-black">
       <Header />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <h1 className="section-title">Grid Montage Creator</h1>
-        <p className="text-gray-400 mb-8">
+        <p className="text-gray-500 mb-8">
           Create stunning grid montages with your NODES NFTs
         </p>
 
         {!isConnected ? (
           <div className="card text-center py-16">
-            <Wallet className="w-16 h-16 mx-auto mb-6 text-gray-600" />
+            <Wallet className="w-16 h-16 mx-auto mb-6 text-gray-700" />
             <h2 className="text-2xl font-semibold mb-4">Connect Your Wallet</h2>
-            <p className="text-gray-400 mb-6">Connect to access your NODES NFTs</p>
+            <p className="text-gray-500 mb-6">Connect to access your NODES NFTs</p>
             <ConnectButton />
           </div>
         ) : (
@@ -237,8 +136,8 @@ export default function GridCreatorPage() {
             <div className="space-y-6">
               {/* Grid Size Selection */}
               <div className="card">
-                <h3 className="font-semibold mb-4 flex items-center gap-2">
-                  <Grid3X3 className="w-5 h-5 text-purple-400" />
+                <h3 className="font-semibold mb-4 flex items-center gap-2 uppercase tracking-wide">
+                  <Grid3X3 className="w-5 h-5 text-[#00D4FF]" />
                   Grid Size
                 </h3>
                 <div className="flex flex-wrap gap-2">
@@ -248,8 +147,8 @@ export default function GridCreatorPage() {
                       onClick={() => setGridConfig(preset)}
                       className={`px-4 py-2 rounded-lg text-sm transition-all ${
                         gridConfig.name === preset.name
-                          ? 'bg-purple-600 text-white'
-                          : 'bg-gray-800 hover:bg-gray-700'
+                          ? 'bg-[#00D4FF] text-black'
+                          : 'bg-[#0a0a0a] border border-[#1a1a1a] hover:border-[#00D4FF]/50'
                       }`}
                     >
                       {preset.name}
@@ -258,8 +157,8 @@ export default function GridCreatorPage() {
                 </div>
                 
                 {/* Custom Grid */}
-                <div className="mt-4 pt-4 border-t border-gray-800">
-                  <p className="text-sm text-gray-400 mb-2">Custom Size:</p>
+                <div className="mt-4 pt-4 border-t border-[#1a1a1a]">
+                  <p className="text-sm text-gray-500 mb-2 uppercase tracking-wide">Custom Size:</p>
                   <div className="flex items-center gap-2">
                     <input
                       type="number"
@@ -273,7 +172,7 @@ export default function GridCreatorPage() {
                       })}
                       className="input w-20 text-center"
                     />
-                    <span className="text-gray-500">×</span>
+                    <span className="text-gray-600">×</span>
                     <input
                       type="number"
                       min="1"
@@ -292,7 +191,7 @@ export default function GridCreatorPage() {
 
               {/* Quick Actions */}
               <div className="card">
-                <h3 className="font-semibold mb-4">Quick Actions</h3>
+                <h3 className="font-semibold mb-4 uppercase tracking-wide">Quick Actions</h3>
                 <div className="flex flex-wrap gap-2">
                   <button
                     onClick={shuffleGrid}
@@ -311,7 +210,7 @@ export default function GridCreatorPage() {
                   </button>
                   <button
                     onClick={() => setShowLogoOption(!showLogoOption)}
-                    className={`btn-secondary flex items-center gap-2 ${showLogoOption ? 'ring-2 ring-purple-500' : ''}`}
+                    className={`btn-secondary flex items-center gap-2 ${showLogoOption ? 'ring-2 ring-[#00D4FF]' : ''}`}
                   >
                     <Plus className="w-4 h-4" />
                     Add Logo
@@ -321,17 +220,17 @@ export default function GridCreatorPage() {
 
               {/* NFT Gallery */}
               <div className="card">
-                <h3 className="font-semibold mb-4">Your NODES</h3>
-                <p className="text-sm text-gray-400 mb-3">
+                <h3 className="font-semibold mb-4 uppercase tracking-wide">Your NODES</h3>
+                <p className="text-sm text-gray-500 mb-3">
                   Click on a cell in the preview, then click an NFT to place it
                 </p>
                 {isLoadingNfts ? (
-                  <div className="flex items-center gap-2 text-gray-500">
+                  <div className="flex items-center gap-2 text-gray-600">
                     <Loader2 className="w-4 h-4 animate-spin" />
                     Loading NFTs...
                   </div>
                 ) : nfts.length === 0 ? (
-                  <p className="text-gray-500">No NODES found in your wallet</p>
+                  <p className="text-gray-600">No NODES found in your wallet</p>
                 ) : (
                   <div className="grid grid-cols-6 gap-2 max-h-64 overflow-y-auto">
                     {nfts.map((nft) => (
@@ -350,42 +249,28 @@ export default function GridCreatorPage() {
                 )}
               </div>
 
-              {/* Export Buttons */}
-              <div className="flex gap-3">
-                <button
-                  onClick={handleExportPNG}
-                  disabled={isExporting}
-                  className="btn-primary flex-1 flex items-center justify-center gap-2"
-                >
-                  {isExporting ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                  ) : (
-                    <Download className="w-5 h-5" />
-                  )}
-                  Export PNG
-                </button>
-                <button
-                  onClick={handleExportVideo}
-                  disabled={isExporting}
-                  className="btn-secondary flex-1 flex items-center justify-center gap-2"
-                >
-                  {isExporting ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                  ) : (
-                    <Download className="w-5 h-5" />
-                  )}
-                  Export Video (1.1s)
-                </button>
-              </div>
+              {/* Export Button */}
+              <button
+                onClick={handleExport}
+                disabled={isExporting}
+                className="btn-primary w-full flex items-center justify-center gap-2"
+              >
+                {isExporting ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <Download className="w-5 h-5" />
+                )}
+                Export PNG
+              </button>
             </div>
 
             {/* Preview */}
             <div className="card">
-              <h3 className="font-semibold mb-4">Preview ({gridConfig.name})</h3>
+              <h3 className="font-semibold mb-4 uppercase tracking-wide">Preview ({gridConfig.name})</h3>
               <div className="flex justify-center">
                 <div 
                   ref={canvasRef}
-                  className="bg-gray-950 rounded-xl overflow-hidden border border-gray-800"
+                  className="bg-black rounded-xl overflow-hidden border border-[#1a1a1a]"
                   style={{
                     display: 'grid',
                     gridTemplateColumns: `repeat(${gridConfig.cols}, ${cellSize}px)`,
@@ -409,8 +294,8 @@ export default function GridCreatorPage() {
                       }}
                     >
                       {cell === 'logo' ? (
-                        <div className="w-full h-full flex items-center justify-center bg-purple-600/20">
-                          <span className="text-2xl font-bold text-purple-400">N</span>
+                        <div className="w-full h-full flex items-center justify-center bg-[#00D4FF]/20">
+                          <span className="text-2xl">⚡️</span>
                         </div>
                       ) : cell ? (
                         <Image
@@ -421,13 +306,13 @@ export default function GridCreatorPage() {
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <span className="text-gray-600 text-xs">{index + 1}</span>
+                        <span className="text-gray-700 text-xs">{index + 1}</span>
                       )}
                     </div>
                   ))}
                 </div>
               </div>
-              <p className="text-sm text-gray-500 text-center mt-4">
+              <p className="text-sm text-gray-600 text-center mt-4">
                 Click cells to clear. Click &quot;Add Logo&quot; then a cell to add NODES logo.
               </p>
             </div>

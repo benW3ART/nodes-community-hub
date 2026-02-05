@@ -4,9 +4,10 @@ export const NODES_CONTRACT = process.env.NEXT_PUBLIC_NODES_CONTRACT || '0x95bc4
 export const ALCHEMY_API_KEY = process.env.NEXT_PUBLIC_ALCHEMY_API_KEY || '';
 export const ALCHEMY_RPC_URL = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL || '';
 
-// Inner State values for Full Set tracking
+// Inner State values for Full Set tracking (8 states for complete set)
 export const INNER_STATES = [
   'Awakened',
+  'Ascended',
   'Calm',
   'Curious', 
   'Determined',
