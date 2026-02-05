@@ -148,15 +148,26 @@ export default function BannerCreatorPage() {
         scale: 2,
         useCORS: true,
         allowTaint: true,
-        backgroundColor: null,
+        backgroundColor: '#000000',
+        logging: false,
+        imageTimeout: 15000,
+        onclone: (clonedDoc) => {
+          const images = clonedDoc.querySelectorAll('img');
+          images.forEach((img) => {
+            img.crossOrigin = 'anonymous';
+          });
+        }
       });
       
       const link = document.createElement('a');
       link.download = `nodes-banner-${Date.now()}.png`;
-      link.href = canvas.toDataURL('image/png');
+      link.href = canvas.toDataURL('image/png', 1.0);
+      document.body.appendChild(link);
       link.click();
+      document.body.removeChild(link);
     } catch (err) {
       console.error('Export failed:', err);
+      alert('Export failed. This may be due to image loading issues. Try refreshing the page and trying again.');
     } finally {
       setIsExporting(false);
     }
