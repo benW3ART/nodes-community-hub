@@ -87,10 +87,13 @@ async function loadStaticImage(url: string): Promise<CanvasImage | null> {
 }
 
 // Pre-render all frames of an animated GIF into complete canvases
-function prerenderGifFrames(gifData: GifData): { canvases: any[], delays: number[] } {
+// Also calculates cumulative timestamps for time-based frame lookup
+function prerenderGifFrames(gifData: GifData): { canvases: any[], delays: number[], timestamps: number[], totalDuration: number } {
   const { frames, width, height, frameDelays } = gifData;
   const canvases: any[] = [];
   const delays: number[] = [];
+  const timestamps: number[] = []; // cumulative time at start of each frame
+  let cumulative = 0;
   
   // Create a persistent canvas to composite frames (GIF disposal handling)
   const compositeCanvas = createCanvas(width, height);
@@ -130,22 +133,38 @@ function prerenderGifFrames(gifData: GifData): { canvases: any[], delays: number
       const frameCtx = frameCanvas.getContext('2d');
       frameCtx.drawImage(compositeCanvas, 0, 0);
       
+      const frameDelay = frameDelays[i] || 50;
+      timestamps.push(cumulative);
+      cumulative += frameDelay;
       canvases.push(frameCanvas);
-      delays.push(frameDelays[i] || 100);
+      delays.push(frameDelay);
     } catch (err) {
       console.error(`Failed to render frame ${i}:`, err);
-      // Push previous frame or empty canvas as fallback
+      const frameDelay = delays.length > 0 ? delays[delays.length - 1] : 50;
+      timestamps.push(cumulative);
+      cumulative += frameDelay;
       if (canvases.length > 0) {
         canvases.push(canvases[canvases.length - 1]);
-        delays.push(delays[delays.length - 1] || 100);
+        delays.push(frameDelay);
       } else {
         canvases.push(createCanvas(width, height));
-        delays.push(100);
+        delays.push(frameDelay);
       }
     }
   }
   
-  return { canvases, delays };
+  return { canvases, delays, timestamps, totalDuration: cumulative };
+}
+
+// Find which frame to show at a given time (with looping)
+function getFrameAtTime(timestamps: number[], totalDuration: number, timeMs: number): number {
+  const loopedTime = timeMs % totalDuration;
+  for (let i = timestamps.length - 1; i >= 0; i--) {
+    if (loopedTime >= timestamps[i]) {
+      return i;
+    }
+  }
+  return 0;
 }
 
 export async function POST(request: NextRequest) {
@@ -168,7 +187,7 @@ export async function POST(request: NextRequest) {
     // Load all images - try GIF first, then static
     const loadedCells: { 
       cell: GridCell; 
-      renderedFrames?: { canvases: any[], delays: number[] }; 
+      renderedFrames?: { canvases: any[], delays: number[], timestamps: number[], totalDuration: number }; 
       staticImg?: CanvasImage;
       isAnimated: boolean;
     }[] = [];
@@ -179,8 +198,8 @@ export async function POST(request: NextRequest) {
       // Try as animated GIF first
       const gifData = await fetchGifFrames(cell.image);
       if (gifData) {
-        console.log(`  -> Animated GIF with ${gifData.frames.length} frames, delays: ${gifData.frameDelays.slice(0, 3).join(',')}...ms`);
         const renderedFrames = prerenderGifFrames(gifData);
+        console.log(`  -> Animated GIF: ${renderedFrames.canvases.length} frames, ${renderedFrames.totalDuration}ms total`);
         loadedCells.push({ cell, renderedFrames, isAnimated: true });
         continue;
       }
@@ -203,26 +222,25 @@ export async function POST(request: NextRequest) {
     
     console.log(`Loaded ${loadedCells.length}/${cells.length} cells successfully`);
     
-    // Find the animated cell with the most frames (this will be our "master" timing)
+    // Find the longest animation duration to determine output length
     const animatedCells = loadedCells.filter(c => c.isAnimated && c.renderedFrames);
-    let masterDelays: number[] = [100]; // default if no animated
-    let maxFrames = 1;
+    let totalDuration = 1000; // default 1 second for static only
     
     if (animatedCells.length > 0) {
-      // Sort by frame count descending, pick the one with most frames
-      const sorted = animatedCells.sort((a, b) => 
-        (b.renderedFrames?.canvases.length || 0) - (a.renderedFrames?.canvases.length || 0)
-      );
-      const master = sorted[0].renderedFrames!;
-      maxFrames = Math.min(60, master.canvases.length); // cap at 60 frames
-      masterDelays = master.delays.slice(0, maxFrames);
+      // Use the longest animation duration (so all GIFs complete at least one loop)
+      totalDuration = Math.max(...animatedCells.map(c => c.renderedFrames!.totalDuration));
     }
     
-    console.log(`Generating ${maxFrames} frames with master delays:`, masterDelays.slice(0, 10), '...');
-    console.log(`Total animation time: ${masterDelays.reduce((a, b) => a + b, 0)}ms`);
+    // Use fixed 30fps output (33ms per frame), each GIF plays at its own speed
+    const outputFps = 30;
+    const frameInterval = Math.round(1000 / outputFps); // ~33ms
+    const totalFrames = Math.min(90, Math.ceil(totalDuration / frameInterval)); // cap at 3 seconds
+    
+    console.log(`Output: ${totalFrames} frames at ${outputFps}fps (${totalDuration}ms duration)`);
     
     // Create GIF encoder
     const encoder = new GIFEncoder(totalWidth, totalHeight);
+    encoder.setDelay(frameInterval); // fixed frame rate
     encoder.setRepeat(0);  // Loop forever
     encoder.setQuality(10);
     encoder.start();
@@ -231,11 +249,9 @@ export async function POST(request: NextRequest) {
     const canvas = createCanvas(totalWidth, totalHeight);
     const ctx = canvas.getContext('2d');
     
-    // Generate each frame
-    for (let frameIdx = 0; frameIdx < maxFrames; frameIdx++) {
-      // Set delay for THIS frame (from master GIF timing)
-      const frameDelay = masterDelays[frameIdx] || masterDelays[0] || 100;
-      encoder.setDelay(frameDelay);
+    // Generate each frame based on elapsed time
+    for (let frameIdx = 0; frameIdx < totalFrames; frameIdx++) {
+      const currentTimeMs = frameIdx * frameInterval;
       
       // Clear with black background
       ctx.fillStyle = '#000000';
@@ -252,15 +268,19 @@ export async function POST(request: NextRequest) {
         }
       }
       
-      // Draw each loaded image
+      // Draw each loaded image at the correct frame for this time
       for (const { cell, renderedFrames, staticImg, isAnimated } of loadedCells) {
         const x = padding + cell.col * (cellSize + gap);
         const y = padding + cell.row * (cellSize + gap);
         
         try {
           if (isAnimated && renderedFrames && renderedFrames.canvases.length > 0) {
-            // Get the appropriate frame (loop if needed)
-            const frameIndex = frameIdx % renderedFrames.canvases.length;
+            // Find the correct frame for this GIF at current time
+            const frameIndex = getFrameAtTime(
+              renderedFrames.timestamps, 
+              renderedFrames.totalDuration, 
+              currentTimeMs
+            );
             const frameCanvas = renderedFrames.canvases[frameIndex];
             
             if (frameCanvas) {
@@ -270,7 +290,7 @@ export async function POST(request: NextRequest) {
             ctx.drawImage(staticImg, x, y, cellSize, cellSize);
           }
         } catch (err) {
-          console.error(`Error drawing cell [${cell.row},${cell.col}] frame ${frameIdx}:`, err);
+          console.error(`Error drawing cell [${cell.row},${cell.col}] at ${currentTimeMs}ms:`, err);
           // Draw a placeholder on error
           ctx.fillStyle = '#1a1a1a';
           ctx.fillRect(x, y, cellSize, cellSize);
