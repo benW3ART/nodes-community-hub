@@ -241,7 +241,7 @@ export default function GridCreatorPage() {
     }
   };
 
-  // Simplified video export - static image (animated compositing requires too much memory)
+  // Video export - creates a proper video with the grid
   const handleExportVideo = async () => {
     const nftCount = gridCells.filter(c => c && c !== 'logo').length;
     if (nftCount === 0) {
@@ -250,10 +250,18 @@ export default function GridCreatorPage() {
     }
     
     setIsExporting(true);
-    setExportProgress('Creating video...');
+    setExportProgress('Rendering grid...');
     
     try {
+      // First render the grid to canvas
       const sourceCanvas = await renderGridToCanvas();
+      
+      // Verify the canvas has content
+      if (!sourceCanvas || sourceCanvas.width === 0 || sourceCanvas.height === 0) {
+        throw new Error('Failed to render grid');
+      }
+      
+      setExportProgress('Creating video...');
       
       // Create video canvas
       const canvas = document.createElement('canvas');
@@ -262,51 +270,104 @@ export default function GridCreatorPage() {
       const ctx = canvas.getContext('2d');
       if (!ctx) throw new Error('No canvas context');
       
+      // Draw first frame immediately
+      ctx.drawImage(sourceCanvas, 0, 0);
+      
+      // Check for MediaRecorder support
+      const mimeTypes = [
+        'video/webm;codecs=vp9',
+        'video/webm;codecs=vp8',
+        'video/webm',
+        'video/mp4'
+      ];
+      
+      let selectedMimeType = '';
+      for (const mimeType of mimeTypes) {
+        if (MediaRecorder.isTypeSupported(mimeType)) {
+          selectedMimeType = mimeType;
+          break;
+        }
+      }
+      
+      if (!selectedMimeType) {
+        throw new Error('No supported video format found');
+      }
+      
       const stream = canvas.captureStream(30);
       const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'video/webm;codecs=vp9',
+        mimeType: selectedMimeType,
         videoBitsPerSecond: 5000000,
       });
       
       const chunks: Blob[] = [];
-      mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
-      mediaRecorder.onstop = () => {
-        const blob = new Blob(chunks, { type: 'video/webm' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.download = `nodes-grid-${gridConfig.name}-${Date.now()}.webm`;
-        link.href = url;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        setIsExporting(false);
-        setExportProgress('');
-      };
       
-      mediaRecorder.start();
+      const recordingPromise = new Promise<Blob>((resolve, reject) => {
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0) {
+            chunks.push(e.data);
+          }
+        };
+        
+        mediaRecorder.onstop = () => {
+          if (chunks.length === 0) {
+            reject(new Error('No video data recorded'));
+            return;
+          }
+          const blob = new Blob(chunks, { type: selectedMimeType.split(';')[0] });
+          resolve(blob);
+        };
+        
+        mediaRecorder.onerror = (e) => {
+          reject(new Error('MediaRecorder error'));
+        };
+      });
       
-      // Record 2 seconds of static image
-      let frameCount = 0;
-      const totalFrames = 60;
+      // Start recording
+      mediaRecorder.start(100); // Collect data every 100ms
+      
+      // Record 2 seconds of static image with proper frame timing
+      const durationMs = 2000;
+      const startTime = performance.now();
       
       const animate = () => {
-        if (frameCount >= totalFrames) {
+        const elapsed = performance.now() - startTime;
+        
+        if (elapsed >= durationMs) {
+          // Stop recording
           mediaRecorder.stop();
           return;
         }
         
-        // Draw the static canvas
+        // Redraw the frame
         ctx.drawImage(sourceCanvas, 0, 0);
         
-        frameCount++;
         requestAnimationFrame(animate);
       };
       
+      // Start animation after a small delay to ensure recorder is ready
+      await new Promise(resolve => setTimeout(resolve, 100));
       animate();
+      
+      // Wait for recording to complete
+      setExportProgress('Finalizing video...');
+      const blob = await recordingPromise;
+      
+      // Download
+      const extension = selectedMimeType.includes('mp4') ? 'mp4' : 'webm';
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.download = `nodes-grid-${gridConfig.name}-${Date.now()}.${extension}`;
+      link.href = url;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      setIsExporting(false);
+      setExportProgress('');
     } catch (err) {
       console.error('Video export failed:', err);
-      alert('Video export failed. Try with fewer NFTs or use PNG export.');
+      alert('Video export failed: ' + (err instanceof Error ? err.message : 'Unknown error'));
       setIsExporting(false);
       setExportProgress('');
     }

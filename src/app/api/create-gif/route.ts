@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createCanvas, loadImage } from 'canvas';
+import { createCanvas, loadImage, Image as CanvasImage } from 'canvas';
 import GIFEncoder from 'gif-encoder-2';
 import { parseGIF, decompressFrames } from 'gifuct-js';
 
@@ -15,10 +15,26 @@ interface GridConfig {
   name: string;
 }
 
+interface GifData {
+  frames: any[];
+  width: number;
+  height: number;
+  isAnimated: true;
+}
+
+interface StaticData {
+  staticImg: CanvasImage;
+  isAnimated: false;
+}
+
+type ImageData = (GridCell & GifData) | (GridCell & StaticData);
+
 // Helper to fetch and parse GIF frames with error handling
-async function fetchGifFrames(url: string) {
+async function fetchGifFrames(url: string): Promise<GifData | null> {
   try {
-    const response = await fetch(url);
+    const response = await fetch(url, { 
+      signal: AbortSignal.timeout(10000) // 10s timeout
+    });
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
     }
@@ -30,8 +46,14 @@ async function fetchGifFrames(url: string) {
       throw new Error('No frames found');
     }
     
+    // Validate frames have required data
+    const validFrames = frames.filter(f => f && f.dims && f.patch);
+    if (validFrames.length === 0) {
+      throw new Error('No valid frames');
+    }
+    
     return {
-      frames,
+      frames: validFrames,
       width: gif.lsd.width,
       height: gif.lsd.height,
       isAnimated: true
@@ -43,7 +65,7 @@ async function fetchGifFrames(url: string) {
 }
 
 // Fallback: load image as static
-async function loadStaticImage(url: string) {
+async function loadStaticImage(url: string): Promise<CanvasImage | null> {
   try {
     const img = await loadImage(url);
     return img;
@@ -51,6 +73,64 @@ async function loadStaticImage(url: string) {
     console.error('Static image load failed for', url, error);
     return null;
   }
+}
+
+// Pre-render all frames of an animated GIF into complete canvases
+function prerenderGifFrames(gifData: GifData): any[] {
+  const { frames, width, height } = gifData;
+  const renderedFrames: any[] = [];
+  
+  // Create a persistent canvas to composite frames (GIF disposal handling)
+  const compositeCanvas = createCanvas(width, height);
+  const compositeCtx = compositeCanvas.getContext('2d');
+  
+  for (let i = 0; i < frames.length; i++) {
+    const frame = frames[i];
+    
+    try {
+      // Handle disposal from previous frame
+      if (i > 0) {
+        const prevFrame = frames[i - 1];
+        if (prevFrame.disposalType === 2) {
+          // Restore to background (clear)
+          compositeCtx.clearRect(
+            prevFrame.dims.left, 
+            prevFrame.dims.top, 
+            prevFrame.dims.width, 
+            prevFrame.dims.height
+          );
+        }
+        // disposalType 3 (restore to previous) is complex, skip for now
+      }
+      
+      // Create ImageData for this frame's patch
+      const patchCanvas = createCanvas(frame.dims.width, frame.dims.height);
+      const patchCtx = patchCanvas.getContext('2d');
+      const imageData = patchCtx.createImageData(frame.dims.width, frame.dims.height);
+      imageData.data.set(new Uint8ClampedArray(frame.patch));
+      patchCtx.putImageData(imageData, 0, 0);
+      
+      // Draw patch onto composite
+      compositeCtx.drawImage(patchCanvas, frame.dims.left, frame.dims.top);
+      
+      // Save a copy of current composite state
+      const frameCanvas = createCanvas(width, height);
+      const frameCtx = frameCanvas.getContext('2d');
+      frameCtx.drawImage(compositeCanvas, 0, 0);
+      
+      renderedFrames.push(frameCanvas);
+    } catch (err) {
+      console.error(`Failed to render frame ${i}:`, err);
+      // Push previous frame or empty canvas as fallback
+      if (renderedFrames.length > 0) {
+        renderedFrames.push(renderedFrames[renderedFrames.length - 1]);
+      } else {
+        renderedFrames.push(createCanvas(width, height));
+      }
+    }
+  }
+  
+  return renderedFrames;
 }
 
 export async function POST(request: NextRequest) {
@@ -68,41 +148,58 @@ export async function POST(request: NextRequest) {
     const totalWidth = gridConfig.cols * cellSize + (gridConfig.cols - 1) * gap + padding * 2;
     const totalHeight = gridConfig.rows * cellSize + (gridConfig.rows - 1) * gap + padding * 2;
     
-    // Try to fetch GIF frames, fallback to static images
-    const gifDataList = await Promise.all(
-      cells.map(async (cell) => {
-        const gifData = await fetchGifFrames(cell.image);
-        if (gifData) {
-          return { ...cell, ...gifData };
-        }
-        // Fallback to static image
-        const staticImg = await loadStaticImage(cell.image);
-        if (staticImg) {
-          return { ...cell, staticImg, isAnimated: false };
-        }
-        return null;
-      })
-    );
+    console.log(`Creating GIF: ${gridConfig.cols}x${gridConfig.rows} grid with ${cells.length} cells`);
     
-    const validData = gifDataList.filter(g => g !== null);
+    // Load all images - try GIF first, then static
+    const loadedCells: { 
+      cell: GridCell; 
+      renderedFrames?: any[]; 
+      staticImg?: CanvasImage;
+      isAnimated: boolean;
+    }[] = [];
     
-    if (validData.length === 0) {
+    for (const cell of cells) {
+      console.log(`Loading cell [${cell.row},${cell.col}]: ${cell.image.substring(0, 50)}...`);
+      
+      // Try as animated GIF first
+      const gifData = await fetchGifFrames(cell.image);
+      if (gifData) {
+        console.log(`  -> Animated GIF with ${gifData.frames.length} frames`);
+        const renderedFrames = prerenderGifFrames(gifData);
+        loadedCells.push({ cell, renderedFrames, isAnimated: true });
+        continue;
+      }
+      
+      // Fallback to static image
+      const staticImg = await loadStaticImage(cell.image);
+      if (staticImg) {
+        console.log(`  -> Static image loaded`);
+        loadedCells.push({ cell, staticImg, isAnimated: false });
+        continue;
+      }
+      
+      // Both failed - log but continue (cell will show as empty)
+      console.warn(`  -> FAILED to load image for cell [${cell.row},${cell.col}]`);
+    }
+    
+    if (loadedCells.length === 0) {
       return NextResponse.json({ error: 'Could not load any images' }, { status: 400 });
     }
     
-    // Check if we have any animated GIFs
-    const hasAnimated = validData.some(d => d!.isAnimated);
+    console.log(`Loaded ${loadedCells.length}/${cells.length} cells successfully`);
     
-    // Determine number of frames
-    const animatedData = validData.filter(d => d!.isAnimated && 'frames' in d!);
-    const maxFrames = animatedData.length > 0
-      ? Math.min(30, Math.max(...animatedData.map(d => (d as any).frames?.length || 1)))
+    // Determine number of frames (max from all animated GIFs, capped at 30)
+    const animatedCells = loadedCells.filter(c => c.isAnimated && c.renderedFrames);
+    const maxFrames = animatedCells.length > 0
+      ? Math.min(30, Math.max(...animatedCells.map(c => c.renderedFrames!.length)))
       : 1;
+    
+    console.log(`Generating ${maxFrames} frames...`);
     
     // Create GIF encoder
     const encoder = new GIFEncoder(totalWidth, totalHeight);
-    encoder.setDelay(100);
-    encoder.setRepeat(0);
+    encoder.setDelay(100); // 100ms between frames
+    encoder.setRepeat(0);  // Loop forever
     encoder.setQuality(10);
     encoder.start();
     
@@ -110,23 +207,13 @@ export async function POST(request: NextRequest) {
     const canvas = createCanvas(totalWidth, totalHeight);
     const ctx = canvas.getContext('2d');
     
-    // Create frame canvases for animated GIFs
-    const frameCanvases = validData.map(data => {
-      const d = data as any;
-      if (d.isAnimated && d.frames) {
-        const frameCanvas = createCanvas(d.width, d.height);
-        return { data: d, canvas: frameCanvas, ctx: frameCanvas.getContext('2d') };
-      }
-      return { data: d, canvas: null, ctx: null };
-    });
-    
     // Generate each frame
     for (let frameIdx = 0; frameIdx < maxFrames; frameIdx++) {
       // Clear with black background
       ctx.fillStyle = '#000000';
       ctx.fillRect(0, 0, totalWidth, totalHeight);
       
-      // Draw cell borders
+      // Draw cell borders for ALL grid positions (including empty ones)
       ctx.strokeStyle = '#1a1a1a';
       ctx.lineWidth = 2;
       for (let row = 0; row < gridConfig.rows; row++) {
@@ -137,44 +224,33 @@ export async function POST(request: NextRequest) {
         }
       }
       
-      // Draw each image
-      for (const { data, canvas: frameCanvas, ctx: frameCtx } of frameCanvases) {
-        if (!data) continue;
+      // Draw each loaded image
+      for (const { cell, renderedFrames, staticImg, isAnimated } of loadedCells) {
+        const x = padding + cell.col * (cellSize + gap);
+        const y = padding + cell.row * (cellSize + gap);
         
-        const x = padding + data.col * (cellSize + gap);
-        const y = padding + data.row * (cellSize + gap);
-        
-        if (data.isAnimated && data.frames && frameCtx && frameCanvas) {
-          // Animated GIF frame
-          const frameIndex = frameIdx % data.frames.length;
-          const frame = data.frames[frameIndex];
-          
-          if (frame && frame.dims && frame.patch) {
-            try {
-              // Create ImageData from frame
-              const imageData = frameCtx.createImageData(frame.dims.width, frame.dims.height);
-              imageData.data.set(new Uint8ClampedArray(frame.patch));
-              
-              // Handle disposal
-              if (frame.disposalType === 2) {
-                frameCtx.clearRect(0, 0, data.width!, data.height!);
-              }
-              
-              // Draw frame patch
-              const patchCanvas = createCanvas(frame.dims.width, frame.dims.height);
-              const patchCtx = patchCanvas.getContext('2d');
-              patchCtx.putImageData(imageData, 0, 0);
-              frameCtx.drawImage(patchCanvas, frame.dims.left, frame.dims.top);
-              
-              // Draw to main canvas
-              ctx.drawImage(frameCanvas, 0, 0, data.width!, data.height!, x, y, cellSize, cellSize);
-            } catch (err) {
-              console.error('Frame rendering error:', err);
+        try {
+          if (isAnimated && renderedFrames && renderedFrames.length > 0) {
+            // Get the appropriate frame (loop if needed)
+            const frameIndex = frameIdx % renderedFrames.length;
+            const frameCanvas = renderedFrames[frameIndex];
+            
+            if (frameCanvas) {
+              ctx.drawImage(frameCanvas, 0, 0, frameCanvas.width, frameCanvas.height, x, y, cellSize, cellSize);
             }
+          } else if (staticImg) {
+            ctx.drawImage(staticImg, x, y, cellSize, cellSize);
           }
-        } else if (data.staticImg) {
-          // Static image
-          ctx.drawImage(data.staticImg, x, y, cellSize, cellSize);
+        } catch (err) {
+          console.error(`Error drawing cell [${cell.row},${cell.col}] frame ${frameIdx}:`, err);
+          // Draw a placeholder on error
+          ctx.fillStyle = '#1a1a1a';
+          ctx.fillRect(x, y, cellSize, cellSize);
+          ctx.fillStyle = '#333';
+          ctx.font = '20px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('?', x + cellSize/2, y + cellSize/2);
         }
       }
       
@@ -184,6 +260,7 @@ export async function POST(request: NextRequest) {
     encoder.finish();
     
     const buffer = encoder.out.getData();
+    console.log(`GIF created: ${buffer.length} bytes`);
     
     return new NextResponse(new Uint8Array(buffer), {
       headers: {
