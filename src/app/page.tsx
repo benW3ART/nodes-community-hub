@@ -17,6 +17,7 @@ import {
   Sparkles,
   ArrowRight
 } from 'lucide-react';
+import { TwitterFeed } from '@/components/TwitterFeed';
 
 const features = [
   {
@@ -208,6 +209,9 @@ export default function Home() {
           </div>
         </section>
 
+        {/* Twitter Feed */}
+        <TwitterFeed />
+
         {/* Links */}
         <section className="mt-10 sm:mt-16 text-center">
           <h2 className="section-title text-lg sm:text-2xl">Official Links</h2>
@@ -219,6 +223,14 @@ export default function Home() {
               className="btn-secondary text-sm sm:text-base py-2.5 px-4"
             >
               OpenSea
+            </a>
+            <a 
+              href="https://x.com/NODESonBase" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="btn-secondary text-sm sm:text-base py-2.5 px-4"
+            >
+              @NODESonBase
             </a>
             <a 
               href="https://x.com/gmhunterart" 
