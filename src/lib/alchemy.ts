@@ -91,6 +91,27 @@ function parseMetadataToNFT(tokenId: string, metadata: FreshMetadata): NodeNFT {
 }
 
 /**
+ * Process NFTs in batches to avoid rate limiting
+ */
+async function processBatch<T, R>(
+  items: T[],
+  batchSize: number,
+  processor: (item: T) => Promise<R>
+): Promise<R[]> {
+  const results: R[] = [];
+  for (let i = 0; i < items.length; i += batchSize) {
+    const batch = items.slice(i, i + batchSize);
+    const batchResults = await Promise.all(batch.map(processor));
+    results.push(...batchResults);
+    // Small delay between batches to avoid rate limiting
+    if (i + batchSize < items.length) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+  }
+  return results;
+}
+
+/**
  * Get NFTs for an owner with FRESH metadata from the contract API
  * Falls back to Alchemy's cached data if the fresh API fails
  */
@@ -111,8 +132,10 @@ export async function getNFTsForOwner(ownerAddress: string): Promise<NodeNFT[]> 
       return [];
     }
     
-    // Try to fetch fresh metadata, fall back to Alchemy's cached data
-    const nftPromises = data.ownedNfts.map(async (alchemyNft: any) => {
+    console.log(`[NFTs] Found ${data.ownedNfts.length} NFTs for ${ownerAddress.slice(0,8)}...`);
+    
+    // Process in batches of 5 to avoid rate limiting
+    const nfts = await processBatch(data.ownedNfts, 5, async (alchemyNft: any) => {
       const tokenId = alchemyNft.tokenId || alchemyNft.id?.tokenId || '';
       if (!tokenId) return null;
       
@@ -158,7 +181,6 @@ export async function getNFTsForOwner(ownerAddress: string): Promise<NodeNFT[]> 
       } as NodeNFT;
     });
     
-    const nfts = await Promise.all(nftPromises);
     return nfts.filter((nft): nft is NodeNFT => nft !== null);
     
   } catch (error) {
