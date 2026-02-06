@@ -88,9 +88,8 @@ function parseNodeNFT(nft: AlchemyNFT): NodeNFT {
       value: a.value!,
     }));
   
-  // Use cleanimage if available (new metadata), fallback to image (old metadata)
-  const cleanImage = (metadata as Record<string, unknown>).cleanimage as string | undefined;
-  const imageUrl = cleanImage || nft.image?.cachedUrl || nft.image?.originalUrl || metadata.image || '';
+  // Use the image attribute from metadata (animated version)
+  const imageUrl = metadata.image || nft.image?.cachedUrl || nft.image?.originalUrl || '';
   
   return {
     tokenId: nft.tokenId || nft.id?.tokenId || '',
