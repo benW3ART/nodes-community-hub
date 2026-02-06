@@ -1,6 +1,5 @@
 'use client';
 
-import { Timeline } from 'react-twitter-widgets';
 import { Twitter, ExternalLink } from 'lucide-react';
 import { useState } from 'react';
 
@@ -12,6 +11,9 @@ interface TimelineColumnProps {
 function TimelineColumn({ username, title }: TimelineColumnProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+
+  // Direct iframe to Twitter's syndication endpoint
+  const timelineUrl = `https://syndication.twitter.com/srv/timeline-profile/screen-name/${username}?dnt=true&embedId=twitter-widget-0&frame=false&hideBorder=true&hideFooter=true&hideHeader=true&hideScrollBar=false&lang=en&theme=dark&transparent=true&tweetLimit=5`;
 
   return (
     <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl overflow-hidden flex flex-col">
@@ -32,10 +34,10 @@ function TimelineColumn({ username, title }: TimelineColumnProps) {
         </a>
       </div>
       
-      {/* Timeline Widget */}
-      <div className="flex-1 overflow-hidden">
+      {/* Timeline iframe */}
+      <div className="flex-1 relative min-h-[450px]">
         {loading && !error && (
-          <div className="flex items-center justify-center h-[400px] text-gray-500">
+          <div className="absolute inset-0 flex items-center justify-center text-gray-500 bg-[#0a0a0a] z-10">
             <div className="animate-pulse flex flex-col items-center gap-2">
               <Twitter className="w-8 h-8 opacity-50" />
               <span className="text-sm">Loading tweets...</span>
@@ -44,7 +46,7 @@ function TimelineColumn({ username, title }: TimelineColumnProps) {
         )}
         
         {error && (
-          <div className="flex flex-col items-center justify-center h-[400px] text-gray-500 text-sm p-4 text-center">
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500 text-sm p-4 text-center bg-[#0a0a0a] z-10">
             <Twitter className="w-10 h-10 mb-3 opacity-30" />
             <p className="mb-3">Timeline unavailable</p>
             <a
@@ -58,27 +60,21 @@ function TimelineColumn({ username, title }: TimelineColumnProps) {
           </div>
         )}
         
-        <div className={loading && !error ? 'opacity-0 h-0' : ''}>
-          <Timeline
-            dataSource={{
-              sourceType: 'profile',
-              screenName: username,
-            }}
-            options={{
-              height: 500,
-              theme: 'dark',
-              chrome: 'noheader nofooter noborders transparent',
-              tweetLimit: 5,
-              dnt: true,
-            }}
-            onLoad={() => setLoading(false)}
-            renderError={() => {
-              setError(true);
-              setLoading(false);
-              return null;
-            }}
-          />
-        </div>
+        <iframe
+          src={timelineUrl}
+          className="w-full h-full min-h-[450px] border-0"
+          style={{ 
+            colorScheme: 'dark',
+            background: 'transparent',
+          }}
+          onLoad={() => setLoading(false)}
+          onError={() => {
+            setError(true);
+            setLoading(false);
+          }}
+          title={`${username} Twitter Timeline`}
+          sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+        />
       </div>
     </div>
   );
