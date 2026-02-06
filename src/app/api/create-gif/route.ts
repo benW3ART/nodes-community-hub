@@ -7,6 +7,7 @@ interface GridCell {
   image: string;
   row: number;
   col: number;
+  isLogo?: boolean;
 }
 
 interface GridConfig {
@@ -193,7 +194,22 @@ export async function POST(request: NextRequest) {
     }[] = [];
     
     for (const cell of cells) {
-      console.log(`Loading cell [${cell.row},${cell.col}]: ${cell.image.substring(0, 50)}...`);
+      console.log(`Loading cell [${cell.row},${cell.col}]: ${cell.isLogo ? 'LOGO' : cell.image.substring(0, 50)}...`);
+      
+      // Handle logo specially - load from public folder
+      if (cell.isLogo) {
+        try {
+          const logoPath = process.cwd() + '/public/nodes-logo.png';
+          const logoImg = await loadImage(logoPath);
+          console.log(`  -> Logo loaded from ${logoPath}`);
+          loadedCells.push({ cell, staticImg: logoImg, isAnimated: false });
+          continue;
+        } catch (err) {
+          console.error(`  -> Failed to load logo:`, err);
+          // Continue without logo
+          continue;
+        }
+      }
       
       // Try as animated GIF first
       const gifData = await fetchGifFrames(cell.image);

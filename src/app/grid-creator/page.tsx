@@ -188,11 +188,18 @@ export default function GridCreatorPage() {
 
   // Server-side GIF export with real animations
   const handleExportGIF = async () => {
-    // Collect NFT cells with positions
-    const cells: {image: string; row: number; col: number}[] = [];
+    // Collect NFT cells with positions (including logo)
+    const cells: {image: string; row: number; col: number; isLogo?: boolean}[] = [];
     for (let i = 0; i < gridCells.length; i++) {
       const cell = gridCells[i];
-      if (cell && cell !== 'logo' && cell.image) {
+      if (cell === 'logo') {
+        cells.push({
+          image: '/nodes-logo.png',
+          row: Math.floor(i / gridConfig.cols),
+          col: i % gridConfig.cols,
+          isLogo: true
+        });
+      } else if (cell && cell.image) {
         cells.push({
           image: cell.image,
           row: Math.floor(i / gridConfig.cols),
@@ -243,11 +250,18 @@ export default function GridCreatorPage() {
 
   // Server-side video export with real animations
   const handleExportVideo = async () => {
-    // Collect NFT cells with positions
-    const cells: {image: string; row: number; col: number}[] = [];
+    // Collect NFT cells with positions (including logo)
+    const cells: {image: string; row: number; col: number; isLogo?: boolean}[] = [];
     for (let i = 0; i < gridCells.length; i++) {
       const cell = gridCells[i];
-      if (cell && cell !== 'logo' && cell.image) {
+      if (cell === 'logo') {
+        cells.push({
+          image: '/nodes-logo.png',
+          row: Math.floor(i / gridConfig.cols),
+          col: i % gridConfig.cols,
+          isLogo: true
+        });
+      } else if (cell && cell.image) {
         cells.push({
           image: cell.image,
           row: Math.floor(i / gridConfig.cols),

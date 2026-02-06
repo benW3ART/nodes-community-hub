@@ -13,6 +13,7 @@ interface GridCell {
   image: string;
   row: number;
   col: number;
+  isLogo?: boolean;
 }
 
 interface GridConfig {
@@ -164,6 +165,20 @@ export async function POST(request: NextRequest) {
     }[] = [];
     
     for (const cell of cells) {
+      // Handle logo specially
+      if (cell.isLogo) {
+        try {
+          const logoPath = process.cwd() + '/public/nodes-logo.png';
+          const logoImg = await loadImage(logoPath);
+          console.log(`  Cell [${cell.row},${cell.col}]: LOGO`);
+          loadedCells.push({ cell, staticImg: logoImg, isAnimated: false });
+          continue;
+        } catch (err) {
+          console.error(`  Failed to load logo:`, err);
+          continue;
+        }
+      }
+      
       const gifData = await fetchGifFrames(cell.image);
       if (gifData) {
         const renderedFrames = prerenderGifFrames(gifData);
