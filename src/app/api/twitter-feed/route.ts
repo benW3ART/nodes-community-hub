@@ -174,33 +174,10 @@ async function searchMentions(): Promise<Tweet[]> {
   return [];
 }
 
-// Fallback static data if everything fails
-const FALLBACK_DATA: TwitterFeedData = {
-  official: [
-    {
-      id: '1',
-      text: 'Welcome to NODES - 3,333 digital identities born from internet culture. Follow us for updates! 🎨',
-      author: { username: 'NODESonBase', displayName: 'NODES' },
-      createdAt: new Date().toISOString(),
-      url: 'https://x.com/NODESonBase',
-    },
-    {
-      id: '2', 
-      text: 'Creating art that lives on-chain. NODES is a journey through color, form, and digital identity. ✨',
-      author: { username: 'gmhunterart', displayName: 'gmhunter' },
-      createdAt: new Date().toISOString(),
-      url: 'https://x.com/gmhunterart',
-    },
-  ],
-  mentions: [
-    {
-      id: '3',
-      text: 'Check out the NODES Community Hub for tools to create posts featuring your NFTs! 🔥 @NODESonBase',
-      author: { username: 'community', displayName: 'Community Member' },
-      createdAt: new Date().toISOString(),
-      url: 'https://x.com/search?q=%40NODESonBase',
-    },
-  ],
+// Empty data when nothing is available
+const EMPTY_DATA: TwitterFeedData = {
+  official: [],
+  mentions: [],
   lastFetch: Date.now(),
 };
 
@@ -228,13 +205,13 @@ export async function GET(request: NextRequest) {
     // If we got some data, cache it
     if (official.length > 0 || mentions.length > 0) {
       cache = {
-        official: official.length > 0 ? official : FALLBACK_DATA.official,
-        mentions: mentions.length > 0 ? mentions : FALLBACK_DATA.mentions,
+        official: official.length > 0 ? official : EMPTY_DATA.official,
+        mentions: mentions.length > 0 ? mentions : EMPTY_DATA.mentions,
         lastFetch: Date.now(),
       };
     } else {
       // Use fallback data
-      cache = { ...FALLBACK_DATA, lastFetch: Date.now() };
+      cache = { ...EMPTY_DATA, lastFetch: Date.now() };
     }
     
     return NextResponse.json(cache);
@@ -248,6 +225,6 @@ export async function GET(request: NextRequest) {
     }
     
     // Return fallback data
-    return NextResponse.json(FALLBACK_DATA);
+    return NextResponse.json(EMPTY_DATA);
   }
 }
