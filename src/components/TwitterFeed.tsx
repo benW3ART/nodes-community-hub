@@ -1,7 +1,18 @@
 'use client';
 
 import { Twitter, ExternalLink } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+
+// Extend Window interface for Twitter widgets
+declare global {
+  interface Window {
+    twttr?: {
+      widgets: {
+        load: (element?: HTMLElement) => void;
+      };
+    };
+  }
+}
 
 interface TimelineColumnProps {
   username: string;
@@ -9,11 +20,57 @@ interface TimelineColumnProps {
 }
 
 function TimelineColumn({ username, title }: TimelineColumnProps) {
-  const [loading, setLoading] = useState(true);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
 
-  // Direct iframe to Twitter's syndication endpoint
-  const timelineUrl = `https://syndication.twitter.com/srv/timeline-profile/screen-name/${username}?dnt=true&embedId=twitter-widget-0&frame=false&hideBorder=true&hideFooter=true&hideHeader=true&hideScrollBar=false&lang=en&theme=dark&transparent=true&tweetLimit=5`;
+  useEffect(() => {
+    // Load Twitter widgets script
+    const loadTwitterScript = () => {
+      // Check if script already exists
+      if (document.getElementById('twitter-wjs')) {
+        // Script exists, just reload widgets
+        if (window.twttr?.widgets) {
+          window.twttr.widgets.load(containerRef.current || undefined);
+          setLoaded(true);
+        }
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.id = 'twitter-wjs';
+      script.src = 'https://platform.twitter.com/widgets.js';
+      script.async = true;
+      script.charset = 'utf-8';
+      
+      script.onload = () => {
+        // Wait a bit for twttr to initialize
+        setTimeout(() => {
+          if (window.twttr?.widgets) {
+            window.twttr.widgets.load(containerRef.current || undefined);
+            setLoaded(true);
+          }
+        }, 100);
+      };
+      
+      script.onerror = () => {
+        setError(true);
+      };
+
+      document.body.appendChild(script);
+    };
+
+    loadTwitterScript();
+
+    // Timeout fallback - if not loaded after 10s, show error
+    const timeout = setTimeout(() => {
+      if (!loaded) {
+        setError(true);
+      }
+    }, 10000);
+
+    return () => clearTimeout(timeout);
+  }, [username, loaded]);
 
   return (
     <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl overflow-hidden flex flex-col">
@@ -34,19 +91,13 @@ function TimelineColumn({ username, title }: TimelineColumnProps) {
         </a>
       </div>
       
-      {/* Timeline iframe */}
-      <div className="flex-1 relative min-h-[450px]">
-        {loading && !error && (
-          <div className="absolute inset-0 flex items-center justify-center text-gray-500 bg-[#0a0a0a] z-10">
-            <div className="animate-pulse flex flex-col items-center gap-2">
-              <Twitter className="w-8 h-8 opacity-50" />
-              <span className="text-sm">Loading tweets...</span>
-            </div>
-          </div>
-        )}
-        
-        {error && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500 text-sm p-4 text-center bg-[#0a0a0a] z-10">
+      {/* Timeline - Official Twitter Embed */}
+      <div 
+        ref={containerRef}
+        className="flex-1 overflow-y-auto max-h-[500px] p-2"
+      >
+        {error ? (
+          <div className="flex flex-col items-center justify-center h-[400px] text-gray-500 text-sm p-4 text-center">
             <Twitter className="w-10 h-10 mb-3 opacity-30" />
             <p className="mb-3">Timeline unavailable</p>
             <a
@@ -58,23 +109,26 @@ function TimelineColumn({ username, title }: TimelineColumnProps) {
               View on X →
             </a>
           </div>
+        ) : (
+          /* Official Twitter Timeline Embed */
+          <a
+            className="twitter-timeline"
+            data-theme="dark"
+            data-chrome="noheader nofooter noborders transparent"
+            data-tweet-limit="5"
+            data-dnt="true"
+            href={`https://twitter.com/${username}?ref_src=twsrc%5Etfw`}
+          >
+            {!loaded && (
+              <div className="flex items-center justify-center h-[400px] text-gray-500">
+                <div className="animate-pulse flex flex-col items-center gap-2">
+                  <Twitter className="w-8 h-8 opacity-50" />
+                  <span className="text-sm">Loading tweets...</span>
+                </div>
+              </div>
+            )}
+          </a>
         )}
-        
-        <iframe
-          src={timelineUrl}
-          className="w-full h-full min-h-[450px] border-0"
-          style={{ 
-            colorScheme: 'dark',
-            background: 'transparent',
-          }}
-          onLoad={() => setLoading(false)}
-          onError={() => {
-            setError(true);
-            setLoading(false);
-          }}
-          title={`${username} Twitter Timeline`}
-          sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
-        />
       </div>
     </div>
   );
