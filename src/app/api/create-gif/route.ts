@@ -198,11 +198,14 @@ export async function POST(request: NextRequest) {
       
       // Handle logo specially - try multiple paths
       if (cell.isLogo) {
+        const cwd = process.cwd();
         const logoPaths = [
-          process.cwd() + '/public/nodes-logo.png',           // Dev
-          process.cwd() + '/.next/static/nodes-logo.png',     // Prod build
-          '/app/public/nodes-logo.png',                        // Docker/Railway
+          `${cwd}/public/nodes-logo.png`,                      // Dev & Railway
+          `${cwd}/.next/standalone/public/nodes-logo.png`,     // Next standalone
+          `${cwd}/.next/static/nodes-logo.png`,                // Static build
+          '/app/public/nodes-logo.png',                        // Docker absolute
         ];
+        console.log(`  Logo paths to try (cwd=${cwd}):`, logoPaths);
         
         let logoLoaded = false;
         for (const logoPath of logoPaths) {
