@@ -54,11 +54,14 @@ async function fetchGifFrames(url: string): Promise<GifData | null> {
     }
     
     // Extract frame delays (GIF stores in centiseconds, convert to ms)
-    // Default to 100ms if delay is 0 or missing (common for old GIFs)
+    // Minimum 20ms (browser limit), default to 50ms if unspecified
     const frameDelays = validFrames.map(f => {
       const delay = (f.delay || 0) * 10; // centiseconds to ms
-      return delay > 0 ? delay : 100; // minimum 100ms if unspecified
+      // 20ms minimum (browser floor), 50ms default if 0
+      return delay >= 20 ? delay : (delay > 0 ? 20 : 50);
     });
+    
+    console.log(`GIF frame delays (first 5): ${frameDelays.slice(0, 5).join(', ')}ms`);
     
     return {
       frames: validFrames,

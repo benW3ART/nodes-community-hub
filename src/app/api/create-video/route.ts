@@ -46,9 +46,11 @@ async function fetchGifFrames(url: string): Promise<GifData | null> {
     if (validFrames.length === 0) throw new Error('No valid frames');
     
     const frameDelays = validFrames.map(f => {
-      const delay = (f.delay || 0) * 10;
-      return delay > 0 ? delay : 100;
+      const delay = (f.delay || 0) * 10; // centiseconds to ms
+      return delay >= 20 ? delay : (delay > 0 ? 20 : 50);
     });
+    
+    console.log(`GIF frame delays (first 5): ${frameDelays.slice(0, 5).join(', ')}ms`);
     
     return { frames: validFrames, width: gif.lsd.width, height: gif.lsd.height, frameDelays };
   } catch (error) {
