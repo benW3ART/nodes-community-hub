@@ -45,10 +45,13 @@ async function fetchGifFrames(url: string): Promise<GifData | null> {
     const validFrames = frames.filter(f => f && f.dims && f.patch);
     if (validFrames.length === 0) throw new Error('No valid frames');
     
+    // gifuct-js already converts delay to milliseconds
     const frameDelays = validFrames.map(f => {
-      const delay = (f.delay || 0) * 10;
-      return delay > 0 ? delay : 100;
+      const delay = f.delay || 0; // already in ms from gifuct-js
+      return delay >= 20 ? delay : (delay > 0 ? 20 : 50);
     });
+    
+    console.log(`GIF frame delays (first 5): ${frameDelays.slice(0, 5).join(', ')}ms`);
     
     return { frames: validFrames, width: gif.lsd.width, height: gif.lsd.height, frameDelays };
   } catch (error) {
