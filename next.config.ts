@@ -30,10 +30,10 @@ const securityHeaders = [
     value: [
       "default-src 'self'",
       "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://platform.twitter.com https://*.twimg.com",
-      "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: blob: https://*.alchemy.com https://ipfs.io https://*.ipfs.nftstorage.link https://arweave.net https://storage.googleapis.com https://res.cloudinary.com https://pbs.twimg.com https://video.twimg.com",
+      "style-src 'self' 'unsafe-inline' https://platform.twitter.com https://*.twimg.com",
+      "img-src 'self' data: blob: https://*.alchemy.com https://ipfs.io https://*.ipfs.nftstorage.link https://arweave.net https://storage.googleapis.com https://res.cloudinary.com https://pbs.twimg.com https://video.twimg.com https://abs.twimg.com https://*.twitter.com https://syndication.twitter.com",
       "font-src 'self'",
-      "connect-src 'self' https://*.alchemy.com https://api.opensea.io https://nodes-metadata-api.10amstudios.xyz https://api.web3modal.org wss://*.walletconnect.com wss://*.walletconnect.org https://*.walletconnect.com https://*.walletconnect.org https://rpc.walletconnect.com https://pulse.walletconnect.com https://verify.walletconnect.com",
+      "connect-src 'self' https://*.alchemy.com https://api.opensea.io https://nodes-metadata-api.10amstudios.xyz https://api.web3modal.org https://*.twitter.com https://syndication.twitter.com wss://*.walletconnect.com wss://*.walletconnect.org https://*.walletconnect.com https://*.walletconnect.org https://rpc.walletconnect.com https://pulse.walletconnect.com https://verify.walletconnect.com",
       "frame-src 'self' https://*.walletconnect.com https://*.walletconnect.org https://verify.walletconnect.com https://syndication.twitter.com https://platform.twitter.com",
     ].join('; ')
   }
