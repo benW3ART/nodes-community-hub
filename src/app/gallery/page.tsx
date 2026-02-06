@@ -62,7 +62,7 @@ export default function GalleryPage() {
         
         // Calculate rarity for user's collection
         if (fetchedNfts.length > 0) {
-          const rarity = calculateCollectionRarity(fetchedNfts);
+          const rarity = await calculateCollectionRarity(fetchedNfts);
           setRarityMap(rarity);
         }
       } catch (err) {
@@ -105,8 +105,8 @@ export default function GalleryPage() {
           comparison = a.innerState.localeCompare(b.innerState);
           break;
         case 'rarity':
-          const rarityA = rarityMap.get(a.tokenId)?.totalScore || 0;
-          const rarityB = rarityMap.get(b.tokenId)?.totalScore || 0;
+          const rarityA = rarityMap.get(a.tokenId)?.score || 0;
+          const rarityB = rarityMap.get(b.tokenId)?.score || 0;
           comparison = rarityB - rarityA; // Higher is rarer
           break;
       }
@@ -190,44 +190,28 @@ export default function GalleryPage() {
                   <div className="p-2 sm:p-3 bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg">
                     <p className="text-xs sm:text-sm text-gray-500 uppercase tracking-wide">Avg Score</p>
                     <p className="text-xl sm:text-2xl font-bold text-[#00D4FF]">
-                      {portfolioStats.averageScore.toFixed(1)}
+                      {portfolioStats.avgScore.toFixed(1)}
                     </p>
                   </div>
                   <div className="p-2 sm:p-3 bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg">
-                    <p className="text-xs sm:text-sm text-gray-500 uppercase tracking-wide">Total Rarity</p>
+                    <p className="text-xs sm:text-sm text-gray-500 uppercase tracking-wide">Avg Percentile</p>
                     <p className="text-xl sm:text-2xl font-bold text-[#4FFFDF]">
-                      {portfolioStats.totalRarityScore.toFixed(1)}
+                      {portfolioStats.avgPercentile}%
                     </p>
                   </div>
                   <div className="p-2 sm:p-3 bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg">
                     <p className="text-xs sm:text-sm text-gray-500 uppercase tracking-wide">Avg Rank</p>
                     <p className="text-xl sm:text-2xl font-bold">
-                      #{portfolioStats.averageRank}
+                      #{portfolioStats.avgRank}
                     </p>
                   </div>
                   <div className="p-2 sm:p-3 bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg">
                     <p className="text-xs sm:text-sm text-gray-500 uppercase tracking-wide">Best NFT</p>
                     <p className="text-xl sm:text-2xl font-bold text-[#00D4FF]">
-                      #{portfolioStats.bestNft?.tokenId || 'N/A'}
+                      #{portfolioStats.rarestNFT?.tokenId || 'N/A'}
                     </p>
                   </div>
                 </div>
-                
-                {portfolioStats.rarestTraits.length > 0 && (
-                  <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-[#00D4FF]/30">
-                    <p className="text-xs sm:text-sm text-gray-500 mb-2 uppercase tracking-wide">Rarest Traits:</p>
-                    <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                      {portfolioStats.rarestTraits.map((trait, i) => (
-                        <span 
-                          key={i}
-                          className="px-2 py-1 bg-[#0a0a0a] border border-[#1a1a1a] rounded text-xs"
-                        >
-                          {trait.traitType}: {trait.value} ({trait.percentage.toFixed(1)}%)
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
             )}
 

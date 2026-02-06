@@ -95,8 +95,8 @@ export function NFTCard({
               <span className="text-[10px] sm:text-xs text-[#4FFFDF]">⚡</span>
             )}
             {showRarity && rarityTier && (
-              <span className="text-[10px] sm:text-xs text-[#00D4FF]">
-                {rarityTier.tier}
+              <span className={`text-[10px] sm:text-xs ${rarityTier.color}`}>
+                {rarityTier.name}
               </span>
             )}
           </div>
@@ -108,7 +108,7 @@ export function NFTCard({
             <div className="flex items-center justify-between text-[10px] sm:text-xs">
               <span className="text-gray-600">Rarity</span>
               <span className="font-medium text-[#00D4FF]">
-                {rarityScore.totalScore.toFixed(1)}
+                {rarityScore.score.toFixed(1)}
               </span>
             </div>
           </div>
@@ -172,9 +172,9 @@ export function NFTCardExpanded({
         
         {/* Rarity Badge Overlay */}
         {rarityTier && rarityScore && (
-          <div className="absolute top-3 left-3 sm:top-4 sm:left-4 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium bg-[#00D4FF]/20 text-[#00D4FF] border border-[#00D4FF]/30 flex items-center gap-1">
+          <div className={`absolute top-3 left-3 sm:top-4 sm:left-4 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium bg-black/60 ${rarityTier.color} border border-current/30 flex items-center gap-1`}>
             <Sparkles className="w-3 h-3" />
-            {rarityTier.tier} - #{rarityScore.rank}
+            {rarityTier.name} - #{rarityScore.rank}
           </div>
         )}
       </div>
@@ -222,18 +222,18 @@ export function NFTCardExpanded({
             <div className="flex items-center justify-between mb-2 sm:mb-3">
               <span className="text-xs sm:text-sm text-gray-500">Total Score</span>
               <span className="text-base sm:text-lg font-bold text-[#00D4FF]">
-                {rarityScore.totalScore.toFixed(2)}
+                {rarityScore.score.toFixed(2)}
               </span>
             </div>
             
             <div className="space-y-1.5 sm:space-y-2">
-              {rarityScore.traitScores.slice(0, 5).map((trait, i) => (
+              {rarityScore.traits && Object.entries(rarityScore.traits).slice(0, 5).map(([traitType, trait], i) => (
                 <div key={i} className="flex items-center justify-between text-[10px] sm:text-xs">
                   <span className="text-gray-600 truncate mr-2">
-                    {trait.traitType}: <span className="text-gray-400">{trait.value}</span>
+                    {traitType}: <span className="text-gray-400">{trait.value}</span>
                   </span>
                   <span className="text-gray-500 flex-shrink-0">
-                    {trait.percentage.toFixed(1)}%
+                    {(trait.rarity * 100).toFixed(1)}%
                   </span>
                 </div>
               ))}

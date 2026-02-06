@@ -1,5 +1,14 @@
 import type { NodeNFT } from '@/types/nft';
 
+// Exported type for components
+export interface RarityScore {
+  rank: number;
+  score: number;
+  percentile: number;
+  tier?: string;
+  traits?: Record<string, { value: string; rarity: number }>;
+}
+
 interface RarityData {
   generatedAt: string;
   totalNFTs: number;
@@ -98,6 +107,99 @@ export async function enrichNFTsWithRarity(nfts: NodeNFT[]): Promise<(NodeNFT & 
       },
     };
   });
+}
+
+/**
+ * Get rarity tier based on percentile
+ */
+export function getRarityTier(percentile: number): { name: string; color: string } {
+  if (percentile >= 99) return { name: 'Legendary', color: 'text-yellow-400' };
+  if (percentile >= 95) return { name: 'Epic', color: 'text-purple-400' };
+  if (percentile >= 85) return { name: 'Rare', color: 'text-blue-400' };
+  if (percentile >= 70) return { name: 'Uncommon', color: 'text-green-400' };
+  return { name: 'Common', color: 'text-gray-400' };
+}
+
+/**
+ * Calculate rarity for a collection of NFTs (alias for enrichNFTsWithRarity)
+ * Returns a Map of tokenId -> RarityScore
+ */
+export async function calculateCollectionRarity(nfts: NodeNFT[]): Promise<Map<string, RarityScore>> {
+  const rarityData = await loadRarityData();
+  const rarityMap = new Map<string, RarityScore>();
+  
+  if (!rarityData) return rarityMap;
+  
+  for (const nft of nfts) {
+    const nftRarity = rarityData.nfts[nft.tokenId];
+    if (nftRarity) {
+      const percentile = Math.round((1 - nftRarity.rank / rarityData.totalNFTs) * 100);
+      rarityMap.set(nft.tokenId, {
+        rank: nftRarity.rank,
+        score: nftRarity.score,
+        percentile,
+        tier: getRarityTier(percentile).name,
+        traits: nftRarity.traits,
+      });
+    }
+  }
+  
+  return rarityMap;
+}
+
+/**
+ * Calculate portfolio rarity summary from pre-loaded rarityMap (synchronous)
+ */
+export function calculatePortfolioRarity(
+  nfts: NodeNFT[], 
+  rarityMap: Map<string, RarityScore>
+): {
+  avgRank: number;
+  avgScore: number;
+  bestRank: number;
+  worstRank: number;
+  avgPercentile: number;
+  rarestNFT: { tokenId: string; rank: number } | null;
+} | null {
+  if (nfts.length === 0 || rarityMap.size === 0) return null;
+  
+  let totalRank = 0;
+  let totalScore = 0;
+  let totalPercentile = 0;
+  let bestRank = Infinity;
+  let worstRank = 0;
+  let rarestNFT: { tokenId: string; rank: number } | null = null;
+  let validCount = 0;
+  
+  for (const nft of nfts) {
+    const rarity = rarityMap.get(nft.tokenId);
+    if (!rarity) continue;
+    
+    totalRank += rarity.rank;
+    totalScore += rarity.score;
+    totalPercentile += rarity.percentile;
+    validCount++;
+    
+    if (rarity.rank < bestRank) {
+      bestRank = rarity.rank;
+      rarestNFT = { tokenId: nft.tokenId, rank: rarity.rank };
+    }
+    
+    if (rarity.rank > worstRank) {
+      worstRank = rarity.rank;
+    }
+  }
+  
+  if (validCount === 0) return null;
+  
+  return {
+    avgRank: Math.round(totalRank / validCount),
+    avgScore: Math.round((totalScore / validCount) * 100) / 100,
+    bestRank: bestRank === Infinity ? 0 : bestRank,
+    worstRank,
+    avgPercentile: Math.round(totalPercentile / validCount),
+    rarestNFT,
+  };
 }
 
 /**
