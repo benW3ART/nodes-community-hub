@@ -20,6 +20,7 @@ interface GifData {
   width: number;
   height: number;
   isAnimated: true;
+  frameDelays: number[]; // delay in ms for each frame
 }
 
 interface StaticData {
@@ -52,11 +53,19 @@ async function fetchGifFrames(url: string): Promise<GifData | null> {
       throw new Error('No valid frames');
     }
     
+    // Extract frame delays (GIF stores in centiseconds, convert to ms)
+    // Default to 100ms if delay is 0 or missing (common for old GIFs)
+    const frameDelays = validFrames.map(f => {
+      const delay = (f.delay || 0) * 10; // centiseconds to ms
+      return delay > 0 ? delay : 100; // minimum 100ms if unspecified
+    });
+    
     return {
       frames: validFrames,
       width: gif.lsd.width,
       height: gif.lsd.height,
-      isAnimated: true
+      isAnimated: true,
+      frameDelays
     };
   } catch (error) {
     console.error('GIF parsing failed for', url, error);
@@ -76,9 +85,10 @@ async function loadStaticImage(url: string): Promise<CanvasImage | null> {
 }
 
 // Pre-render all frames of an animated GIF into complete canvases
-function prerenderGifFrames(gifData: GifData): any[] {
-  const { frames, width, height } = gifData;
-  const renderedFrames: any[] = [];
+function prerenderGifFrames(gifData: GifData): { canvases: any[], delays: number[] } {
+  const { frames, width, height, frameDelays } = gifData;
+  const canvases: any[] = [];
+  const delays: number[] = [];
   
   // Create a persistent canvas to composite frames (GIF disposal handling)
   const compositeCanvas = createCanvas(width, height);
@@ -118,19 +128,22 @@ function prerenderGifFrames(gifData: GifData): any[] {
       const frameCtx = frameCanvas.getContext('2d');
       frameCtx.drawImage(compositeCanvas, 0, 0);
       
-      renderedFrames.push(frameCanvas);
+      canvases.push(frameCanvas);
+      delays.push(frameDelays[i] || 100);
     } catch (err) {
       console.error(`Failed to render frame ${i}:`, err);
       // Push previous frame or empty canvas as fallback
-      if (renderedFrames.length > 0) {
-        renderedFrames.push(renderedFrames[renderedFrames.length - 1]);
+      if (canvases.length > 0) {
+        canvases.push(canvases[canvases.length - 1]);
+        delays.push(delays[delays.length - 1] || 100);
       } else {
-        renderedFrames.push(createCanvas(width, height));
+        canvases.push(createCanvas(width, height));
+        delays.push(100);
       }
     }
   }
   
-  return renderedFrames;
+  return { canvases, delays };
 }
 
 export async function POST(request: NextRequest) {
@@ -153,7 +166,7 @@ export async function POST(request: NextRequest) {
     // Load all images - try GIF first, then static
     const loadedCells: { 
       cell: GridCell; 
-      renderedFrames?: any[]; 
+      renderedFrames?: { canvases: any[], delays: number[] }; 
       staticImg?: CanvasImage;
       isAnimated: boolean;
     }[] = [];
@@ -164,7 +177,7 @@ export async function POST(request: NextRequest) {
       // Try as animated GIF first
       const gifData = await fetchGifFrames(cell.image);
       if (gifData) {
-        console.log(`  -> Animated GIF with ${gifData.frames.length} frames`);
+        console.log(`  -> Animated GIF with ${gifData.frames.length} frames, delays: ${gifData.frameDelays.slice(0, 3).join(',')}...ms`);
         const renderedFrames = prerenderGifFrames(gifData);
         loadedCells.push({ cell, renderedFrames, isAnimated: true });
         continue;
@@ -188,17 +201,25 @@ export async function POST(request: NextRequest) {
     
     console.log(`Loaded ${loadedCells.length}/${cells.length} cells successfully`);
     
-    // Determine number of frames (max from all animated GIFs, capped at 30)
+    // Find the animated cell with the most frames (this will be our "master" timing)
     const animatedCells = loadedCells.filter(c => c.isAnimated && c.renderedFrames);
-    const maxFrames = animatedCells.length > 0
-      ? Math.min(30, Math.max(...animatedCells.map(c => c.renderedFrames!.length)))
-      : 1;
+    let masterDelays: number[] = [100]; // default if no animated
+    let maxFrames = 1;
     
-    console.log(`Generating ${maxFrames} frames...`);
+    if (animatedCells.length > 0) {
+      // Sort by frame count descending, pick the one with most frames
+      const sorted = animatedCells.sort((a, b) => 
+        (b.renderedFrames?.canvases.length || 0) - (a.renderedFrames?.canvases.length || 0)
+      );
+      const master = sorted[0].renderedFrames!;
+      maxFrames = Math.min(60, master.canvases.length); // cap at 60 frames
+      masterDelays = master.delays.slice(0, maxFrames);
+    }
+    
+    console.log(`Generating ${maxFrames} frames with delays from master GIF...`);
     
     // Create GIF encoder
     const encoder = new GIFEncoder(totalWidth, totalHeight);
-    encoder.setDelay(100); // 100ms between frames
     encoder.setRepeat(0);  // Loop forever
     encoder.setQuality(10);
     encoder.start();
@@ -209,6 +230,10 @@ export async function POST(request: NextRequest) {
     
     // Generate each frame
     for (let frameIdx = 0; frameIdx < maxFrames; frameIdx++) {
+      // Set delay for THIS frame (from master GIF timing)
+      const frameDelay = masterDelays[frameIdx] || masterDelays[0] || 100;
+      encoder.setDelay(frameDelay);
+      
       // Clear with black background
       ctx.fillStyle = '#000000';
       ctx.fillRect(0, 0, totalWidth, totalHeight);
@@ -230,10 +255,10 @@ export async function POST(request: NextRequest) {
         const y = padding + cell.row * (cellSize + gap);
         
         try {
-          if (isAnimated && renderedFrames && renderedFrames.length > 0) {
+          if (isAnimated && renderedFrames && renderedFrames.canvases.length > 0) {
             // Get the appropriate frame (loop if needed)
-            const frameIndex = frameIdx % renderedFrames.length;
-            const frameCanvas = renderedFrames[frameIndex];
+            const frameIndex = frameIdx % renderedFrames.canvases.length;
+            const frameCanvas = renderedFrames.canvases[frameIndex];
             
             if (frameCanvas) {
               ctx.drawImage(frameCanvas, 0, 0, frameCanvas.width, frameCanvas.height, x, y, cellSize, cellSize);
