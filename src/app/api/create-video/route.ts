@@ -45,8 +45,9 @@ async function fetchGifFrames(url: string): Promise<GifData | null> {
     const validFrames = frames.filter(f => f && f.dims && f.patch);
     if (validFrames.length === 0) throw new Error('No valid frames');
     
+    // gifuct-js already converts delay to milliseconds
     const frameDelays = validFrames.map(f => {
-      const delay = (f.delay || 0) * 10; // centiseconds to ms
+      const delay = f.delay || 0; // already in ms from gifuct-js
       return delay >= 20 ? delay : (delay > 0 ? 20 : 50);
     });
     

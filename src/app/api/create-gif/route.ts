@@ -53,11 +53,10 @@ async function fetchGifFrames(url: string): Promise<GifData | null> {
       throw new Error('No valid frames');
     }
     
-    // Extract frame delays (GIF stores in centiseconds, convert to ms)
-    // Minimum 20ms (browser limit), default to 50ms if unspecified
+    // gifuct-js already converts delay to milliseconds (see lib/index.js:78)
+    // Just use it directly, with 20ms minimum (browser floor)
     const frameDelays = validFrames.map(f => {
-      const delay = (f.delay || 0) * 10; // centiseconds to ms
-      // 20ms minimum (browser floor), 50ms default if 0
+      const delay = f.delay || 0; // already in ms from gifuct-js
       return delay >= 20 ? delay : (delay > 0 ? 20 : 50);
     });
     
@@ -219,7 +218,8 @@ export async function POST(request: NextRequest) {
       masterDelays = master.delays.slice(0, maxFrames);
     }
     
-    console.log(`Generating ${maxFrames} frames with delays from master GIF...`);
+    console.log(`Generating ${maxFrames} frames with master delays:`, masterDelays.slice(0, 10), '...');
+    console.log(`Total animation time: ${masterDelays.reduce((a, b) => a + b, 0)}ms`);
     
     // Create GIF encoder
     const encoder = new GIFEncoder(totalWidth, totalHeight);
