@@ -2,24 +2,6 @@
 
 import Script from 'next/script';
 import { Twitter, ExternalLink } from 'lucide-react';
-import { useEffect, useRef, useState, useCallback } from 'react';
-
-// Extend Window interface for Twitter widgets
-declare global {
-  interface Window {
-    twttr?: {
-      widgets: {
-        load: (element?: HTMLElement) => Promise<void>;
-        createTimeline: (
-          dataSource: { sourceType: string; screenName: string },
-          targetEl: HTMLElement,
-          options?: Record<string, unknown>
-        ) => Promise<HTMLElement>;
-      };
-      ready: (callback: () => void) => void;
-    };
-  }
-}
 
 interface TimelineColumnProps {
   username: string;
@@ -27,53 +9,6 @@ interface TimelineColumnProps {
 }
 
 function TimelineColumn({ username, title }: TimelineColumnProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
-
-  const loadTimeline = useCallback(() => {
-    if (!containerRef.current || !window.twttr?.widgets) return;
-
-    // Clear container first
-    containerRef.current.innerHTML = '';
-
-    window.twttr.widgets
-      .createTimeline(
-        { sourceType: 'profile', screenName: username },
-        containerRef.current,
-        {
-          theme: 'dark',
-          chrome: 'noheader nofooter noborders transparent',
-          tweetLimit: 5,
-          dnt: true,
-          height: 450,
-        }
-      )
-      .then(() => {
-        setStatus('ready');
-      })
-      .catch(() => {
-        setStatus('error');
-      });
-  }, [username]);
-
-  useEffect(() => {
-    // If twttr is already loaded, create timeline
-    if (window.twttr?.widgets) {
-      window.twttr.ready(() => {
-        loadTimeline();
-      });
-    }
-
-    // Timeout fallback
-    const timeout = setTimeout(() => {
-      if (status === 'loading') {
-        setStatus('error');
-      }
-    }, 15000);
-
-    return () => clearTimeout(timeout);
-  }, [loadTimeline, status]);
-
   return (
     <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl overflow-hidden flex flex-col">
       {/* Header */}
@@ -93,36 +28,17 @@ function TimelineColumn({ username, title }: TimelineColumnProps) {
         </a>
       </div>
 
-      {/* Timeline Container */}
-      <div className="flex-1 overflow-y-auto min-h-[450px]">
-        {status === 'loading' && (
-          <div className="flex items-center justify-center h-[450px] text-gray-500">
-            <div className="animate-pulse flex flex-col items-center gap-2">
-              <Twitter className="w-8 h-8 opacity-50" />
-              <span className="text-sm">Loading tweets...</span>
-            </div>
-          </div>
-        )}
-
-        {status === 'error' && (
-          <div className="flex flex-col items-center justify-center h-[450px] text-gray-500 text-sm p-4 text-center">
-            <Twitter className="w-10 h-10 mb-3 opacity-30" />
-            <p className="mb-3">Timeline unavailable</p>
-            <a
-              href={`https://x.com/${username}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-secondary text-xs"
-            >
-              View on X →
-            </a>
-          </div>
-        )}
-
-        <div
-          ref={containerRef}
-          className={status === 'ready' ? '' : 'hidden'}
-        />
+      {/* EXACT embed code from publish.x.com */}
+      <div className="flex-1 overflow-y-auto p-2 min-h-[450px]">
+        <a 
+          className="twitter-timeline" 
+          data-theme="dark"
+          data-height="450"
+          data-chrome="noheader nofooter noborders transparent"
+          href={`https://twitter.com/${username}?ref_src=twsrc%5Etfw`}
+        >
+          Tweets by {username}
+        </a>
       </div>
     </div>
   );
@@ -164,21 +80,12 @@ function TwitterSearchCard() {
 }
 
 export function TwitterFeed() {
-  const [scriptLoaded, setScriptLoaded] = useState(false);
-
   return (
     <section className="mt-10 sm:mt-16">
-      {/* Load Twitter Widget Script */}
+      {/* EXACT script from publish.x.com */}
       <Script
         src="https://platform.twitter.com/widgets.js"
-        strategy="lazyOnload"
-        onLoad={() => {
-          setScriptLoaded(true);
-          // Trigger re-render of timelines
-          if (window.twttr?.widgets) {
-            window.twttr.widgets.load();
-          }
-        }}
+        strategy="afterInteractive"
       />
 
       <h2 className="section-title text-lg sm:text-2xl flex items-center gap-3 mb-6">
@@ -187,27 +94,8 @@ export function TwitterFeed() {
       </h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {scriptLoaded ? (
-          <>
-            <TimelineColumn username="NODESonBase" title="@NODESonBase" />
-            <TimelineColumn username="gmhunterart" title="@gmhunterart" />
-          </>
-        ) : (
-          <>
-            <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl p-4 min-h-[450px] flex items-center justify-center">
-              <div className="animate-pulse flex flex-col items-center gap-2 text-gray-500">
-                <Twitter className="w-8 h-8 opacity-50" />
-                <span className="text-sm">Loading Twitter...</span>
-              </div>
-            </div>
-            <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl p-4 min-h-[450px] flex items-center justify-center">
-              <div className="animate-pulse flex flex-col items-center gap-2 text-gray-500">
-                <Twitter className="w-8 h-8 opacity-50" />
-                <span className="text-sm">Loading Twitter...</span>
-              </div>
-            </div>
-          </>
-        )}
+        <TimelineColumn username="NODESonBase" title="@NODESonBase" />
+        <TimelineColumn username="gmhunterart" title="@gmhunterart" />
         <TwitterSearchCard />
       </div>
 
