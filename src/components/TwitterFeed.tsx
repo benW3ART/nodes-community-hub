@@ -1,43 +1,17 @@
 'use client';
 
-import { Tweet } from 'react-tweet';
-import { Twitter, ExternalLink, RefreshCw } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { Timeline } from 'react-twitter-widgets';
+import { Twitter, ExternalLink } from 'lucide-react';
+import { useState } from 'react';
 
-// Tweet IDs to display - update these periodically
-// Run: bird --cookie-source chrome user-tweets NODESonBase -n 6 --json | jq '.[].id'
-const TWEET_IDS = {
-  NODESonBase: [
-    '2019464630704214034',
-    '2019426537615823033', 
-    '2019395022916100306',
-  ],
-  gmhunterart: [
-    '2019518116343214154',
-    '2019515793004982788',
-    '2019456703662624949',
-  ],
-};
-
-function TweetColumn({ 
-  username, 
-  tweetIds,
-  title 
-}: { 
-  username: string; 
-  tweetIds: string[];
+interface TimelineColumnProps {
+  username: string;
   title?: string;
-}) {
-  const [mounted, setMounted] = useState(false);
-  const [failedTweets, setFailedTweets] = useState<Set<string>>(new Set());
-  
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+}
 
-  const handleTweetError = (id: string) => {
-    setFailedTweets(prev => new Set(prev).add(id));
-  };
+function TimelineColumn({ username, title }: TimelineColumnProps) {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   return (
     <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl overflow-hidden flex flex-col">
@@ -58,29 +32,21 @@ function TweetColumn({
         </a>
       </div>
       
-      {/* Tweets */}
-      <div className="flex-1 overflow-y-auto max-h-[500px] p-2 space-y-2 tweet-container">
-        {!mounted ? (
-          <div className="flex items-center justify-center h-[300px] text-gray-500">
-            <RefreshCw className="w-5 h-5 animate-spin" />
+      {/* Timeline Widget */}
+      <div className="flex-1 overflow-hidden">
+        {loading && !error && (
+          <div className="flex items-center justify-center h-[400px] text-gray-500">
+            <div className="animate-pulse flex flex-col items-center gap-2">
+              <Twitter className="w-8 h-8 opacity-50" />
+              <span className="text-sm">Loading tweets...</span>
+            </div>
           </div>
-        ) : (
-          tweetIds.map((id) => (
-            !failedTweets.has(id) && (
-              <div key={id} className="tweet-wrapper" data-theme="dark">
-                <Tweet 
-                  id={id} 
-                  onError={() => handleTweetError(id)}
-                />
-              </div>
-            )
-          ))
         )}
         
-        {mounted && tweetIds.every(id => failedTweets.has(id)) && (
-          <div className="flex flex-col items-center justify-center h-[300px] text-gray-500 text-sm p-4 text-center">
+        {error && (
+          <div className="flex flex-col items-center justify-center h-[400px] text-gray-500 text-sm p-4 text-center">
             <Twitter className="w-10 h-10 mb-3 opacity-30" />
-            <p className="mb-3">Tweets unavailable</p>
+            <p className="mb-3">Timeline unavailable</p>
             <a
               href={`https://x.com/${username}`}
               target="_blank"
@@ -91,6 +57,28 @@ function TweetColumn({
             </a>
           </div>
         )}
+        
+        <div className={loading && !error ? 'opacity-0 h-0' : ''}>
+          <Timeline
+            dataSource={{
+              sourceType: 'profile',
+              screenName: username,
+            }}
+            options={{
+              height: 500,
+              theme: 'dark',
+              chrome: 'noheader nofooter noborders transparent',
+              tweetLimit: 5,
+              dnt: true,
+            }}
+            onLoad={() => setLoading(false)}
+            renderError={() => {
+              setError(true);
+              setLoading(false);
+              return null;
+            }}
+          />
+        </div>
       </div>
     </div>
   );
@@ -139,14 +127,12 @@ export function TwitterFeed() {
       </h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <TweetColumn 
+        <TimelineColumn 
           username="NODESonBase" 
-          tweetIds={TWEET_IDS.NODESonBase}
           title="@NODESonBase" 
         />
-        <TweetColumn 
+        <TimelineColumn 
           username="gmhunterart" 
-          tweetIds={TWEET_IDS.gmhunterart}
           title="@gmhunterart" 
         />
         <TwitterSearchCard />
@@ -172,28 +158,6 @@ export function TwitterFeed() {
           @gmhunterart
         </a>
       </div>
-      
-      {/* Styles for react-tweet dark theme */}
-      <style jsx global>{`
-        .tweet-container [data-theme="dark"] {
-          --tweet-bg-color: #0a0a0a;
-          --tweet-border: 1px solid #1a1a1a;
-          --tweet-font-color: #e5e5e5;
-          --tweet-font-color-secondary: #71767b;
-          --tweet-actions-icon-color: #71767b;
-          --tweet-link-color: #00D4FF;
-          --tweet-quoted-bg-color: #111;
-        }
-        
-        .tweet-wrapper > div {
-          margin: 0 !important;
-        }
-        
-        .tweet-wrapper article {
-          border-radius: 12px !important;
-          border: 1px solid #1a1a1a !important;
-        }
-      `}</style>
     </section>
   );
 }

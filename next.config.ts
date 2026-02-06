@@ -29,7 +29,7 @@ const securityHeaders = [
     key: 'Content-Security-Policy',
     value: [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
+      "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://platform.twitter.com https://*.twimg.com",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https://*.alchemy.com https://ipfs.io https://*.ipfs.nftstorage.link https://arweave.net https://storage.googleapis.com https://res.cloudinary.com https://pbs.twimg.com https://video.twimg.com",
       "font-src 'self'",
