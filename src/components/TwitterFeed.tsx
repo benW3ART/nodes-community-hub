@@ -18,6 +18,10 @@ interface Tweet {
     retweets: number;
     replies: number;
   };
+  media?: {
+    type: string;
+    url: string;
+  };
 }
 
 interface TwitterFeedData {
@@ -71,6 +75,16 @@ function TweetCard({ tweet }: { tweet: Tweet }) {
             className="text-sm text-gray-300 leading-relaxed break-words"
             dangerouslySetInnerHTML={{ __html: formatText(tweet.text) }}
           />
+          {tweet.media && (
+            <div className="mt-2 rounded-lg overflow-hidden border border-[#1a1a1a]">
+              <img 
+                src={tweet.media.url} 
+                alt="Tweet media"
+                className="w-full h-auto max-h-48 object-cover"
+                loading="lazy"
+              />
+            </div>
+          )}
           {tweet.metrics && (
             <div className="flex items-center gap-4 mt-2 text-gray-500 text-xs">
               <span className="flex items-center gap-1 hover:text-[#F91880]">

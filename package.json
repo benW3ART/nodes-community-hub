@@ -12,7 +12,8 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "calculate-rarity": "npx ts-node --esm scripts/calculate-rarity.ts"
+    "calculate-rarity": "npx ts-node --esm scripts/calculate-rarity.ts",
+    "fetch-tweets": "npx ts-node scripts/fetch-tweets.ts"
   },
   "dependencies": {
     "@rainbow-me/rainbowkit": "^2.2.10",
