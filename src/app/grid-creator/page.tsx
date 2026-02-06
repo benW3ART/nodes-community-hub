@@ -241,122 +241,45 @@ export default function GridCreatorPage() {
     }
   };
 
-  // Video export - creates a proper video with the grid
+  // Server-side video export with real animations
   const handleExportVideo = async () => {
-    const nftCount = gridCells.filter(c => c && c !== 'logo').length;
-    if (nftCount === 0) {
+    // Collect NFT cells with positions
+    const cells: {image: string; row: number; col: number}[] = [];
+    for (let i = 0; i < gridCells.length; i++) {
+      const cell = gridCells[i];
+      if (cell && cell !== 'logo' && cell.image) {
+        cells.push({
+          image: cell.image,
+          row: Math.floor(i / gridConfig.cols),
+          col: i % gridConfig.cols
+        });
+      }
+    }
+    
+    if (cells.length === 0) {
       alert('Add some NFTs to the grid first!');
       return;
     }
     
     setIsExporting(true);
-    setExportProgress('Rendering grid...');
+    setExportProgress('Creating animated video (server-side)...');
     
     try {
-      // First render the grid to canvas
-      const sourceCanvas = await renderGridToCanvas();
-      
-      // Verify the canvas has content
-      if (!sourceCanvas || sourceCanvas.width === 0 || sourceCanvas.height === 0) {
-        throw new Error('Failed to render grid');
-      }
-      
-      setExportProgress('Creating video...');
-      
-      // Create video canvas
-      const canvas = document.createElement('canvas');
-      canvas.width = sourceCanvas.width;
-      canvas.height = sourceCanvas.height;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) throw new Error('No canvas context');
-      
-      // Draw first frame immediately
-      ctx.drawImage(sourceCanvas, 0, 0);
-      
-      // Check for MediaRecorder support
-      const mimeTypes = [
-        'video/webm;codecs=vp9',
-        'video/webm;codecs=vp8',
-        'video/webm',
-        'video/mp4'
-      ];
-      
-      let selectedMimeType = '';
-      for (const mimeType of mimeTypes) {
-        if (MediaRecorder.isTypeSupported(mimeType)) {
-          selectedMimeType = mimeType;
-          break;
-        }
-      }
-      
-      if (!selectedMimeType) {
-        throw new Error('No supported video format found');
-      }
-      
-      const stream = canvas.captureStream(30);
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: selectedMimeType,
-        videoBitsPerSecond: 5000000,
+      const response = await fetch('/api/create-video', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gridConfig, cells }),
       });
       
-      const chunks: Blob[] = [];
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to create video');
+      }
       
-      const recordingPromise = new Promise<Blob>((resolve, reject) => {
-        mediaRecorder.ondataavailable = (e) => {
-          if (e.data.size > 0) {
-            chunks.push(e.data);
-          }
-        };
-        
-        mediaRecorder.onstop = () => {
-          if (chunks.length === 0) {
-            reject(new Error('No video data recorded'));
-            return;
-          }
-          const blob = new Blob(chunks, { type: selectedMimeType.split(';')[0] });
-          resolve(blob);
-        };
-        
-        mediaRecorder.onerror = (e) => {
-          reject(new Error('MediaRecorder error'));
-        };
-      });
-      
-      // Start recording
-      mediaRecorder.start(100); // Collect data every 100ms
-      
-      // Record 2 seconds of static image with proper frame timing
-      const durationMs = 2000;
-      const startTime = performance.now();
-      
-      const animate = () => {
-        const elapsed = performance.now() - startTime;
-        
-        if (elapsed >= durationMs) {
-          // Stop recording
-          mediaRecorder.stop();
-          return;
-        }
-        
-        // Redraw the frame
-        ctx.drawImage(sourceCanvas, 0, 0);
-        
-        requestAnimationFrame(animate);
-      };
-      
-      // Start animation after a small delay to ensure recorder is ready
-      await new Promise(resolve => setTimeout(resolve, 100));
-      animate();
-      
-      // Wait for recording to complete
-      setExportProgress('Finalizing video...');
-      const blob = await recordingPromise;
-      
-      // Download
-      const extension = selectedMimeType.includes('mp4') ? 'mp4' : 'webm';
+      const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.download = `nodes-grid-${gridConfig.name}-${Date.now()}.${extension}`;
+      link.download = `nodes-grid-${gridConfig.name}-${Date.now()}.mp4`;
       link.href = url;
       document.body.appendChild(link);
       link.click();
@@ -560,7 +483,7 @@ export default function GridCreatorPage() {
                 </button>
               </div>
               <p className="text-xs text-gray-500 mt-2 text-center">
-                PNG = image • GIF/Video = static montage
+                PNG = static image • GIF/Video = animated
               </p>
               {exportProgress && (
                 <p className="text-xs text-[#00D4FF] mt-2 text-center animate-pulse">
