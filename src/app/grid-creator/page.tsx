@@ -296,7 +296,9 @@ export default function GridCreatorPage() {
     }
   };
 
-  const cellSize = Math.floor(600 / Math.max(gridConfig.rows, gridConfig.cols));
+  // Calculate cell size based on grid dimensions
+  // Use 480px base to fit comfortably in the two-column desktop layout
+  const cellSize = Math.floor(480 / Math.max(gridConfig.rows, gridConfig.cols));
 
   return (
     <div className="min-h-screen bg-black">
@@ -495,10 +497,10 @@ export default function GridCreatorPage() {
             {/* Preview */}
             <div className="card">
               <h3 className="font-semibold mb-4 uppercase tracking-wide">Preview ({gridConfig.name})</h3>
-              <div className="flex justify-center">
+              <div className="flex justify-center overflow-x-auto lg:overflow-x-visible">
                 <div 
                   ref={canvasRef}
-                  className="bg-black rounded-xl overflow-hidden border border-[#1a1a1a]"
+                  className="bg-black rounded-xl overflow-hidden border border-[#1a1a1a] flex-shrink-0"
                   style={{
                     display: 'grid',
                     gridTemplateColumns: `repeat(${gridConfig.cols}, ${cellSize}px)`,
