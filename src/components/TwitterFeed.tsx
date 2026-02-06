@@ -1,191 +1,83 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
-import { Twitter, ExternalLink, RefreshCw, Heart, Repeat2, MessageCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Twitter, ExternalLink, RefreshCw } from 'lucide-react';
 
-interface Tweet {
-  id: string;
-  text: string;
-  author: {
-    username: string;
-    displayName: string;
-    avatar?: string;
-  };
-  createdAt: string;
-  url: string;
-  metrics?: {
-    likes: number;
-    retweets: number;
-    replies: number;
-  };
-  media?: {
-    type: string;
-    url: string;
-  };
-}
-
-interface TwitterFeedData {
-  official: Tweet[];
-  mentions: Tweet[];
-  lastFetch: number;
-}
-
-function formatTimeAgo(dateString: string): string {
-  const date = new Date(dateString);
-  const now = new Date();
-  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+// Twitter Syndication iframe URL builder
+function getTwitterTimelineUrl(username: string, theme: 'dark' | 'light' = 'dark'): string {
+  const params = new URLSearchParams({
+    dnt: 'true',
+    embedId: `twitter-widget-${username}`,
+    frame: 'false',
+    hideCard: 'false',
+    hideThread: 'false',
+    lang: 'en',
+    theme: theme,
+    widgetsVersion: '2615f7e52b7e0:1702314776716',
+  });
   
-  if (seconds < 60) return 'just now';
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h`;
-  if (seconds < 604800) return `${Math.floor(seconds / 86400)}d`;
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return `https://syndication.twitter.com/srv/timeline-profile/screen-name/${username}?${params.toString()}`;
 }
 
-function TweetCard({ tweet }: { tweet: Tweet }) {
-  // Parse hashtags and mentions
-  const formatText = (text: string) => {
-    return text
-      .replace(/(#\w+)/g, '<span class="text-[#00D4FF]">$1</span>')
-      .replace(/(@\w+)/g, '<span class="text-[#4FFFDF]">$1</span>')
-      .replace(/(https?:\/\/[^\s]+)/g, '<span class="text-[#00D4FF] underline">$1</span>');
+function TwitterTimelineIframe({ username, title }: { username: string; title?: string }) {
+  const [isLoading, setIsLoading] = useState(true);
+  const [key, setKey] = useState(0);
+  
+  const iframeUrl = getTwitterTimelineUrl(username);
+  
+  const handleLoad = () => {
+    setIsLoading(false);
+  };
+  
+  const handleRefresh = () => {
+    setIsLoading(true);
+    setKey(prev => prev + 1);
   };
 
   return (
-    <a
-      href={tweet.url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="block p-4 hover:bg-[#111] transition-colors border-b border-[#1a1a1a] last:border-b-0"
-    >
-      <div className="flex gap-3">
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#00D4FF] to-[#4FFFDF] flex items-center justify-center flex-shrink-0">
-          <span className="text-black font-bold text-sm">
-            {tweet.author.displayName.charAt(0).toUpperCase()}
-          </span>
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="font-semibold text-sm truncate">{tweet.author.displayName}</span>
-            <span className="text-gray-500 text-sm">@{tweet.author.username}</span>
-            <span className="text-gray-600 text-xs">·</span>
-            <span className="text-gray-500 text-xs">{formatTimeAgo(tweet.createdAt)}</span>
-          </div>
-          <p 
-            className="text-sm text-gray-300 leading-relaxed break-words"
-            dangerouslySetInnerHTML={{ __html: formatText(tweet.text) }}
-          />
-          {tweet.media && (
-            <div className="mt-2 rounded-lg overflow-hidden border border-[#1a1a1a]">
-              <img 
-                src={tweet.media.url} 
-                alt="Tweet media"
-                className="w-full h-auto max-h-48 object-cover"
-                loading="lazy"
-              />
-            </div>
-          )}
-          {tweet.metrics && (
-            <div className="flex items-center gap-4 mt-2 text-gray-500 text-xs">
-              <span className="flex items-center gap-1 hover:text-[#F91880]">
-                <Heart className="w-3.5 h-3.5" />
-                {tweet.metrics.likes}
-              </span>
-              <span className="flex items-center gap-1 hover:text-[#00BA7C]">
-                <Repeat2 className="w-3.5 h-3.5" />
-                {tweet.metrics.retweets}
-              </span>
-              <span className="flex items-center gap-1 hover:text-[#1D9BF0]">
-                <MessageCircle className="w-3.5 h-3.5" />
-                {tweet.metrics.replies}
-              </span>
-            </div>
-          )}
-        </div>
-      </div>
-    </a>
-  );
-}
-
-function TweetList({ 
-  tweets, 
-  username, 
-  title,
-  loading,
-  error 
-}: { 
-  tweets: Tweet[]; 
-  username?: string;
-  title?: string;
-  loading: boolean;
-  error: boolean;
-}) {
-  const displayTitle = title || (username ? `@${username}` : 'Tweets');
-  const profileUrl = username ? `https://x.com/${username}` : 'https://x.com/search?q=%40NODESonBase%20OR%20%40gmhunterart';
-  
-  return (
-    <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl overflow-hidden">
-      <div className="p-4 border-b border-[#1a1a1a] flex items-center justify-between">
+    <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl overflow-hidden flex flex-col">
+      {/* Header */}
+      <div className="p-4 border-b border-[#1a1a1a] flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-2">
           <Twitter className="w-4 h-4 text-[#00D4FF]" />
-          <span className="font-medium text-sm">{displayTitle}</span>
+          <span className="font-medium text-sm">{title || `@${username}`}</span>
         </div>
-        <a
-          href={profileUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-[#00D4FF] hover:text-[#4FFFDF] text-xs flex items-center gap-1"
-        >
-          View on X
-          <ExternalLink className="w-3 h-3" />
-        </a>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleRefresh}
+            className="text-gray-500 hover:text-[#00D4FF] transition-colors p-1 rounded"
+            title="Refresh"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+          </button>
+          <a
+            href={`https://x.com/${username}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[#00D4FF] hover:text-[#4FFFDF] text-xs flex items-center gap-1"
+          >
+            View on X
+            <ExternalLink className="w-3 h-3" />
+          </a>
+        </div>
       </div>
       
-      <div className="min-h-[300px] max-h-[400px] overflow-y-auto">
-        {loading && (
-          <div className="flex items-center justify-center h-[300px] text-gray-500 text-sm">
-            <RefreshCw className="w-5 h-5 animate-spin mr-2" />
-            Loading tweets...
+      {/* Timeline iframe */}
+      <div className="relative flex-1 min-h-[400px] bg-black">
+        {isLoading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-[#0a0a0a] z-10">
+            <RefreshCw className="w-6 h-6 animate-spin text-[#00D4FF]" />
           </div>
         )}
-        
-        {!loading && error && tweets.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-[300px] text-gray-500 text-sm p-4 text-center">
-            <Twitter className="w-10 h-10 mb-3 opacity-30" />
-            <p className="mb-3">Couldn&apos;t load tweets</p>
-            <a
-              href={profileUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-secondary text-xs"
-            >
-              View on X →
-            </a>
-          </div>
-        )}
-        
-        {!loading && tweets.length > 0 && (
-          <div>
-            {tweets.map((tweet) => (
-              <TweetCard key={tweet.id} tweet={tweet} />
-            ))}
-          </div>
-        )}
-        
-        {!loading && !error && tweets.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-[300px] text-gray-500 text-sm p-4 text-center">
-            <Twitter className="w-10 h-10 mb-3 opacity-30" />
-            <p className="mb-3">No recent tweets</p>
-            <a
-              href={profileUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-secondary text-xs"
-            >
-              View on X →
-            </a>
-          </div>
-        )}
+        <iframe
+          key={key}
+          src={iframeUrl}
+          className="w-full h-full min-h-[400px] border-0"
+          onLoad={handleLoad}
+          title={`${username} Twitter Timeline`}
+          sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+          loading="lazy"
+        />
       </div>
     </div>
   );
@@ -203,7 +95,7 @@ function TwitterSearchCard() {
         </div>
       </div>
       
-      <div className="p-8 flex flex-col items-center justify-center text-center h-[300px]">
+      <div className="p-8 flex flex-col items-center justify-center text-center min-h-[400px]">
         <div className="w-16 h-16 rounded-full bg-[#4FFFDF]/10 flex items-center justify-center mb-4">
           <Twitter className="w-8 h-8 text-[#4FFFDF]" />
         </div>
@@ -226,66 +118,32 @@ function TwitterSearchCard() {
 }
 
 export function TwitterFeed() {
-  const [feedData, setFeedData] = useState<TwitterFeedData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-
-  const fetchFeed = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(false);
-      
-      const response = await fetch('/api/twitter-feed');
-      if (!response.ok) throw new Error('Failed to fetch');
-      
-      const data = await response.json();
-      setFeedData(data);
-    } catch (err) {
-      console.error('Failed to fetch Twitter feed:', err);
-      setError(true);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
+  // Track if component is mounted (for SSR safety)
+  const [mounted, setMounted] = useState(false);
+  
   useEffect(() => {
-    fetchFeed();
-  }, [fetchFeed]);
-
-  // Split official tweets by account
-  const nodesTweets = feedData?.official.filter(t => t.author.username === 'NODESonBase') || [];
-  const hunterTweets = feedData?.official.filter(t => t.author.username === 'gmhunterart') || [];
+    setMounted(true);
+  }, []);
 
   return (
     <section className="mt-10 sm:mt-16">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="section-title text-lg sm:text-2xl flex items-center gap-3">
-          <Twitter className="w-6 h-6 text-[#00D4FF]" />
-          Community Feed
-        </h2>
-        <button
-          onClick={fetchFeed}
-          disabled={loading}
-          className="text-gray-500 hover:text-[#00D4FF] transition-colors p-2 rounded-lg hover:bg-[#111] disabled:opacity-50"
-          title="Refresh feed"
-        >
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-        </button>
-      </div>
+      <h2 className="section-title text-lg sm:text-2xl flex items-center gap-3 mb-6">
+        <Twitter className="w-6 h-6 text-[#00D4FF]" />
+        Community Feed
+      </h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <TweetList 
-          tweets={nodesTweets} 
-          username="NODESonBase" 
-          loading={loading}
-          error={error}
-        />
-        <TweetList 
-          tweets={hunterTweets} 
-          username="gmhunterart" 
-          loading={loading}
-          error={error}
-        />
+        {mounted ? (
+          <>
+            <TwitterTimelineIframe username="NODESonBase" title="@NODESonBase" />
+            <TwitterTimelineIframe username="gmhunterart" title="@gmhunterart" />
+          </>
+        ) : (
+          <>
+            <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl min-h-[450px] animate-pulse" />
+            <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl min-h-[450px] animate-pulse" />
+          </>
+        )}
         <TwitterSearchCard />
       </div>
 
