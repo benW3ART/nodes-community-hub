@@ -625,7 +625,7 @@ export async function POST(request: NextRequest) {
     // Export as PNG
     const buffer = canvas.toBuffer('image/png');
     
-    return new NextResponse(buffer, {
+    return new NextResponse(new Uint8Array(buffer), {
       status: 200,
       headers: {
         'Content-Type': 'image/png',
