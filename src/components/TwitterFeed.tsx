@@ -1,226 +1,25 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { Twitter, ExternalLink } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Twitter, ExternalLink, RefreshCw } from 'lucide-react';
 
 declare global {
   interface Window {
     twttr?: {
       widgets: {
-        load: (element?: HTMLElement) => void;
-        createTimeline: (
-          source: { sourceType: string; screenName?: string; url?: string },
-          target: HTMLElement,
-          options?: Record<string, unknown>
-        ) => Promise<HTMLElement>;
+        load: (element?: HTMLElement) => Promise<void>;
       };
     };
   }
 }
 
-function TwitterEmbed({ username, title }: { username: string; title: string }) {
+function TwitterTimelineEmbed({ username }: { username: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    if (!containerRef.current) return;
-
-    const loadTimeline = async () => {
-      // Wait for Twitter widgets to be ready
-      const checkTwitter = () => {
-        return new Promise<void>((resolve) => {
-          const check = () => {
-            if (window.twttr?.widgets) {
-              resolve();
-            } else {
-              setTimeout(check, 100);
-            }
-          };
-          check();
-        });
-      };
-
-      try {
-        await checkTwitter();
-        
-        if (containerRef.current && window.twttr) {
-          // Clear container
-          containerRef.current.innerHTML = '';
-          
-          await window.twttr.widgets.createTimeline(
-            { sourceType: 'profile', screenName: username },
-            containerRef.current,
-            {
-              theme: 'dark',
-              chrome: 'noheader nofooter noborders transparent',
-              tweetLimit: 3,
-              width: '100%',
-              dnt: true,
-            }
-          );
-          setIsLoading(false);
-          setError(false);
-        }
-      } catch (err) {
-        console.error('Twitter embed error:', err);
-        setError(true);
-        setIsLoading(false);
-      }
-    };
-
-    loadTimeline();
-  }, [username]);
-
-  return (
-    <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl overflow-hidden">
-      <div className="p-4 border-b border-[#1a1a1a] flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Twitter className="w-4 h-4 text-[#00D4FF]" />
-          <span className="font-medium text-sm">{title}</span>
-        </div>
-        <a
-          href={`https://x.com/${username}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-[#00D4FF] hover:text-[#4FFFDF] text-xs flex items-center gap-1"
-        >
-          @{username}
-          <ExternalLink className="w-3 h-3" />
-        </a>
-      </div>
-      
-      <div className="min-h-[300px] max-h-[400px] overflow-y-auto">
-        {isLoading && !error && (
-          <div className="flex items-center justify-center h-[300px] text-gray-500 text-sm">
-            Loading tweets...
-          </div>
-        )}
-        {error && (
-          <div className="flex flex-col items-center justify-center h-[300px] text-gray-500 text-sm p-4 text-center">
-            <Twitter className="w-8 h-8 mb-2 opacity-50" />
-            <p>Unable to load tweets</p>
-            <a
-              href={`https://x.com/${username}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-2 text-[#00D4FF] hover:text-[#4FFFDF]"
-            >
-              View on X →
-            </a>
-          </div>
-        )}
-        <div ref={containerRef} className={isLoading || error ? 'hidden' : ''} />
-      </div>
-    </div>
-  );
-}
-
-function TwitterSearchEmbed() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(false);
-
-  useEffect(() => {
-    if (!containerRef.current) return;
-
-    const loadSearch = async () => {
-      const checkTwitter = () => {
-        return new Promise<void>((resolve) => {
-          const check = () => {
-            if (window.twttr?.widgets) {
-              resolve();
-            } else {
-              setTimeout(check, 100);
-            }
-          };
-          check();
-        });
-      };
-
-      try {
-        await checkTwitter();
-        
-        if (containerRef.current && window.twttr) {
-          containerRef.current.innerHTML = '';
-          
-          // Use search URL for mentions
-          await window.twttr.widgets.createTimeline(
-            { 
-              sourceType: 'url',
-              url: 'https://twitter.com/search?q=%40NODESonBase%20OR%20%40gmhunterart%20-from%3ANODESonBase%20-from%3Agmhunterart'
-            },
-            containerRef.current,
-            {
-              theme: 'dark',
-              chrome: 'noheader nofooter noborders transparent',
-              tweetLimit: 5,
-              width: '100%',
-              dnt: true,
-            }
-          );
-          setIsLoading(false);
-          setError(false);
-        }
-      } catch (err) {
-        console.error('Twitter search embed error:', err);
-        setError(true);
-        setIsLoading(false);
-      }
-    };
-
-    loadSearch();
-  }, []);
-
-  const searchUrl = 'https://x.com/search?q=%40NODESonBase%20OR%20%40gmhunterart&src=typed_query&f=live';
-
-  return (
-    <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl overflow-hidden">
-      <div className="p-4 border-b border-[#1a1a1a] flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Twitter className="w-4 h-4 text-[#4FFFDF]" />
-          <span className="font-medium text-sm">Community Mentions</span>
-        </div>
-        <a
-          href={searchUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-[#00D4FF] hover:text-[#4FFFDF] text-xs flex items-center gap-1"
-        >
-          View all
-          <ExternalLink className="w-3 h-3" />
-        </a>
-      </div>
-      
-      <div className="min-h-[300px] max-h-[400px] overflow-y-auto">
-        {isLoading && !error && (
-          <div className="flex items-center justify-center h-[300px] text-gray-500 text-sm">
-            Loading mentions...
-          </div>
-        )}
-        {error && (
-          <div className="flex flex-col items-center justify-center h-[300px] text-gray-500 text-sm p-4 text-center">
-            <Twitter className="w-8 h-8 mb-2 opacity-50" />
-            <p>Unable to load mentions</p>
-            <a
-              href={searchUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-2 text-[#00D4FF] hover:text-[#4FFFDF]"
-            >
-              Search on X →
-            </a>
-          </div>
-        )}
-        <div ref={containerRef} className={isLoading || error ? 'hidden' : ''} />
-      </div>
-    </div>
-  );
-}
-
-export function TwitterFeed() {
-  useEffect(() => {
-    // Load Twitter widgets.js
+    // Load Twitter widgets script if not already loaded
     if (!document.getElementById('twitter-wjs')) {
       const script = document.createElement('script');
       script.id = 'twitter-wjs';
@@ -228,8 +27,127 @@ export function TwitterFeed() {
       script.async = true;
       document.body.appendChild(script);
     }
-  }, []);
 
+    // Wait for script to load and render widget
+    const timeout = setTimeout(() => {
+      if (isLoading) {
+        setError(true);
+        setIsLoading(false);
+      }
+    }, 10000); // 10 second timeout
+
+    const checkAndRender = () => {
+      if (window.twttr?.widgets && containerRef.current) {
+        window.twttr.widgets.load(containerRef.current).then(() => {
+          setIsLoading(false);
+          clearTimeout(timeout);
+        }).catch(() => {
+          setError(true);
+          setIsLoading(false);
+        });
+      } else {
+        setTimeout(checkAndRender, 500);
+      }
+    };
+
+    checkAndRender();
+
+    return () => clearTimeout(timeout);
+  }, [username]);
+
+  return (
+    <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl overflow-hidden">
+      <div className="p-4 border-b border-[#1a1a1a] flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Twitter className="w-4 h-4 text-[#00D4FF]" />
+          <span className="font-medium text-sm">@{username}</span>
+        </div>
+        <a
+          href={`https://x.com/${username}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[#00D4FF] hover:text-[#4FFFDF] text-xs flex items-center gap-1"
+        >
+          View on X
+          <ExternalLink className="w-3 h-3" />
+        </a>
+      </div>
+      
+      <div className="min-h-[350px] max-h-[450px] overflow-y-auto twitter-embed-container">
+        {isLoading && !error && (
+          <div className="flex items-center justify-center h-[350px] text-gray-500 text-sm">
+            <RefreshCw className="w-5 h-5 animate-spin mr-2" />
+            Loading...
+          </div>
+        )}
+        
+        {error && (
+          <div className="flex flex-col items-center justify-center h-[350px] text-gray-500 text-sm p-4 text-center">
+            <Twitter className="w-10 h-10 mb-3 opacity-30" />
+            <p className="mb-3">Tweets couldn&apos;t load</p>
+            <a
+              href={`https://x.com/${username}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-secondary text-xs"
+            >
+              View on X →
+            </a>
+          </div>
+        )}
+        
+        <div ref={containerRef} className={isLoading || error ? 'hidden' : ''}>
+          <a 
+            className="twitter-timeline" 
+            data-theme="dark"
+            data-chrome="noheader nofooter noborders transparent"
+            data-tweet-limit="5"
+            data-dnt="true"
+            href={`https://twitter.com/${username}?ref_src=twsrc%5Etfw`}
+          >
+            Loading @{username}...
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TwitterSearchCard() {
+  const searchUrl = 'https://x.com/search?q=%40NODESonBase%20OR%20%40gmhunterart&src=typed_query&f=live';
+  
+  return (
+    <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl overflow-hidden">
+      <div className="p-4 border-b border-[#1a1a1a] flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Twitter className="w-4 h-4 text-[#4FFFDF]" />
+          <span className="font-medium text-sm">Community Mentions</span>
+        </div>
+      </div>
+      
+      <div className="p-8 flex flex-col items-center justify-center text-center h-[350px]">
+        <div className="w-16 h-16 rounded-full bg-[#4FFFDF]/10 flex items-center justify-center mb-4">
+          <Twitter className="w-8 h-8 text-[#4FFFDF]" />
+        </div>
+        <h3 className="text-lg font-semibold mb-2">Community Posts</h3>
+        <p className="text-gray-500 text-sm mb-6 max-w-[200px]">
+          See what the community is saying about NODES
+        </p>
+        <a
+          href={searchUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn-primary text-sm flex items-center gap-2"
+        >
+          Search on X
+          <ExternalLink className="w-4 h-4" />
+        </a>
+      </div>
+    </div>
+  );
+}
+
+export function TwitterFeed() {
   return (
     <section className="mt-10 sm:mt-16">
       <h2 className="section-title text-lg sm:text-2xl flex items-center gap-3 mb-6">
@@ -238,15 +156,11 @@ export function TwitterFeed() {
       </h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {/* Official accounts */}
-        <TwitterEmbed username="NODESonBase" title="NODES Official" />
-        <TwitterEmbed username="gmhunterart" title="gmhunter" />
-        
-        {/* Community mentions */}
-        <TwitterSearchEmbed />
+        <TwitterTimelineEmbed username="NODESonBase" />
+        <TwitterTimelineEmbed username="gmhunterart" />
+        <TwitterSearchCard />
       </div>
 
-      {/* Direct links */}
       <div className="text-center mt-6 flex flex-wrap justify-center gap-4">
         <a
           href="https://x.com/NODESonBase"
@@ -267,6 +181,15 @@ export function TwitterFeed() {
           @gmhunterart
         </a>
       </div>
+      
+      <style jsx global>{`
+        .twitter-embed-container .twitter-timeline {
+          width: 100% !important;
+        }
+        .twitter-embed-container iframe {
+          border-radius: 0 !important;
+        }
+      `}</style>
     </section>
   );
 }
