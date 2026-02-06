@@ -7,6 +7,12 @@ import type { RarityScore } from '@/lib/rarity';
 import { getRarityTier } from '@/lib/rarity';
 import { useNodesStore } from '@/stores/useNodesStore';
 
+// Check if image is animated (GIF) - Next.js Image can't optimize these
+const isAnimatedImage = (url: string | undefined): boolean => {
+  if (!url) return false;
+  return url.toLowerCase().endsWith('.gif');
+};
+
 interface NFTCardProps {
   nft: NodeNFT;
   selectable?: boolean;
@@ -49,6 +55,8 @@ export function NFTCard({
     ? getRarityTier(rarityScore.percentile) 
     : null;
 
+  const isGif = isAnimatedImage(nft.image);
+
   return (
     <div
       className={`nft-card cursor-pointer active:scale-[0.98] transition-transform ${isSelected ? 'nft-card-selected' : ''} ${sizeClasses[size]}`}
@@ -75,6 +83,7 @@ export function NFTCard({
             src={nft.image}
             alt={nft.name}
             fill
+            unoptimized={isGif}
             className="object-cover group-hover:scale-110 transition-transform duration-300"
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
           />
@@ -120,6 +129,8 @@ export function NFTCard({
 
 // Mini version for grid creator - touch optimized
 export function NFTCardMini({ nft, onClick }: { nft: NodeNFT; onClick?: () => void }) {
+  const isGif = isAnimatedImage(nft.image);
+  
   return (
     <div 
       className="aspect-square relative overflow-hidden rounded-lg cursor-pointer hover:ring-2 hover:ring-[#00D4FF] active:ring-2 active:ring-[#00D4FF] active:scale-95 transition-all touch-manipulation"
@@ -130,6 +141,7 @@ export function NFTCardMini({ nft, onClick }: { nft: NodeNFT; onClick?: () => vo
           src={nft.image}
           alt={nft.name}
           fill
+          unoptimized={isGif}
           className="object-cover"
           sizes="100px"
         />
@@ -152,6 +164,8 @@ export function NFTCardExpanded({
     ? getRarityTier(rarityScore.percentile) 
     : null;
 
+  const isGif = isAnimatedImage(nft.image);
+
   return (
     <div className="card overflow-hidden">
       {/* Image */}
@@ -161,6 +175,7 @@ export function NFTCardExpanded({
             src={nft.image}
             alt={nft.name}
             fill
+            unoptimized={isGif}
             className="object-cover"
             sizes="(max-width: 640px) 100vw, 400px"
           />

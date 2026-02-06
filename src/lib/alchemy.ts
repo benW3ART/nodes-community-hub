@@ -3,110 +3,148 @@ import type { NodeNFT, FullSetStatus } from '@/types/nft';
 
 const ALCHEMY_BASE_URL = `https://base-mainnet.g.alchemy.com/nft/v3/${ALCHEMY_API_KEY}`;
 
-// Alchemy API response types
-interface AlchemyAttribute {
-  trait_type?: string;
-  value?: string;
+// Direct metadata API (always fresh, not cached by Alchemy)
+const METADATA_API_URL = 'https://nodes-metadata-api.10amstudios.xyz/metadata';
+
+// Fresh metadata response from the contract's tokenURI
+interface FreshMetadata {
+  name: string;
+  description: string;
+  image: string;
+  cleanimage?: string;
+  id: string;
+  attributes: Array<{
+    trait_type: string;
+    value: string;
+  }>;
 }
 
+// Alchemy API response types (only used for getting token IDs)
 interface AlchemyNFT {
   tokenId?: string;
   id?: { tokenId?: string };
-  raw?: {
-    metadata?: {
-      name?: string;
-      description?: string;
-      image?: string;
-      attributes?: AlchemyAttribute[];
-    };
+}
+
+/**
+ * Fetch fresh metadata directly from the contract's tokenURI API
+ * This bypasses Alchemy's cache and always returns current data
+ */
+async function fetchFreshMetadata(tokenId: string): Promise<FreshMetadata | null> {
+  try {
+    const response = await fetch(`${METADATA_API_URL}/${tokenId}`, {
+      next: { revalidate: 60 }, // Cache for 1 minute on server
+    });
+    
+    if (!response.ok) {
+      console.warn(`Failed to fetch fresh metadata for token ${tokenId}`);
+      return null;
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error(`Error fetching metadata for token ${tokenId}:`, error);
+    return null;
+  }
+}
+
+/**
+ * Parse fresh metadata into NodeNFT format
+ */
+function parseMetadataToNFT(tokenId: string, metadata: FreshMetadata): NodeNFT {
+  const getAttribute = (traitType: string): string => {
+    const attr = metadata.attributes?.find(a => 
+      a.trait_type?.toLowerCase() === traitType.toLowerCase()
+    );
+    return attr?.value || '';
   };
-  metadata?: {
-    name?: string;
-    description?: string;
-    image?: string;
-    attributes?: AlchemyAttribute[];
-  };
-  image?: {
-    cachedUrl?: string;
-    originalUrl?: string;
+  
+  const interferenceValue = getAttribute('Interference');
+  const hasInterference = interferenceValue !== '' && 
+    interferenceValue.toLowerCase() !== 'none' && 
+    interferenceValue.toLowerCase() !== 'false';
+  
+  return {
+    tokenId,
+    name: metadata.name || `NODES #${tokenId}`,
+    image: metadata.image || '',
+    innerState: getAttribute('Inner State'),
+    grid: getAttribute('Grid'),
+    gradient: getAttribute('Gradient'),
+    glow: getAttribute('Glow'),
+    interference: hasInterference,
+    metadata: {
+      name: metadata.name || '',
+      description: metadata.description || '',
+      image: metadata.image || '',
+      attributes: metadata.attributes || [],
+    },
   };
 }
 
+/**
+ * Get NFTs for an owner with FRESH metadata from the contract API
+ */
 export async function getNFTsForOwner(ownerAddress: string): Promise<NodeNFT[]> {
   try {
+    // Step 1: Get token IDs from Alchemy (fast, just need the list)
     const response = await fetch(
-      `${ALCHEMY_BASE_URL}/getNFTsForOwner?owner=${ownerAddress}&contractAddresses[]=${NODES_CONTRACT}&withMetadata=true`
+      `${ALCHEMY_BASE_URL}/getNFTsForOwner?owner=${ownerAddress}&contractAddresses[]=${NODES_CONTRACT}&withMetadata=false`
     );
     
     if (!response.ok) {
-      throw new Error('Failed to fetch NFTs');
+      throw new Error('Failed to fetch NFTs from Alchemy');
     }
     
     const data = await response.json();
+    const tokenIds: string[] = data.ownedNfts.map((nft: AlchemyNFT) => 
+      nft.tokenId || nft.id?.tokenId || ''
+    ).filter(Boolean);
     
-    return data.ownedNfts.map((nft: AlchemyNFT) => parseNodeNFT(nft));
+    if (tokenIds.length === 0) {
+      return [];
+    }
+    
+    // Step 2: Fetch fresh metadata for each token in parallel
+    const metadataPromises = tokenIds.map(async (tokenId) => {
+      const metadata = await fetchFreshMetadata(tokenId);
+      if (metadata) {
+        return parseMetadataToNFT(tokenId, metadata);
+      }
+      // Fallback: return minimal NFT if metadata fetch fails
+      return {
+        tokenId,
+        name: `NODES #${tokenId}`,
+        image: '',
+        innerState: '',
+        grid: '',
+        gradient: '',
+        glow: '',
+        interference: false,
+        metadata: { name: '', description: '', image: '', attributes: [] },
+      } as NodeNFT;
+    });
+    
+    const nfts = await Promise.all(metadataPromises);
+    return nfts.filter(nft => nft.image !== ''); // Filter out failed fetches
+    
   } catch (error) {
     console.error('Error fetching NFTs:', error);
     return [];
   }
 }
 
+/**
+ * Get single NFT metadata (fresh from contract API)
+ */
 export async function getNFTMetadata(tokenId: string): Promise<NodeNFT | null> {
   try {
-    const response = await fetch(
-      `${ALCHEMY_BASE_URL}/getNFTMetadata?contractAddress=${NODES_CONTRACT}&tokenId=${tokenId}`
-    );
-    
-    if (!response.ok) {
-      throw new Error('Failed to fetch NFT metadata');
-    }
-    
-    const data = await response.json();
-    return parseNodeNFT(data);
+    const metadata = await fetchFreshMetadata(tokenId);
+    if (!metadata) return null;
+    return parseMetadataToNFT(tokenId, metadata);
   } catch (error) {
     console.error('Error fetching NFT metadata:', error);
     return null;
   }
-}
-
-function parseNodeNFT(nft: AlchemyNFT): NodeNFT {
-  const metadata = nft.raw?.metadata || nft.metadata || {};
-  const attributes: AlchemyAttribute[] = metadata.attributes || [];
-  
-  const getAttribute = (traitType: string): string => {
-    const attr = attributes.find((a: AlchemyAttribute) => 
-      a.trait_type?.toLowerCase() === traitType.toLowerCase()
-    );
-    return attr?.value || '';
-  };
-  
-  // Convert AlchemyAttribute to NFTAttribute (ensure required fields)
-  const normalizedAttributes = attributes
-    .filter(a => a.trait_type && a.value)
-    .map(a => ({
-      trait_type: a.trait_type!,
-      value: a.value!,
-    }));
-  
-  // Use the image attribute from metadata (animated version)
-  const imageUrl = metadata.image || nft.image?.cachedUrl || nft.image?.originalUrl || '';
-  
-  return {
-    tokenId: nft.tokenId || nft.id?.tokenId || '',
-    name: metadata.name || `NODES #${nft.tokenId}`,
-    image: imageUrl,
-    innerState: getAttribute('Inner State'),
-    grid: getAttribute('Grid'),
-    gradient: getAttribute('Gradient'),
-    glow: getAttribute('Glow'),
-    interference: getAttribute('Interference') === 'true' || getAttribute('Interference') === '1',
-    metadata: {
-      name: metadata.name || '',
-      description: metadata.description || '',
-      image: metadata.image || '',
-      attributes: normalizedAttributes,
-    },
-  };
 }
 
 export function analyzeFullSets(nfts: NodeNFT[]): {
