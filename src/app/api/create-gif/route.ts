@@ -248,11 +248,13 @@ export async function POST(request: NextRequest) {
     }
     
     // Use fixed 30fps output (33ms per frame), each GIF plays at its own speed
+    // Cap at 10 seconds max to prevent huge files, but allow full loop of longest GIF
     const outputFps = 30;
     const frameInterval = Math.round(1000 / outputFps); // ~33ms
-    const totalFrames = Math.min(90, Math.ceil(totalDuration / frameInterval)); // cap at 3 seconds
+    const maxDuration = Math.min(totalDuration, 10000); // cap at 10 seconds
+    const totalFrames = Math.ceil(maxDuration / frameInterval);
     
-    console.log(`Output: ${totalFrames} frames at ${outputFps}fps (${totalDuration}ms duration)`);
+    console.log(`Output: ${totalFrames} frames at ${outputFps}fps (${maxDuration}ms duration, original: ${totalDuration}ms)`);
     
     // Create GIF encoder
     const encoder = new GIFEncoder(totalWidth, totalHeight);

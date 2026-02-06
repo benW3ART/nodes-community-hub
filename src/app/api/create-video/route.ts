@@ -206,11 +206,13 @@ export async function POST(request: NextRequest) {
     }
     
     // Use fixed 30fps, duration based on longest GIF
+    // Cap at 10 seconds max to prevent huge files, but allow full loop
     const fps = 30;
     const frameInterval = Math.round(1000 / fps);
-    const maxFrames = Math.min(90, Math.ceil(totalDuration / frameInterval));
+    const maxDuration = Math.min(totalDuration, 10000); // cap at 10 seconds
+    const maxFrames = Math.ceil(maxDuration / frameInterval);
     
-    console.log(`Generating ${maxFrames} frames at ${fps} FPS (${totalDuration}ms duration)...`);
+    console.log(`Generating ${maxFrames} frames at ${fps} FPS (${maxDuration}ms duration, original: ${totalDuration}ms)...`);
     
     // Create main canvas
     const canvas = createCanvas(totalWidth, totalHeight);
