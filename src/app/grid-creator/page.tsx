@@ -241,78 +241,64 @@ export default function GridCreatorPage() {
     }
   };
 
-  // Simplified video export - static image (animated compositing requires too much memory)
+  // Server-side video export with real animations
   const handleExportVideo = async () => {
-    const nftCount = gridCells.filter(c => c && c !== 'logo').length;
-    if (nftCount === 0) {
+    // Collect NFT cells with positions
+    const cells: {image: string; row: number; col: number}[] = [];
+    for (let i = 0; i < gridCells.length; i++) {
+      const cell = gridCells[i];
+      if (cell && cell !== 'logo' && cell.image) {
+        cells.push({
+          image: cell.image,
+          row: Math.floor(i / gridConfig.cols),
+          col: i % gridConfig.cols
+        });
+      }
+    }
+    
+    if (cells.length === 0) {
       alert('Add some NFTs to the grid first!');
       return;
     }
     
     setIsExporting(true);
-    setExportProgress('Creating video...');
+    setExportProgress('Creating animated video (server-side)...');
     
     try {
-      const sourceCanvas = await renderGridToCanvas();
-      
-      // Create video canvas
-      const canvas = document.createElement('canvas');
-      canvas.width = sourceCanvas.width;
-      canvas.height = sourceCanvas.height;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) throw new Error('No canvas context');
-      
-      const stream = canvas.captureStream(30);
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'video/webm;codecs=vp9',
-        videoBitsPerSecond: 5000000,
+      const response = await fetch('/api/create-video', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gridConfig, cells }),
       });
       
-      const chunks: Blob[] = [];
-      mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
-      mediaRecorder.onstop = () => {
-        const blob = new Blob(chunks, { type: 'video/webm' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.download = `nodes-grid-${gridConfig.name}-${Date.now()}.webm`;
-        link.href = url;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        setIsExporting(false);
-        setExportProgress('');
-      };
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to create video');
+      }
       
-      mediaRecorder.start();
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.download = `nodes-grid-${gridConfig.name}-${Date.now()}.mp4`;
+      link.href = url;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
       
-      // Record 2 seconds of static image
-      let frameCount = 0;
-      const totalFrames = 60;
-      
-      const animate = () => {
-        if (frameCount >= totalFrames) {
-          mediaRecorder.stop();
-          return;
-        }
-        
-        // Draw the static canvas
-        ctx.drawImage(sourceCanvas, 0, 0);
-        
-        frameCount++;
-        requestAnimationFrame(animate);
-      };
-      
-      animate();
+      setIsExporting(false);
+      setExportProgress('');
     } catch (err) {
       console.error('Video export failed:', err);
-      alert('Video export failed. Try with fewer NFTs or use PNG export.');
+      alert('Video export failed: ' + (err instanceof Error ? err.message : 'Unknown error'));
       setIsExporting(false);
       setExportProgress('');
     }
   };
 
-  const cellSize = Math.floor(600 / Math.max(gridConfig.rows, gridConfig.cols));
+  // Calculate cell size based on grid dimensions
+  // Use 480px base to fit comfortably in the two-column desktop layout
+  const cellSize = Math.floor(480 / Math.max(gridConfig.rows, gridConfig.cols));
 
   return (
     <div className="min-h-screen bg-black">
@@ -499,7 +485,7 @@ export default function GridCreatorPage() {
                 </button>
               </div>
               <p className="text-xs text-gray-500 mt-2 text-center">
-                PNG = image • GIF/Video = static montage
+                PNG = static image • GIF/Video = animated
               </p>
               {exportProgress && (
                 <p className="text-xs text-[#00D4FF] mt-2 text-center animate-pulse">
@@ -511,10 +497,10 @@ export default function GridCreatorPage() {
             {/* Preview */}
             <div className="card">
               <h3 className="font-semibold mb-4 uppercase tracking-wide">Preview ({gridConfig.name})</h3>
-              <div className="flex justify-center">
+              <div className="flex justify-center overflow-x-auto lg:overflow-x-visible">
                 <div 
                   ref={canvasRef}
-                  className="bg-black rounded-xl overflow-hidden border border-[#1a1a1a]"
+                  className="bg-black rounded-xl overflow-hidden border border-[#1a1a1a] flex-shrink-0"
                   style={{
                     display: 'grid',
                     gridTemplateColumns: `repeat(${gridConfig.cols}, ${cellSize}px)`,
