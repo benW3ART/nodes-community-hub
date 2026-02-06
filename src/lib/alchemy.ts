@@ -31,18 +31,27 @@ interface AlchemyNFT {
  */
 async function fetchFreshMetadata(tokenId: string): Promise<FreshMetadata | null> {
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
+    
     const response = await fetch(`${METADATA_API_URL}/${tokenId}`, {
-      next: { revalidate: 60 }, // Cache for 1 minute on server
+      signal: controller.signal,
+      cache: 'no-store', // Don't use Next.js cache for external API
     });
     
+    clearTimeout(timeoutId);
+    
     if (!response.ok) {
-      console.warn(`Failed to fetch fresh metadata for token ${tokenId}`);
+      console.warn(`[Metadata API] Token ${tokenId}: HTTP ${response.status}`);
       return null;
     }
     
-    return await response.json();
+    const data = await response.json();
+    console.log(`[Metadata API] Token ${tokenId}: OK - ${data.name}`);
+    return data;
   } catch (error) {
-    console.error(`Error fetching metadata for token ${tokenId}:`, error);
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`[Metadata API] Token ${tokenId}: ${errorMsg}`);
     return null;
   }
 }
@@ -114,6 +123,7 @@ export async function getNFTsForOwner(ownerAddress: string): Promise<NodeNFT[]> 
       }
       
       // Fallback to Alchemy's cached data
+      console.warn(`[Fallback] Token ${tokenId}: Using Alchemy cached data`);
       const metadata = alchemyNft.raw?.metadata || alchemyNft.metadata || {};
       const image = metadata.image || alchemyNft.image?.cachedUrl || alchemyNft.image?.originalUrl || '';
       
