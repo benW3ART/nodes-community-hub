@@ -1,69 +1,123 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { Twitter, ExternalLink, RefreshCw } from 'lucide-react';
+import { useEffect, useState, useCallback } from 'react';
+import { Twitter, ExternalLink, RefreshCw, Heart, Repeat2, MessageCircle } from 'lucide-react';
 
-declare global {
-  interface Window {
-    twttr?: {
-      widgets: {
-        load: (element?: HTMLElement) => Promise<void>;
-      };
-    };
-  }
+interface Tweet {
+  id: string;
+  text: string;
+  author: {
+    username: string;
+    displayName: string;
+    avatar?: string;
+  };
+  createdAt: string;
+  url: string;
+  metrics?: {
+    likes: number;
+    retweets: number;
+    replies: number;
+  };
 }
 
-function TwitterTimelineEmbed({ username }: { username: string }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(false);
+interface TwitterFeedData {
+  official: Tweet[];
+  mentions: Tweet[];
+  lastFetch: number;
+}
 
-  useEffect(() => {
-    // Load Twitter widgets script if not already loaded
-    if (!document.getElementById('twitter-wjs')) {
-      const script = document.createElement('script');
-      script.id = 'twitter-wjs';
-      script.src = 'https://platform.twitter.com/widgets.js';
-      script.async = true;
-      document.body.appendChild(script);
-    }
+function formatTimeAgo(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+  
+  if (seconds < 60) return 'just now';
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h`;
+  if (seconds < 604800) return `${Math.floor(seconds / 86400)}d`;
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
 
-    // Wait for script to load and render widget
-    const timeout = setTimeout(() => {
-      if (isLoading) {
-        setError(true);
-        setIsLoading(false);
-      }
-    }, 10000); // 10 second timeout
+function TweetCard({ tweet }: { tweet: Tweet }) {
+  // Parse hashtags and mentions
+  const formatText = (text: string) => {
+    return text
+      .replace(/(#\w+)/g, '<span class="text-[#00D4FF]">$1</span>')
+      .replace(/(@\w+)/g, '<span class="text-[#4FFFDF]">$1</span>')
+      .replace(/(https?:\/\/[^\s]+)/g, '<span class="text-[#00D4FF] underline">$1</span>');
+  };
 
-    const checkAndRender = () => {
-      if (window.twttr?.widgets && containerRef.current) {
-        window.twttr.widgets.load(containerRef.current).then(() => {
-          setIsLoading(false);
-          clearTimeout(timeout);
-        }).catch(() => {
-          setError(true);
-          setIsLoading(false);
-        });
-      } else {
-        setTimeout(checkAndRender, 500);
-      }
-    };
+  return (
+    <a
+      href={tweet.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="block p-4 hover:bg-[#111] transition-colors border-b border-[#1a1a1a] last:border-b-0"
+    >
+      <div className="flex gap-3">
+        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#00D4FF] to-[#4FFFDF] flex items-center justify-center flex-shrink-0">
+          <span className="text-black font-bold text-sm">
+            {tweet.author.displayName.charAt(0).toUpperCase()}
+          </span>
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="font-semibold text-sm truncate">{tweet.author.displayName}</span>
+            <span className="text-gray-500 text-sm">@{tweet.author.username}</span>
+            <span className="text-gray-600 text-xs">·</span>
+            <span className="text-gray-500 text-xs">{formatTimeAgo(tweet.createdAt)}</span>
+          </div>
+          <p 
+            className="text-sm text-gray-300 leading-relaxed break-words"
+            dangerouslySetInnerHTML={{ __html: formatText(tweet.text) }}
+          />
+          {tweet.metrics && (
+            <div className="flex items-center gap-4 mt-2 text-gray-500 text-xs">
+              <span className="flex items-center gap-1 hover:text-[#F91880]">
+                <Heart className="w-3.5 h-3.5" />
+                {tweet.metrics.likes}
+              </span>
+              <span className="flex items-center gap-1 hover:text-[#00BA7C]">
+                <Repeat2 className="w-3.5 h-3.5" />
+                {tweet.metrics.retweets}
+              </span>
+              <span className="flex items-center gap-1 hover:text-[#1D9BF0]">
+                <MessageCircle className="w-3.5 h-3.5" />
+                {tweet.metrics.replies}
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+    </a>
+  );
+}
 
-    checkAndRender();
-
-    return () => clearTimeout(timeout);
-  }, [username]);
-
+function TweetList({ 
+  tweets, 
+  username, 
+  title,
+  loading,
+  error 
+}: { 
+  tweets: Tweet[]; 
+  username?: string;
+  title?: string;
+  loading: boolean;
+  error: boolean;
+}) {
+  const displayTitle = title || (username ? `@${username}` : 'Tweets');
+  const profileUrl = username ? `https://x.com/${username}` : 'https://x.com/search?q=%40NODESonBase%20OR%20%40gmhunterart';
+  
   return (
     <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl overflow-hidden">
       <div className="p-4 border-b border-[#1a1a1a] flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Twitter className="w-4 h-4 text-[#00D4FF]" />
-          <span className="font-medium text-sm">@{username}</span>
+          <span className="font-medium text-sm">{displayTitle}</span>
         </div>
         <a
-          href={`https://x.com/${username}`}
+          href={profileUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="text-[#00D4FF] hover:text-[#4FFFDF] text-xs flex items-center gap-1"
@@ -73,20 +127,20 @@ function TwitterTimelineEmbed({ username }: { username: string }) {
         </a>
       </div>
       
-      <div className="min-h-[350px] max-h-[450px] overflow-y-auto twitter-embed-container">
-        {isLoading && !error && (
-          <div className="flex items-center justify-center h-[350px] text-gray-500 text-sm">
+      <div className="min-h-[300px] max-h-[400px] overflow-y-auto">
+        {loading && (
+          <div className="flex items-center justify-center h-[300px] text-gray-500 text-sm">
             <RefreshCw className="w-5 h-5 animate-spin mr-2" />
-            Loading...
+            Loading tweets...
           </div>
         )}
         
-        {error && (
-          <div className="flex flex-col items-center justify-center h-[350px] text-gray-500 text-sm p-4 text-center">
+        {!loading && error && tweets.length === 0 && (
+          <div className="flex flex-col items-center justify-center h-[300px] text-gray-500 text-sm p-4 text-center">
             <Twitter className="w-10 h-10 mb-3 opacity-30" />
-            <p className="mb-3">Tweets couldn&apos;t load</p>
+            <p className="mb-3">Couldn&apos;t load tweets</p>
             <a
-              href={`https://x.com/${username}`}
+              href={profileUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="btn-secondary text-xs"
@@ -96,25 +150,35 @@ function TwitterTimelineEmbed({ username }: { username: string }) {
           </div>
         )}
         
-        <div ref={containerRef} className={isLoading || error ? 'hidden' : ''}>
-          <a 
-            className="twitter-timeline" 
-            data-theme="dark"
-            data-chrome="noheader nofooter noborders transparent"
-            data-tweet-limit="5"
-            data-dnt="true"
-            href={`https://twitter.com/${username}?ref_src=twsrc%5Etfw`}
-          >
-            Loading @{username}...
-          </a>
-        </div>
+        {!loading && tweets.length > 0 && (
+          <div>
+            {tweets.map((tweet) => (
+              <TweetCard key={tweet.id} tweet={tweet} />
+            ))}
+          </div>
+        )}
+        
+        {!loading && !error && tweets.length === 0 && (
+          <div className="flex flex-col items-center justify-center h-[300px] text-gray-500 text-sm p-4 text-center">
+            <Twitter className="w-10 h-10 mb-3 opacity-30" />
+            <p className="mb-3">No recent tweets</p>
+            <a
+              href={profileUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-secondary text-xs"
+            >
+              View on X →
+            </a>
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
 function TwitterSearchCard() {
-  const searchUrl = 'https://x.com/search?q=%40NODESonBase%20OR%20%40gmhunterart&src=typed_query&f=live';
+  const searchUrl = 'https://x.com/search?q=%40NODESonBase%20OR%20%40gmhunterart%20OR%20%23NODES&src=typed_query&f=live';
   
   return (
     <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl overflow-hidden">
@@ -125,7 +189,7 @@ function TwitterSearchCard() {
         </div>
       </div>
       
-      <div className="p-8 flex flex-col items-center justify-center text-center h-[350px]">
+      <div className="p-8 flex flex-col items-center justify-center text-center h-[300px]">
         <div className="w-16 h-16 rounded-full bg-[#4FFFDF]/10 flex items-center justify-center mb-4">
           <Twitter className="w-8 h-8 text-[#4FFFDF]" />
         </div>
@@ -148,16 +212,66 @@ function TwitterSearchCard() {
 }
 
 export function TwitterFeed() {
+  const [feedData, setFeedData] = useState<TwitterFeedData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  const fetchFeed = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(false);
+      
+      const response = await fetch('/api/twitter-feed');
+      if (!response.ok) throw new Error('Failed to fetch');
+      
+      const data = await response.json();
+      setFeedData(data);
+    } catch (err) {
+      console.error('Failed to fetch Twitter feed:', err);
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchFeed();
+  }, [fetchFeed]);
+
+  // Split official tweets by account
+  const nodesTweets = feedData?.official.filter(t => t.author.username === 'NODESonBase') || [];
+  const hunterTweets = feedData?.official.filter(t => t.author.username === 'gmhunterart') || [];
+
   return (
     <section className="mt-10 sm:mt-16">
-      <h2 className="section-title text-lg sm:text-2xl flex items-center gap-3 mb-6">
-        <Twitter className="w-6 h-6 text-[#00D4FF]" />
-        Community Feed
-      </h2>
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="section-title text-lg sm:text-2xl flex items-center gap-3">
+          <Twitter className="w-6 h-6 text-[#00D4FF]" />
+          Community Feed
+        </h2>
+        <button
+          onClick={fetchFeed}
+          disabled={loading}
+          className="text-gray-500 hover:text-[#00D4FF] transition-colors p-2 rounded-lg hover:bg-[#111] disabled:opacity-50"
+          title="Refresh feed"
+        >
+          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+        </button>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <TwitterTimelineEmbed username="NODESonBase" />
-        <TwitterTimelineEmbed username="gmhunterart" />
+        <TweetList 
+          tweets={nodesTweets} 
+          username="NODESonBase" 
+          loading={loading}
+          error={error}
+        />
+        <TweetList 
+          tweets={hunterTweets} 
+          username="gmhunterart" 
+          loading={loading}
+          error={error}
+        />
         <TwitterSearchCard />
       </div>
 
@@ -181,15 +295,6 @@ export function TwitterFeed() {
           @gmhunterart
         </a>
       </div>
-      
-      <style jsx global>{`
-        .twitter-embed-container .twitter-timeline {
-          width: 100% !important;
-        }
-        .twitter-embed-container iframe {
-          border-radius: 0 !important;
-        }
-      `}</style>
     </section>
   );
 }
