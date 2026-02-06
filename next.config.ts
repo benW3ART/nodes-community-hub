@@ -31,7 +31,7 @@ const securityHeaders = [
       "default-src 'self'",
       "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
       "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: blob: https://*.alchemy.com https://ipfs.io https://*.ipfs.nftstorage.link https://arweave.net",
+      "img-src 'self' data: blob: https://*.alchemy.com https://ipfs.io https://*.ipfs.nftstorage.link https://arweave.net https://storage.googleapis.com https://res.cloudinary.com",
       "font-src 'self'",
       "connect-src 'self' https://*.alchemy.com https://api.opensea.io wss://*.walletconnect.com wss://*.walletconnect.org https://*.walletconnect.com https://*.walletconnect.org https://rpc.walletconnect.com https://pulse.walletconnect.com https://verify.walletconnect.com",
       "frame-src 'self' https://*.walletconnect.com https://*.walletconnect.org https://verify.walletconnect.com",
@@ -69,6 +69,14 @@ const nextConfig: NextConfig = {
       {
         protocol: 'https',
         hostname: 'arweave.net',
+      },
+      {
+        protocol: 'https',
+        hostname: 'storage.googleapis.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com',
       },
     ],
   },
