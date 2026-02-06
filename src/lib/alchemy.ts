@@ -3,8 +3,8 @@ import type { NodeNFT, FullSetStatus } from '@/types/nft';
 
 const ALCHEMY_BASE_URL = `https://base-mainnet.g.alchemy.com/nft/v3/${ALCHEMY_API_KEY}`;
 
-// Direct metadata API (always fresh, not cached by Alchemy)
-const METADATA_API_URL = 'https://nodes-metadata-api.10amstudios.xyz/metadata';
+// Use our proxy API to avoid CORS issues (browser → our server → metadata API)
+const METADATA_API_URL = '/api/metadata';
 
 // Fresh metadata response from the contract's tokenURI
 interface FreshMetadata {
