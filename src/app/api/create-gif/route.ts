@@ -196,19 +196,32 @@ export async function POST(request: NextRequest) {
     for (const cell of cells) {
       console.log(`Loading cell [${cell.row},${cell.col}]: ${cell.isLogo ? 'LOGO' : cell.image.substring(0, 50)}...`);
       
-      // Handle logo specially - load from public folder
+      // Handle logo specially - try multiple paths
       if (cell.isLogo) {
-        try {
-          const logoPath = process.cwd() + '/public/nodes-logo.png';
-          const logoImg = await loadImage(logoPath);
-          console.log(`  -> Logo loaded from ${logoPath}`);
-          loadedCells.push({ cell, staticImg: logoImg, isAnimated: false });
-          continue;
-        } catch (err) {
-          console.error(`  -> Failed to load logo:`, err);
-          // Continue without logo
-          continue;
+        const logoPaths = [
+          process.cwd() + '/public/nodes-logo.png',           // Dev
+          process.cwd() + '/.next/static/nodes-logo.png',     // Prod build
+          '/app/public/nodes-logo.png',                        // Docker/Railway
+        ];
+        
+        let logoLoaded = false;
+        for (const logoPath of logoPaths) {
+          try {
+            const logoImg = await loadImage(logoPath);
+            console.log(`  -> Logo loaded from ${logoPath}`);
+            loadedCells.push({ cell, staticImg: logoImg, isAnimated: false });
+            logoLoaded = true;
+            break;
+          } catch {
+            // Try next path
+          }
         }
+        
+        if (!logoLoaded) {
+          // Last resort: try loading from URL (requires request origin)
+          console.error(`  -> Failed to load logo from any path`);
+        }
+        continue;
       }
       
       // Try as animated GIF first

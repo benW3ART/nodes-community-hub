@@ -165,18 +165,31 @@ export async function POST(request: NextRequest) {
     }[] = [];
     
     for (const cell of cells) {
-      // Handle logo specially
+      // Handle logo specially - try multiple paths
       if (cell.isLogo) {
-        try {
-          const logoPath = process.cwd() + '/public/nodes-logo.png';
-          const logoImg = await loadImage(logoPath);
-          console.log(`  Cell [${cell.row},${cell.col}]: LOGO`);
-          loadedCells.push({ cell, staticImg: logoImg, isAnimated: false });
-          continue;
-        } catch (err) {
-          console.error(`  Failed to load logo:`, err);
-          continue;
+        const logoPaths = [
+          process.cwd() + '/public/nodes-logo.png',           // Dev
+          process.cwd() + '/.next/static/nodes-logo.png',     // Prod build
+          '/app/public/nodes-logo.png',                        // Docker/Railway
+        ];
+        
+        let logoLoaded = false;
+        for (const logoPath of logoPaths) {
+          try {
+            const logoImg = await loadImage(logoPath);
+            console.log(`  Cell [${cell.row},${cell.col}]: LOGO loaded from ${logoPath}`);
+            loadedCells.push({ cell, staticImg: logoImg, isAnimated: false });
+            logoLoaded = true;
+            break;
+          } catch {
+            // Try next path
+          }
         }
+        
+        if (!logoLoaded) {
+          console.error(`  Cell [${cell.row},${cell.col}]: Failed to load logo from any path`);
+        }
+        continue;
       }
       
       const gifData = await fetchGifFrames(cell.image);
