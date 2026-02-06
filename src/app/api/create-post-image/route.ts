@@ -69,17 +69,17 @@ async function loadLogo(): Promise<CanvasImage | null> {
 }
 
 function drawGlowEffect(ctx: CanvasRenderingContext2D, x: number, y: number, radius: number, color: string, opacity: number = 0.1) {
+  // Create radial gradient for glow effect (no filter needed)
   const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
-  gradient.addColorStop(0, color.replace(')', `, ${opacity})`).replace('rgb', 'rgba').replace('#', ''));
+  gradient.addColorStop(0, color);
+  gradient.addColorStop(0.5, `${color}80`);
   gradient.addColorStop(1, 'transparent');
   
-  // Simple glow with color
   ctx.save();
   ctx.globalAlpha = opacity;
-  ctx.fillStyle = color;
+  ctx.fillStyle = gradient;
   ctx.beginPath();
   ctx.arc(x, y, radius, 0, Math.PI * 2);
-  ctx.filter = `blur(${radius / 3}px)`;
   ctx.fill();
   ctx.restore();
 }
@@ -169,7 +169,7 @@ async function renderTextOnly(ctx: CanvasRenderingContext2D, text: string) {
   ctx.font = 'bold 32px Inter, system-ui, sans-serif';
   ctx.fillStyle = COLORS.cyan;
   ctx.textAlign = 'center';
-  ctx.letterSpacing = '8px';
+  
   ctx.fillText('NODES COMMUNITY', SIZE / 2, SIZE / 2 + 60);
 }
 
@@ -618,7 +618,7 @@ export async function POST(request: NextRequest) {
       ctx.fillStyle = `${COLORS.cyan}80`;
       ctx.textAlign = 'right';
       ctx.textBaseline = 'top';
-      ctx.letterSpacing = '4px';
+      
       ctx.fillText('NODES', wmX, wmY);
     }
     
