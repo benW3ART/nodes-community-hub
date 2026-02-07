@@ -4,8 +4,9 @@ export const dynamic = 'force-dynamic';
 
 import { useState, useRef, useEffect } from 'react';
 import { Header } from '@/components/Header';
-import { useAccount } from 'wagmi';
+import { useWalletAddress } from '@/hooks/useWalletAddress';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { ViewOnlyLink } from '@/components/ViewOnlyInput';
 import { getNFTsForOwner } from '@/lib/alchemy';
 import { useNodesStore } from '@/stores/useNodesStore';
 import { NFTCardMini } from '@/components/NFTCard';
@@ -74,7 +75,7 @@ const PATTERN_OPTIONS: PatternOption[] = [
 ];
 
 export default function BannerCreatorPage() {
-  const { address, isConnected } = useAccount();
+  const { address, isConnected } = useWalletAddress();
   const { nfts, setNfts } = useNodesStore();
   const [selectedTemplate, setSelectedTemplate] = useState<BannerTemplate>(BANNER_TEMPLATES[2]);
   const [selectedNfts, setSelectedNfts] = useState<(NodeNFT | null)[]>([]);
@@ -418,7 +419,10 @@ export default function BannerCreatorPage() {
             <Wallet className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 sm:mb-6 text-gray-700" />
             <h2 className="text-xl sm:text-2xl font-semibold mb-3 sm:mb-4">Connect Your Wallet</h2>
             <p className="text-gray-500 text-sm sm:text-base mb-4 sm:mb-6">Connect to access your NODES NFTs</p>
-            <ConnectButton />
+            <div className="flex flex-col items-center gap-3">
+              <ConnectButton />
+              <ViewOnlyLink />
+            </div>
           </div>
         ) : (
           <div className="space-y-6 sm:space-y-8">

@@ -4,8 +4,9 @@ export const dynamic = 'force-dynamic';
 
 import { Header } from '@/components/Header';
 import { NetworkHelper } from '@/components/NetworkHelper';
-import { useAccount } from 'wagmi';
+import { useWalletAddress } from '@/hooks/useWalletAddress';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { ViewOnlyLink } from '@/components/ViewOnlyInput';
 import Link from 'next/link';
 import Image from 'next/image';
 import { 
@@ -59,7 +60,7 @@ const features = [
 ];
 
 export default function Home() {
-  const { isConnected } = useAccount();
+  const { isConnected } = useWalletAddress();
 
   return (
     <div className="min-h-screen bg-black">
@@ -112,8 +113,9 @@ export default function Home() {
           </p>
 
           {!isConnected ? (
-            <div className="flex justify-center">
+            <div className="flex flex-col items-center gap-3">
               <ConnectButton />
+              <ViewOnlyLink />
             </div>
           ) : (
             <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 px-4">

@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import { useState, useEffect } from 'react';
 import { Header } from '@/components/Header';
-import { useAccount } from 'wagmi';
+import { useWalletAddress } from '@/hooks/useWalletAddress';
 import { 
   Trophy, 
   Medal, 
@@ -69,7 +69,7 @@ function getRankBg(rank: number) {
 }
 
 export default function LeaderboardPage() {
-  const { address } = useAccount();
+  const { address } = useWalletAddress();
   const [data, setData] = useState<LeaderboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

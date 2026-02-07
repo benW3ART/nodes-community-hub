@@ -1,7 +1,17 @@
 'use client';
 
-import Script from 'next/script';
 import { Twitter, ExternalLink } from 'lucide-react';
+import { useEffect, useRef } from 'react';
+
+declare global {
+  interface Window {
+    twttr?: {
+      widgets: {
+        load: (element?: HTMLElement) => void;
+      };
+    };
+  }
+}
 
 interface TimelineColumnProps {
   username: string;
@@ -9,6 +19,41 @@ interface TimelineColumnProps {
 }
 
 function TimelineColumn({ username, title }: TimelineColumnProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Function to load Twitter widgets
+    const loadWidgets = () => {
+      if (window.twttr?.widgets && containerRef.current) {
+        window.twttr.widgets.load(containerRef.current);
+      }
+    };
+
+    // Check if script already exists
+    const existingScript = document.getElementById('twitter-wjs');
+    
+    if (existingScript) {
+      // Script exists, just reload widgets
+      loadWidgets();
+    } else {
+      // Load script for the first time
+      const script = document.createElement('script');
+      script.id = 'twitter-wjs';
+      script.src = 'https://platform.twitter.com/widgets.js';
+      script.async = true;
+      script.onload = () => {
+        // Wait a bit for twttr to initialize
+        setTimeout(loadWidgets, 500);
+      };
+      document.body.appendChild(script);
+    }
+
+    // Also try to load after a delay in case of race condition
+    const timer = setTimeout(loadWidgets, 2000);
+    
+    return () => clearTimeout(timer);
+  }, [username]);
+
   return (
     <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl overflow-hidden flex flex-col">
       {/* Header */}
@@ -29,7 +74,7 @@ function TimelineColumn({ username, title }: TimelineColumnProps) {
       </div>
 
       {/* EXACT embed code from publish.x.com */}
-      <div className="flex-1 overflow-y-auto p-2 min-h-[450px]">
+      <div ref={containerRef} className="flex-1 overflow-y-auto p-2 min-h-[450px]">
         <a 
           className="twitter-timeline" 
           data-theme="dark"
@@ -82,12 +127,6 @@ function TwitterSearchCard() {
 export function TwitterFeed() {
   return (
     <section className="mt-10 sm:mt-16">
-      {/* EXACT script from publish.x.com */}
-      <Script
-        src="https://platform.twitter.com/widgets.js"
-        strategy="afterInteractive"
-      />
-
       <h2 className="section-title text-lg sm:text-2xl flex items-center gap-3 mb-6">
         <Twitter className="w-6 h-6 text-[#00D4FF]" />
         Community Feed

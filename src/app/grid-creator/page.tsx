@@ -4,8 +4,9 @@ export const dynamic = 'force-dynamic';
 
 import { useState, useRef, useEffect } from 'react';
 import { Header } from '@/components/Header';
-import { useAccount } from 'wagmi';
+import { useWalletAddress } from '@/hooks/useWalletAddress';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { ViewOnlyLink } from '@/components/ViewOnlyInput';
 import { getNFTsForOwner } from '@/lib/alchemy';
 import { useNodesStore } from '@/stores/useNodesStore';
 import { NFTCardMini } from '@/components/NFTCard';
@@ -26,7 +27,7 @@ import type { NodeNFT } from '@/types/nft';
 import { GRID_PRESETS, type GridConfig } from '@/types/nft';
 
 export default function GridCreatorPage() {
-  const { address, isConnected } = useAccount();
+  const { address, isConnected } = useWalletAddress();
   const { nfts, setNfts } = useNodesStore();
   const [gridConfig, setGridConfig] = useState<GridConfig>(GRID_PRESETS[1]); // 3x3 default
   const [gridCells, setGridCells] = useState<(NodeNFT | 'logo' | null)[]>([]);
@@ -329,7 +330,10 @@ export default function GridCreatorPage() {
             <Wallet className="w-16 h-16 mx-auto mb-6 text-gray-700" />
             <h2 className="text-2xl font-semibold mb-4">Connect Your Wallet</h2>
             <p className="text-gray-500 mb-6">Connect to access your NODES NFTs</p>
-            <ConnectButton />
+            <div className="flex flex-col items-center gap-3">
+              <ConnectButton />
+              <ViewOnlyLink />
+            </div>
           </div>
         ) : (
           <div className="grid lg:grid-cols-2 gap-8">

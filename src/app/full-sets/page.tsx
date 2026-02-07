@@ -4,8 +4,9 @@ export const dynamic = 'force-dynamic';
 
 import { useEffect, useState } from 'react';
 import { Header } from '@/components/Header';
-import { useAccount } from 'wagmi';
+import { useWalletAddress } from '@/hooks/useWalletAddress';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { ViewOnlyLink } from '@/components/ViewOnlyInput';
 import { getNFTsForOwner, analyzeFullSets } from '@/lib/alchemy';
 import { useNodesStore } from '@/stores/useNodesStore';
 import { INNER_STATES } from '@/lib/wagmi';
@@ -74,7 +75,7 @@ function checkInterferenceEligibility(
 }
 
 export default function FullSetsPage() {
-  const { address, isConnected } = useAccount();
+  const { address, isConnected, isViewOnly } = useWalletAddress();
   const { 
     nfts, 
     isLoading, 
@@ -191,7 +192,10 @@ export default function FullSetsPage() {
             <p className="text-gray-500 text-sm sm:text-base mb-4 sm:mb-6">
               Connect your wallet to track your Full Set progress
             </p>
-            <ConnectButton />
+            <div className="flex flex-col items-center gap-3">
+              <ConnectButton />
+              <ViewOnlyLink />
+            </div>
           </div>
         ) : isLoading ? (
           <div className="card text-center py-12 sm:py-16">

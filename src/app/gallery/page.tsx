@@ -4,8 +4,9 @@ export const dynamic = 'force-dynamic';
 
 import { useEffect, useState, useMemo } from 'react';
 import { Header } from '@/components/Header';
-import { useAccount } from 'wagmi';
+import { useWalletAddress } from '@/hooks/useWalletAddress';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { ViewOnlyLink } from '@/components/ViewOnlyInput';
 import { getNFTsForOwner, analyzeFullSets } from '@/lib/alchemy';
 import { calculateCollectionRarity, calculatePortfolioRarity } from '@/lib/rarity';
 import type { RarityScore } from '@/lib/rarity';
@@ -27,7 +28,7 @@ type SortOption = 'tokenId' | 'innerState' | 'rarity';
 type SortDirection = 'asc' | 'desc';
 
 export default function GalleryPage() {
-  const { address, isConnected } = useAccount();
+  const { address, isConnected, isViewOnly } = useWalletAddress();
   const { 
     nfts, 
     isLoading, 
@@ -128,10 +129,19 @@ export default function GalleryPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-12">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6 sm:mb-8">
           <div>
-            <h1 className="section-title text-xl sm:text-2xl md:text-3xl mb-1 sm:mb-2">My NODES Gallery</h1>
+            <div className="flex items-center gap-3 mb-1 sm:mb-2">
+              <h1 className="section-title text-xl sm:text-2xl md:text-3xl">
+                {isViewOnly ? 'NODES Gallery' : 'My NODES Gallery'}
+              </h1>
+              {isViewOnly && (
+                <span className="px-2 py-1 bg-[#00D4FF]/10 border border-[#00D4FF]/30 rounded text-xs text-[#00D4FF] uppercase tracking-wide">
+                  View Only
+                </span>
+              )}
+            </div>
             {isConnected && nfts.length > 0 && (
               <p className="text-gray-500 text-sm sm:text-base">
-                You own {nfts.length} NODES NFT{nfts.length !== 1 ? 's' : ''}
+                {isViewOnly ? 'This wallet owns' : 'You own'} {nfts.length} NODES NFT{nfts.length !== 1 ? 's' : ''}
               </p>
             )}
           </div>
@@ -144,7 +154,10 @@ export default function GalleryPage() {
             <p className="text-gray-500 text-sm sm:text-base mb-4 sm:mb-6">
               Connect your wallet to view your NODES NFTs
             </p>
-            <ConnectButton />
+            <div className="flex flex-col items-center gap-3">
+              <ConnectButton />
+              <ViewOnlyLink />
+            </div>
           </div>
         ) : isLoading ? (
           <div className="card text-center py-12 sm:py-16">

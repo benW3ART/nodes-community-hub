@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import { AddBaseButton } from './NetworkHelper';
+import { ViewOnlyInput } from './ViewOnlyInput';
+import { useWalletAddress } from '@/hooks/useWalletAddress';
 import { 
   Home, 
   Image as ImageIcon, 
@@ -14,7 +16,8 @@ import {
   Target, 
   Trophy,
   Menu,
-  X
+  X,
+  Eye
 } from 'lucide-react';
 
 const navItems = [
@@ -30,6 +33,7 @@ const navItems = [
 export function Header() {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { isWalletConnected, isViewOnly, viewOnlyAddress, clearViewOnlyAddress } = useWalletAddress();
 
   return (
     <header className="sticky top-0 z-50 bg-black/90 backdrop-blur-xl border-b border-[#1a1a1a]">
@@ -71,19 +75,52 @@ export function Header() {
             })}
           </nav>
 
-          {/* Right side: Connect + Mobile menu button */}
+          {/* Right side: Connect/View-Only + Mobile menu button */}
           <div className="flex items-center space-x-2 sm:space-x-4">
-            <ConnectButton 
-              chainStatus="icon"
-              accountStatus={{
-                smallScreen: 'avatar',
-                largeScreen: 'full',
-              }}
-              showBalance={{
-                smallScreen: false,
-                largeScreen: true,
-              }}
-            />
+            {/* Show view-only badge if in view-only mode */}
+            {isViewOnly && viewOnlyAddress ? (
+              <div className="flex items-center gap-2">
+                <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-[#0a0a0a] border border-[#00D4FF]/30 rounded-lg">
+                  <Eye className="w-4 h-4 text-[#00D4FF]" />
+                  <span className="text-sm text-gray-300 font-mono">
+                    {viewOnlyAddress.slice(0, 6)}...{viewOnlyAddress.slice(-4)}
+                  </span>
+                  <span className="text-xs text-[#00D4FF] uppercase tracking-wide">View</span>
+                </div>
+                {/* Mobile: Just show icon */}
+                <div className="sm:hidden flex items-center gap-1 px-2 py-1.5 bg-[#0a0a0a] border border-[#00D4FF]/30 rounded-lg">
+                  <Eye className="w-4 h-4 text-[#00D4FF]" />
+                  <span className="text-xs text-gray-300 font-mono">
+                    {viewOnlyAddress.slice(0, 4)}...
+                  </span>
+                </div>
+                <button
+                  onClick={clearViewOnlyAddress}
+                  className="p-1.5 bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg hover:border-red-500/50 hover:text-red-400 transition-colors"
+                  title="Exit view-only mode"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <>
+                <ConnectButton 
+                  chainStatus="icon"
+                  accountStatus={{
+                    smallScreen: 'avatar',
+                    largeScreen: 'full',
+                  }}
+                  showBalance={{
+                    smallScreen: false,
+                    largeScreen: true,
+                  }}
+                />
+                {/* View-only option when not connected */}
+                {!isWalletConnected && (
+                  <ViewOnlyInput compact className="hidden md:block" />
+                )}
+              </>
+            )}
             
             {/* Mobile menu button */}
             <button
