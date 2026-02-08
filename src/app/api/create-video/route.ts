@@ -14,6 +14,7 @@ interface GridCell {
   row: number;
   col: number;
   isLogo?: boolean;
+  isBanner?: boolean;
 }
 
 interface GridConfig {
@@ -168,19 +169,20 @@ export async function POST(request: NextRequest) {
       // Handle logo specially - try multiple paths
       if (cell.isLogo) {
         const cwd = process.cwd();
+        const logoFile = cell.isBanner ? 'nodes-banner-logo.jpg' : 'nodes-logo.png';
         const logoPaths = [
-          `${cwd}/public/nodes-logo.png`,                      // Dev & Railway
-          `${cwd}/.next/standalone/public/nodes-logo.png`,     // Next standalone
-          `${cwd}/.next/static/nodes-logo.png`,                // Static build
-          '/app/public/nodes-logo.png',                        // Docker absolute
+          `${cwd}/public/${logoFile}`,
+          `${cwd}/.next/standalone/public/${logoFile}`,
+          `${cwd}/.next/static/${logoFile}`,
+          `/app/public/${logoFile}`,
         ];
-        console.log(`  Logo paths to try (cwd=${cwd}):`, logoPaths);
+        console.log(`  Logo paths to try (cwd=${cwd}, banner=${!!cell.isBanner}):`, logoPaths);
         
         let logoLoaded = false;
         for (const logoPath of logoPaths) {
           try {
             const logoImg = await loadImage(logoPath);
-            console.log(`  Cell [${cell.row},${cell.col}]: LOGO loaded from ${logoPath}`);
+            console.log(`  Cell [${cell.row},${cell.col}]: ${cell.isBanner ? 'BANNER' : 'LOGO'} loaded from ${logoPath}`);
             loadedCells.push({ cell, staticImg: logoImg, isAnimated: false });
             logoLoaded = true;
             break;
@@ -257,7 +259,6 @@ export async function POST(request: NextRequest) {
         
         try {
           if (isAnimated && renderedFrames && renderedFrames.canvases.length > 0) {
-            // Time-based frame selection - each GIF plays at its own speed
             const frameIndex = getFrameAtTime(
               renderedFrames.timestamps,
               renderedFrames.totalDuration,
@@ -268,7 +269,20 @@ export async function POST(request: NextRequest) {
               ctx.drawImage(frameCanvas, 0, 0, frameCanvas.width, frameCanvas.height, x, y, cellSize, cellSize);
             }
           } else if (staticImg) {
-            ctx.drawImage(staticImg, x, y, cellSize, cellSize);
+            if (cell.isBanner) {
+              // Banner spans 2 cells horizontally
+              const bannerWidth = cellSize * 2 + gap;
+              const imgAspect = staticImg.width / staticImg.height;
+              const fitHeight = cellSize * 0.8;
+              const fitWidth = fitHeight * imgAspect;
+              const cx = x + bannerWidth / 2 - fitWidth / 2;
+              const cy = y + cellSize / 2 - fitHeight / 2;
+              ctx.fillStyle = '#0a0a0a';
+              ctx.fillRect(x, y, bannerWidth, cellSize);
+              ctx.drawImage(staticImg, cx, cy, fitWidth, fitHeight);
+            } else {
+              ctx.drawImage(staticImg, x, y, cellSize, cellSize);
+            }
           }
         } catch (err) {
           ctx.fillStyle = '#1a1a1a';

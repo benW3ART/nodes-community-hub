@@ -8,6 +8,7 @@ interface GridCell {
   row: number;
   col: number;
   isLogo?: boolean;
+  isBanner?: boolean;
 }
 
 interface GridConfig {
@@ -199,19 +200,20 @@ export async function POST(request: NextRequest) {
       // Handle logo specially - try multiple paths
       if (cell.isLogo) {
         const cwd = process.cwd();
+        const logoFile = cell.isBanner ? 'nodes-banner-logo.jpg' : 'nodes-logo.png';
         const logoPaths = [
-          `${cwd}/public/nodes-logo.png`,                      // Dev & Railway
-          `${cwd}/.next/standalone/public/nodes-logo.png`,     // Next standalone
-          `${cwd}/.next/static/nodes-logo.png`,                // Static build
-          '/app/public/nodes-logo.png',                        // Docker absolute
+          `${cwd}/public/${logoFile}`,
+          `${cwd}/.next/standalone/public/${logoFile}`,
+          `${cwd}/.next/static/${logoFile}`,
+          `/app/public/${logoFile}`,
         ];
-        console.log(`  Logo paths to try (cwd=${cwd}):`, logoPaths);
+        console.log(`  Logo paths to try (cwd=${cwd}, banner=${!!cell.isBanner}):`, logoPaths);
         
         let logoLoaded = false;
         for (const logoPath of logoPaths) {
           try {
             const logoImg = await loadImage(logoPath);
-            console.log(`  -> Logo loaded from ${logoPath}`);
+            console.log(`  -> ${cell.isBanner ? 'BANNER' : 'LOGO'} loaded from ${logoPath}`);
             loadedCells.push({ cell, staticImg: logoImg, isAnimated: false });
             logoLoaded = true;
             break;
@@ -221,7 +223,6 @@ export async function POST(request: NextRequest) {
         }
         
         if (!logoLoaded) {
-          // Last resort: try loading from URL (requires request origin)
           console.error(`  -> Failed to load logo from any path`);
         }
         continue;
@@ -321,11 +322,22 @@ export async function POST(request: NextRequest) {
               ctx.drawImage(frameCanvas, 0, 0, frameCanvas.width, frameCanvas.height, x, y, cellSize, cellSize);
             }
           } else if (staticImg) {
-            ctx.drawImage(staticImg, x, y, cellSize, cellSize);
+            if (cell.isBanner) {
+              const bannerWidth = cellSize * 2 + gap;
+              const imgAspect = staticImg.width / staticImg.height;
+              const fitHeight = cellSize * 0.8;
+              const fitWidth = fitHeight * imgAspect;
+              const cx = x + bannerWidth / 2 - fitWidth / 2;
+              const cy = y + cellSize / 2 - fitHeight / 2;
+              ctx.fillStyle = '#0a0a0a';
+              ctx.fillRect(x, y, bannerWidth, cellSize);
+              ctx.drawImage(staticImg, cx, cy, fitWidth, fitHeight);
+            } else {
+              ctx.drawImage(staticImg, x, y, cellSize, cellSize);
+            }
           }
         } catch (err) {
           console.error(`Error drawing cell [${cell.row},${cell.col}] at ${currentTimeMs}ms:`, err);
-          // Draw a placeholder on error
           ctx.fillStyle = '#1a1a1a';
           ctx.fillRect(x, y, cellSize, cellSize);
           ctx.fillStyle = '#333';
