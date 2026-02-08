@@ -35,7 +35,7 @@ export default function GridCreatorPage() {
   const [isLoadingNfts, setIsLoadingNfts] = useState(false);
   const [showLogoOption, setShowLogoOption] = useState(false);
   const [bannerLogoMode, setBannerLogoMode] = useState(false);
-  const [bannerLogoUrl, setBannerLogoUrl] = useState('/nodes-logo.png');
+  const [bannerLogoUrl, setBannerLogoUrl] = useState('/nodes-banner-logo.jpg');
   const bannerFileRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
 
@@ -497,9 +497,9 @@ export default function GridCreatorPage() {
                       >
                         Upload Custom Image
                       </button>
-                      {bannerLogoUrl !== '/nodes-logo.png' && (
+                      {bannerLogoUrl !== '/nodes-banner-logo.jpg' && (
                         <button
-                          onClick={() => setBannerLogoUrl('/nodes-logo.png')}
+                          onClick={() => setBannerLogoUrl('/nodes-banner-logo.jpg')}
                           className="text-xs text-gray-500 hover:text-white"
                         >
                           Reset to Default
@@ -635,9 +635,9 @@ export default function GridCreatorPage() {
                         key={index}
                         className={`grid-cell ${cell ? 'grid-cell-filled' : ''} ${cell === 'logo' ? 'grid-cell-logo' : ''} ${cell === 'banner-start' ? 'border-[#FF6B00]/50' : ''}`}
                         style={{
-                          width: cell === 'banner-start' ? cellSize * 2 + 4 : cellSize,
                           height: cellSize,
                           gridColumn: cell === 'banner-start' ? 'span 2' : undefined,
+                          ...(cell !== 'banner-start' ? { width: cellSize } : { overflow: 'hidden' }),
                         }}
                         onClick={() => {
                           if (cell) {
@@ -652,13 +652,12 @@ export default function GridCreatorPage() {
                         }}
                       >
                         {cell === 'banner-start' ? (
-                          <div className="w-full h-full flex items-center justify-center bg-[#FF6B00]/10 border border-[#FF6B00]/30 rounded p-2">
+                          <div className="w-full h-full flex items-center justify-center bg-[#FF6B00]/10 border border-[#FF6B00]/30 rounded overflow-hidden relative">
                             <Image
                               src={bannerLogoUrl}
                               alt="Banner"
-                              width={cellSize * 2 - 16}
-                              height={cellSize - 16}
-                              className="object-contain"
+                              fill
+                              className="object-contain p-2"
                               unoptimized
                             />
                           </div>

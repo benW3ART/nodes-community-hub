@@ -20,7 +20,7 @@ import Image from 'next/image';
 interface Asset {
   id: string;
   name: string;
-  type: 'logo' | 'frame' | 'background' | 'sticker';
+  type: 'logo' | 'frame' | 'background' | 'sticker' | 'banner';
   url: string;
   createdAt: string;
 }
@@ -204,6 +204,7 @@ export default function AdminPage() {
               <option value="frame">Frame</option>
               <option value="background">Background</option>
               <option value="sticker">Sticker</option>
+              <option value="banner">Banner (2×1)</option>
             </select>
             
             <label className={`btn-primary flex items-center justify-center gap-2 cursor-pointer ${
