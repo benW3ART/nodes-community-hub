@@ -8,7 +8,7 @@ import { useWalletAddress } from '@/hooks/useWalletAddress';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { ViewOnlyLink } from '@/components/ViewOnlyInput';
 import { getNFTsForOwner, analyzeFullSets } from '@/lib/alchemy';
-import { calculateCollectionRarity, calculatePortfolioRarity } from '@/lib/rarity';
+import { calculateCollectionRarity, calculatePortfolioRarity, loadRarityData } from '@/lib/rarity';
 import type { RarityScore } from '@/lib/rarity';
 import { useNodesStore } from '@/stores/useNodesStore';
 import { NFTCard } from '@/components/NFTCard';
@@ -51,6 +51,7 @@ export default function GalleryPage() {
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [showFilters, setShowFilters] = useState(false);
   const [selectedNft, setSelectedNft] = useState<NodeNFT | null>(null);
+  const [traitCounts, setTraitCounts] = useState<Record<string, Record<string, number>>>({});
 
   useEffect(() => {
     async function fetchNFTs() {
@@ -71,6 +72,10 @@ export default function GalleryPage() {
         if (fetchedNfts.length > 0) {
           const rarity = await calculateCollectionRarity(fetchedNfts);
           setRarityMap(rarity);
+          const rarityData = await loadRarityData();
+          if (rarityData?.traitCounts) {
+            setTraitCounts(rarityData.traitCounts);
+          }
         }
       } catch (err) {
         setError('Failed to fetch NFTs. Please try again.');
@@ -451,22 +456,12 @@ export default function GalleryPage() {
                   <p className="text-sm text-gray-500 mb-4">Token #{selectedNft.tokenId}</p>
 
                   <div className="grid grid-cols-2 gap-2 mb-4">
-                    <div className="p-2 bg-black border border-[#1a1a1a] rounded-lg">
-                      <p className="text-[10px] text-gray-600 uppercase tracking-wide">Inner State</p>
-                      <p className="text-sm font-medium text-[#00D4FF]">{selectedNft.innerState}</p>
-                    </div>
-                    <div className="p-2 bg-black border border-[#1a1a1a] rounded-lg">
-                      <p className="text-[10px] text-gray-600 uppercase tracking-wide">Grid</p>
-                      <p className="text-sm font-medium">{selectedNft.grid || 'N/A'}</p>
-                    </div>
-                    <div className="p-2 bg-black border border-[#1a1a1a] rounded-lg">
-                      <p className="text-[10px] text-gray-600 uppercase tracking-wide">Gradient</p>
-                      <p className="text-sm font-medium">{selectedNft.gradient || 'N/A'}</p>
-                    </div>
-                    <div className="p-2 bg-black border border-[#1a1a1a] rounded-lg">
-                      <p className="text-[10px] text-gray-600 uppercase tracking-wide">Glow</p>
-                      <p className="text-sm font-medium">{selectedNft.glow || 'N/A'}</p>
-                    </div>
+                    {selectedNft.metadata.attributes.map((attr, i) => (
+                      <div key={i} className="p-2 bg-black border border-[#1a1a1a] rounded-lg">
+                        <p className="text-[10px] text-gray-600 uppercase tracking-wide">{attr.trait_type}</p>
+                        <p className="text-sm font-medium text-[#00D4FF]">{attr.value}</p>
+                      </div>
+                    ))}
                   </div>
 
                   {selectedNft.interference && (
@@ -490,13 +485,13 @@ export default function GalleryPage() {
                       </div>
                       {nftRarity.traits && (
                         <div className="space-y-1.5">
-                          {Object.entries(nftRarity.traits).slice(0, 5).map(([traitType, trait], i) => (
+                          {Object.entries(nftRarity.traits).map(([traitType, trait], i) => (
                             <div key={i} className="flex items-center justify-between text-xs">
                               <span className="text-gray-600 truncate mr-2">
                                 {traitType}: <span className="text-gray-400">{trait.value}</span>
                               </span>
                               <span className="text-gray-500 flex-shrink-0">
-                                {(trait.rarity * 100).toFixed(1)}%
+                                {traitCounts[traitType]?.[trait.value] || '?'} / 3333
                               </span>
                             </div>
                           ))}
