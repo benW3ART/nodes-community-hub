@@ -26,10 +26,27 @@ import Image from 'next/image';
 import type { NodeNFT } from '@/types/nft';
 import { GRID_PRESETS, type GridConfig } from '@/types/nft';
 
+interface GridStyle {
+  id: string;
+  name: string;
+  gap: number;
+  exportGap: number;
+  border: boolean;
+  bgColor: string;
+}
+
+const GRID_STYLES: GridStyle[] = [
+  { id: 'classic', name: 'Classic', gap: 4, exportGap: 24, border: true, bgColor: '#000000' },
+  { id: 'borderless', name: 'Borderless', gap: 4, exportGap: 24, border: false, bgColor: '#000000' },
+  { id: 'white', name: 'White Gap', gap: 4, exportGap: 24, border: false, bgColor: '#FFFFFF' },
+  { id: 'seamless', name: 'Seamless', gap: 0, exportGap: 0, border: false, bgColor: '#000000' },
+];
+
 export default function GridCreatorPage() {
   const { address, isConnected } = useWalletAddress();
   const { nfts, setNfts } = useNodesStore();
   const [gridConfig, setGridConfig] = useState<GridConfig>(GRID_PRESETS[1]); // 3x3 default
+  const [gridStyle, setGridStyle] = useState<GridStyle>(GRID_STYLES[0]);
   const [gridCells, setGridCells] = useState<(NodeNFT | 'logo' | 'banner-start' | 'banner-end' | null)[]>([]);
   const [isExporting, setIsExporting] = useState(false);
   const [isLoadingNfts, setIsLoadingNfts] = useState(false);
@@ -133,7 +150,7 @@ export default function GridCreatorPage() {
   // Render grid to canvas manually (bypasses html2canvas CORS issues)
   const renderGridToCanvas = async (): Promise<HTMLCanvasElement> => {
     const cellSizeExport = 600; // High quality export
-    const gap = 24;
+    const gap = gridStyle.exportGap;
     const padding = 16;
     
     const totalWidth = gridConfig.cols * cellSizeExport + (gridConfig.cols - 1) * gap + padding * 2;
@@ -146,7 +163,7 @@ export default function GridCreatorPage() {
     if (!ctx) throw new Error('No canvas context');
     
     // Background
-    ctx.fillStyle = '#000000';
+    ctx.fillStyle = gridStyle.bgColor;
     ctx.fillRect(0, 0, totalWidth, totalHeight);
     
     // Draw each cell
@@ -157,9 +174,11 @@ export default function GridCreatorPage() {
       const y = padding + row * (cellSizeExport + gap);
       
       // Cell border
-      ctx.strokeStyle = '#1a1a1a';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(x, y, cellSizeExport, cellSizeExport);
+      if (gridStyle.border) {
+        ctx.strokeStyle = '#1a1a1a';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x, y, cellSizeExport, cellSizeExport);
+      }
       
       const cell = gridCells[i];
       if (cell === 'banner-end') {
@@ -270,7 +289,7 @@ export default function GridCreatorPage() {
       const response = await fetch('/api/create-gif', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ gridConfig, cells }),
+        body: JSON.stringify({ gridConfig, cells, gridStyle }),
       });
       
       if (!response.ok) {
@@ -342,7 +361,7 @@ export default function GridCreatorPage() {
       const response = await fetch('/api/create-video', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ gridConfig, cells }),
+        body: JSON.stringify({ gridConfig, cells, gridStyle }),
       });
       
       if (!response.ok) {
@@ -450,6 +469,28 @@ export default function GridCreatorPage() {
                       className="input w-20 text-center"
                     />
                   </div>
+                </div>
+              </div>
+
+              {/* Grid Style */}
+              <div className="card">
+                <h3 className="font-semibold mb-4 flex items-center gap-2 uppercase tracking-wide">
+                  Grid Style
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {GRID_STYLES.map((style) => (
+                    <button
+                      key={style.id}
+                      onClick={() => setGridStyle(style)}
+                      className={`px-4 py-2 rounded-lg text-sm transition-all ${
+                        gridStyle.id === style.id
+                          ? 'bg-[#00D4FF] text-black'
+                          : 'bg-[#0a0a0a] border border-[#1a1a1a] hover:border-[#00D4FF]/50'
+                      }`}
+                    >
+                      {style.name}
+                    </button>
+                  ))}
                 </div>
               </div>
 
@@ -619,13 +660,14 @@ export default function GridCreatorPage() {
               <div className="flex justify-center overflow-x-auto lg:overflow-x-visible">
                 <div 
                   ref={canvasRef}
-                  className="bg-black rounded-xl overflow-hidden border border-[#1a1a1a] flex-shrink-0"
+                  className="rounded-xl overflow-hidden border border-[#1a1a1a] flex-shrink-0"
                   style={{
                     display: 'grid',
                     gridTemplateColumns: `repeat(${gridConfig.cols}, ${cellSize}px)`,
                     gridTemplateRows: `repeat(${gridConfig.rows}, ${cellSize}px)`,
-                    gap: '4px',
+                    gap: gridStyle.gap + 'px',
                     padding: '4px',
+                    backgroundColor: gridStyle.bgColor,
                   }}
                 >
                   {gridCells.map((cell, index) => {
@@ -633,7 +675,7 @@ export default function GridCreatorPage() {
                     return (
                       <div
                         key={index}
-                        className={`grid-cell ${cell ? 'grid-cell-filled' : ''} ${cell === 'logo' ? 'grid-cell-logo' : ''} ${cell === 'banner-start' ? 'border-[#FF6B00]/50' : ''}`}
+                        className={`grid-cell ${cell ? 'grid-cell-filled' : ''} ${cell === 'logo' ? 'grid-cell-logo' : ''} ${cell === 'banner-start' ? 'border-[#FF6B00]/50' : ''} ${!gridStyle.border ? '!border-0' : ''}`}
                         style={{
                           height: cellSize,
                           gridColumn: cell === 'banner-start' ? 'span 2' : undefined,

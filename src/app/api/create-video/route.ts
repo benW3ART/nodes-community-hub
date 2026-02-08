@@ -142,14 +142,19 @@ export async function POST(request: NextRequest) {
   const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'nodes-video-'));
   
   try {
-    const { gridConfig, cells }: { gridConfig: GridConfig; cells: GridCell[] } = await request.json();
+    const body = await request.json();
+    const { gridConfig, cells, gridStyle: rawGridStyle }: { gridConfig: GridConfig; cells: GridCell[]; gridStyle?: { exportGap?: number; bgColor?: string; border?: boolean } } = body;
     
     if (!gridConfig || !cells || cells.length === 0) {
       return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
     }
     
+    const styleGap = rawGridStyle?.exportGap ?? 24;
+    const styleBgColor = rawGridStyle?.bgColor ?? '#000000';
+    const styleBorder = rawGridStyle?.border ?? true;
+    
     const cellSize = 600;
-    const gap = 24;
+    const gap = styleGap;
     const padding = 16;
     
     const totalWidth = gridConfig.cols * cellSize + (gridConfig.cols - 1) * gap + padding * 2;
@@ -240,16 +245,18 @@ export async function POST(request: NextRequest) {
     for (let frameIdx = 0; frameIdx < maxFrames; frameIdx++) {
       const currentTimeMs = frameIdx * frameInterval;
       
-      ctx.fillStyle = '#000000';
+      ctx.fillStyle = styleBgColor;
       ctx.fillRect(0, 0, totalWidth, totalHeight);
       
-      ctx.strokeStyle = '#1a1a1a';
-      ctx.lineWidth = 2;
-      for (let row = 0; row < gridConfig.rows; row++) {
-        for (let col = 0; col < gridConfig.cols; col++) {
-          const x = padding + col * (cellSize + gap);
-          const y = padding + row * (cellSize + gap);
-          ctx.strokeRect(x, y, cellSize, cellSize);
+      if (styleBorder) {
+        ctx.strokeStyle = '#1a1a1a';
+        ctx.lineWidth = 2;
+        for (let row = 0; row < gridConfig.rows; row++) {
+          for (let col = 0; col < gridConfig.cols; col++) {
+            const x = padding + col * (cellSize + gap);
+            const y = padding + row * (cellSize + gap);
+            ctx.strokeRect(x, y, cellSize, cellSize);
+          }
         }
       }
       
