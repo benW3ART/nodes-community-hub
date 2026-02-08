@@ -637,7 +637,7 @@ export default function GridCreatorPage() {
                         style={{
                           height: cellSize,
                           gridColumn: cell === 'banner-start' ? 'span 2' : undefined,
-                          ...(cell !== 'banner-start' ? { width: cellSize } : { overflow: 'hidden' }),
+                          ...(cell !== 'banner-start' ? { width: cellSize } : { overflow: 'hidden', aspectRatio: 'auto' }),
                         }}
                         onClick={() => {
                           if (cell) {
