@@ -148,8 +148,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
     }
     
-    const cellSize = 200;
-    const gap = 8;
+    const cellSize = 600;
+    const gap = 24;
     const padding = 16;
     
     const totalWidth = gridConfig.cols * cellSize + (gridConfig.cols - 1) * gap + padding * 2;
