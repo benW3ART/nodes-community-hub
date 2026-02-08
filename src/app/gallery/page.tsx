@@ -12,6 +12,8 @@ import { calculateCollectionRarity, calculatePortfolioRarity } from '@/lib/rarit
 import type { RarityScore } from '@/lib/rarity';
 import { useNodesStore } from '@/stores/useNodesStore';
 import { NFTCard } from '@/components/NFTCard';
+import { getRarityTier } from '@/lib/rarity';
+import type { NodeNFT } from '@/types/nft';
 import { INNER_STATES } from '@/lib/wagmi';
 import { 
   Loader2, 
@@ -21,8 +23,11 @@ import {
   SortAsc,
   SortDesc,
   BarChart3,
-  ChevronDown
+  ChevronDown,
+  X,
+  Zap
 } from 'lucide-react';
+import Image from 'next/image';
 
 type SortOption = 'tokenId' | 'innerState' | 'rarity';
 type SortDirection = 'asc' | 'desc';
@@ -45,6 +50,7 @@ export default function GalleryPage() {
   const [sortBy, setSortBy] = useState<SortOption>('tokenId');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [showFilters, setShowFilters] = useState(false);
+  const [selectedNft, setSelectedNft] = useState<NodeNFT | null>(null);
 
   useEffect(() => {
     async function fetchNFTs() {
@@ -380,6 +386,7 @@ export default function GalleryPage() {
                   selectable
                   showRarity={showRarity}
                   rarityScore={rarityMap.get(nft.tokenId)}
+                  onClick={() => setSelectedNft(nft)}
                 />
               ))}
             </div>
@@ -399,6 +406,109 @@ export default function GalleryPage() {
             )}
           </>
         )}
+        {/* NFT Zoom Modal */}
+        {selectedNft && (() => {
+          const nftRarity = rarityMap.get(selectedNft.tokenId);
+          const rarityTier = nftRarity?.percentile !== undefined ? getRarityTier(nftRarity.percentile) : null;
+          const isGif = selectedNft.image?.toLowerCase().endsWith('.gif');
+          return (
+            <div 
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+              onClick={() => setSelectedNft(null)}
+            >
+              <div 
+                className="relative bg-[#0a0a0a] border border-[#1a1a1a] rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <button
+                  onClick={() => setSelectedNft(null)}
+                  className="absolute top-3 right-3 z-10 p-2 bg-black/60 rounded-full hover:bg-black/80 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+
+                <div className="aspect-square relative overflow-hidden rounded-t-2xl">
+                  {selectedNft.image && (
+                    <Image
+                      src={selectedNft.image}
+                      alt={selectedNft.name}
+                      fill
+                      unoptimized={isGif}
+                      className="object-cover"
+                      sizes="(max-width: 640px) 100vw, 500px"
+                    />
+                  )}
+                  {rarityTier && nftRarity && (
+                    <div className={`absolute top-3 left-3 px-3 py-1 rounded-full text-sm font-medium bg-black/60 ${rarityTier.color} border border-current/30 flex items-center gap-1`}>
+                      <Sparkles className="w-3 h-3" />
+                      {rarityTier.name} - #{nftRarity.rank}
+                    </div>
+                  )}
+                </div>
+
+                <div className="p-5">
+                  <h3 className="text-xl font-bold mb-1">{selectedNft.name}</h3>
+                  <p className="text-sm text-gray-500 mb-4">Token #{selectedNft.tokenId}</p>
+
+                  <div className="grid grid-cols-2 gap-2 mb-4">
+                    <div className="p-2 bg-black border border-[#1a1a1a] rounded-lg">
+                      <p className="text-[10px] text-gray-600 uppercase tracking-wide">Inner State</p>
+                      <p className="text-sm font-medium text-[#00D4FF]">{selectedNft.innerState}</p>
+                    </div>
+                    <div className="p-2 bg-black border border-[#1a1a1a] rounded-lg">
+                      <p className="text-[10px] text-gray-600 uppercase tracking-wide">Grid</p>
+                      <p className="text-sm font-medium">{selectedNft.grid || 'N/A'}</p>
+                    </div>
+                    <div className="p-2 bg-black border border-[#1a1a1a] rounded-lg">
+                      <p className="text-[10px] text-gray-600 uppercase tracking-wide">Gradient</p>
+                      <p className="text-sm font-medium">{selectedNft.gradient || 'N/A'}</p>
+                    </div>
+                    <div className="p-2 bg-black border border-[#1a1a1a] rounded-lg">
+                      <p className="text-[10px] text-gray-600 uppercase tracking-wide">Glow</p>
+                      <p className="text-sm font-medium">{selectedNft.glow || 'N/A'}</p>
+                    </div>
+                  </div>
+
+                  {selectedNft.interference && (
+                    <div className="p-3 bg-[#4FFFDF]/10 border border-[#4FFFDF]/30 rounded-lg mb-4">
+                      <p className="text-[#4FFFDF] font-medium flex items-center gap-2 text-sm">
+                        <Zap className="w-4 h-4" />
+                        Interference Edition
+                      </p>
+                    </div>
+                  )}
+
+                  {nftRarity && (
+                    <div className="border-t border-[#1a1a1a] pt-4">
+                      <h4 className="text-sm font-semibold mb-3 flex items-center gap-2 uppercase tracking-wide">
+                        <Sparkles className="w-4 h-4 text-[#00D4FF]" />
+                        Rarity Analysis
+                      </h4>
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-sm text-gray-500">Total Score</span>
+                        <span className="text-lg font-bold text-[#00D4FF]">{nftRarity.score.toFixed(2)}</span>
+                      </div>
+                      {nftRarity.traits && (
+                        <div className="space-y-1.5">
+                          {Object.entries(nftRarity.traits).slice(0, 5).map(([traitType, trait], i) => (
+                            <div key={i} className="flex items-center justify-between text-xs">
+                              <span className="text-gray-600 truncate mr-2">
+                                {traitType}: <span className="text-gray-400">{trait.value}</span>
+                              </span>
+                              <span className="text-gray-500 flex-shrink-0">
+                                {(trait.rarity * 100).toFixed(1)}%
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
       </main>
     </div>
   );

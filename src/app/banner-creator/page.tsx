@@ -140,14 +140,22 @@ export default function BannerCreatorPage() {
     setSelectedNfts(newSelection);
   };
 
-  // Helper to load image with CORS
+  // Helper to load image via proxy (CORS workaround)
   const loadImage = (src: string): Promise<HTMLImageElement> => {
     return new Promise((resolve, reject) => {
       const img = new window.Image();
       img.crossOrigin = 'anonymous';
       img.onload = () => resolve(img);
-      img.onerror = reject;
-      img.src = src;
+      img.onerror = () => {
+        // Try direct URL if proxy fails
+        const directImg = new window.Image();
+        directImg.crossOrigin = 'anonymous';
+        directImg.onload = () => resolve(directImg);
+        directImg.onerror = reject;
+        directImg.src = src;
+      };
+      // Use proxy to avoid CORS issues
+      img.src = `/api/proxy-gif?url=${encodeURIComponent(src)}`;
     });
   };
 

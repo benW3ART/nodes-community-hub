@@ -30,10 +30,13 @@ export default function GridCreatorPage() {
   const { address, isConnected } = useWalletAddress();
   const { nfts, setNfts } = useNodesStore();
   const [gridConfig, setGridConfig] = useState<GridConfig>(GRID_PRESETS[1]); // 3x3 default
-  const [gridCells, setGridCells] = useState<(NodeNFT | 'logo' | null)[]>([]);
+  const [gridCells, setGridCells] = useState<(NodeNFT | 'logo' | 'banner-start' | 'banner-end' | null)[]>([]);
   const [isExporting, setIsExporting] = useState(false);
   const [isLoadingNfts, setIsLoadingNfts] = useState(false);
   const [showLogoOption, setShowLogoOption] = useState(false);
+  const [bannerLogoMode, setBannerLogoMode] = useState(false);
+  const [bannerLogoUrl, setBannerLogoUrl] = useState('/nodes-logo.png');
+  const bannerFileRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
 
   // Initialize grid when config changes
@@ -59,15 +62,31 @@ export default function GridCreatorPage() {
     if (isConnected && address) fetchNFTs();
   }, [address, isConnected, setNfts]);
 
-  const handleCellClick = (index: number, content: NodeNFT | 'logo') => {
+  const handleCellClick = (index: number, content: NodeNFT | 'logo' | 'banner-start') => {
     const newCells = [...gridCells];
-    newCells[index] = content;
+    if (content === 'banner-start') {
+      const col = index % gridConfig.cols;
+      if (col + 1 >= gridConfig.cols) return; // need room for 2 cells
+      newCells[index] = 'banner-start';
+      newCells[index + 1] = 'banner-end';
+    } else {
+      newCells[index] = content;
+    }
     setGridCells(newCells);
   };
 
   const clearCell = (index: number) => {
     const newCells = [...gridCells];
-    newCells[index] = null;
+    const cell = newCells[index];
+    if (cell === 'banner-start') {
+      newCells[index] = null;
+      if (index + 1 < newCells.length) newCells[index + 1] = null;
+    } else if (cell === 'banner-end') {
+      newCells[index] = null;
+      if (index - 1 >= 0) newCells[index - 1] = null;
+    } else {
+      newCells[index] = null;
+    }
     setGridCells(newCells);
   };
 
@@ -113,8 +132,8 @@ export default function GridCreatorPage() {
 
   // Render grid to canvas manually (bypasses html2canvas CORS issues)
   const renderGridToCanvas = async (): Promise<HTMLCanvasElement> => {
-    const cellSizeExport = 200; // Fixed size for export
-    const gap = 8;
+    const cellSizeExport = 600; // High quality export
+    const gap = 24;
     const padding = 16;
     
     const totalWidth = gridConfig.cols * cellSizeExport + (gridConfig.cols - 1) * gap + padding * 2;
@@ -143,20 +162,40 @@ export default function GridCreatorPage() {
       ctx.strokeRect(x, y, cellSizeExport, cellSizeExport);
       
       const cell = gridCells[i];
-      if (cell && cell !== 'logo' && cell.image) {
+      if (cell === 'banner-end') {
+        // Skip — rendered by banner-start
+        continue;
+      } else if (cell === 'banner-start') {
+        const bannerWidth = cellSizeExport * 2 + gap;
+        try {
+          const img = await loadImage(bannerLogoUrl);
+          ctx.fillStyle = '#00D4FF10';
+          ctx.fillRect(x, y, bannerWidth, cellSizeExport);
+          const imgAspect = img.width / img.height;
+          const fitHeight = cellSizeExport * 0.8;
+          const fitWidth = fitHeight * imgAspect;
+          const cx = x + bannerWidth / 2 - fitWidth / 2;
+          const cy = y + cellSizeExport / 2 - fitHeight / 2;
+          ctx.drawImage(img, cx, cy, fitWidth, fitHeight);
+        } catch {
+          ctx.fillStyle = '#00D4FF';
+          ctx.font = `bold ${Math.round(cellSizeExport * 0.24)}px system-ui`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('NODES', x + bannerWidth / 2, y + cellSizeExport / 2);
+        }
+      } else if (cell && cell !== 'logo' && typeof cell === 'object' && cell.image) {
         try {
           const img = await loadImage(cell.image);
           ctx.drawImage(img, x, y, cellSizeExport, cellSizeExport);
         } catch (err) {
           console.error('Failed to load image:', cell.image);
-          // Draw placeholder
           ctx.fillStyle = '#111111';
           ctx.fillRect(x, y, cellSizeExport, cellSizeExport);
         }
       } else if (cell === 'logo') {
-        // Draw NODES logo placeholder
         ctx.fillStyle = '#00D4FF';
-        ctx.font = 'bold 48px system-ui';
+        ctx.font = `bold ${Math.round(cellSizeExport * 0.24)}px system-ui`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText('N', x + cellSizeExport / 2, y + cellSizeExport / 2);
@@ -190,17 +229,27 @@ export default function GridCreatorPage() {
   // Server-side GIF export with real animations
   const handleExportGIF = async () => {
     // Collect NFT cells with positions (including logo)
-    const cells: {image: string; row: number; col: number; isLogo?: boolean}[] = [];
+    const cells: {image: string; row: number; col: number; isLogo?: boolean; isBanner?: boolean}[] = [];
     for (let i = 0; i < gridCells.length; i++) {
       const cell = gridCells[i];
-      if (cell === 'logo') {
+      if (cell === 'banner-start') {
+        cells.push({
+          image: bannerLogoUrl,
+          row: Math.floor(i / gridConfig.cols),
+          col: i % gridConfig.cols,
+          isLogo: true,
+          isBanner: true
+        });
+      } else if (cell === 'banner-end') {
+        // skip
+      } else if (cell === 'logo') {
         cells.push({
           image: '/nodes-logo.png',
           row: Math.floor(i / gridConfig.cols),
           col: i % gridConfig.cols,
           isLogo: true
         });
-      } else if (cell && cell.image) {
+      } else if (cell && typeof cell === 'object' && cell.image) {
         cells.push({
           image: cell.image,
           row: Math.floor(i / gridConfig.cols),
@@ -252,17 +301,27 @@ export default function GridCreatorPage() {
   // Server-side video export with real animations
   const handleExportVideo = async () => {
     // Collect NFT cells with positions (including logo)
-    const cells: {image: string; row: number; col: number; isLogo?: boolean}[] = [];
+    const cells: {image: string; row: number; col: number; isLogo?: boolean; isBanner?: boolean}[] = [];
     for (let i = 0; i < gridCells.length; i++) {
       const cell = gridCells[i];
-      if (cell === 'logo') {
+      if (cell === 'banner-start') {
+        cells.push({
+          image: bannerLogoUrl,
+          row: Math.floor(i / gridConfig.cols),
+          col: i % gridConfig.cols,
+          isLogo: true,
+          isBanner: true
+        });
+      } else if (cell === 'banner-end') {
+        // skip
+      } else if (cell === 'logo') {
         cells.push({
           image: '/nodes-logo.png',
           row: Math.floor(i / gridConfig.cols),
           col: i % gridConfig.cols,
           isLogo: true
         });
-      } else if (cell && cell.image) {
+      } else if (cell && typeof cell === 'object' && cell.image) {
         cells.push({
           image: cell.image,
           row: Math.floor(i / gridConfig.cols),
@@ -420,7 +479,49 @@ export default function GridCreatorPage() {
                     <Plus className="w-4 h-4" />
                     Add Logo
                   </button>
+                  <button
+                    onClick={() => { setBannerLogoMode(!bannerLogoMode); setShowLogoOption(false); }}
+                    className={`btn-secondary flex items-center gap-2 ${bannerLogoMode ? 'ring-2 ring-[#FF6B00]' : ''}`}
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add Banner (2×1)
+                  </button>
                 </div>
+                {bannerLogoMode && (
+                  <div className="mt-3 p-3 bg-[#FF6B00]/10 border border-[#FF6B00]/30 rounded-lg">
+                    <p className="text-xs text-[#FF6B00] mb-2">Click a cell to place a 2×1 banner (spans 2 columns). Not available on last column.</p>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => bannerFileRef.current?.click()}
+                        className="text-xs px-3 py-1.5 bg-[#0a0a0a] border border-[#1a1a1a] rounded hover:border-[#FF6B00]/50"
+                      >
+                        Upload Custom Image
+                      </button>
+                      {bannerLogoUrl !== '/nodes-logo.png' && (
+                        <button
+                          onClick={() => setBannerLogoUrl('/nodes-logo.png')}
+                          className="text-xs text-gray-500 hover:text-white"
+                        >
+                          Reset to Default
+                        </button>
+                      )}
+                      <input
+                        ref={bannerFileRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onload = (ev) => setBannerLogoUrl(ev.target?.result as string);
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* NFT Gallery */}
@@ -527,43 +628,64 @@ export default function GridCreatorPage() {
                     padding: '4px',
                   }}
                 >
-                  {gridCells.map((cell, index) => (
-                    <div
-                      key={index}
-                      className={`grid-cell ${cell ? 'grid-cell-filled' : ''} ${cell === 'logo' ? 'grid-cell-logo' : ''}`}
-                      style={{ width: cellSize, height: cellSize }}
-                      onClick={() => {
-                        if (cell) {
-                          clearCell(index);
-                        } else if (showLogoOption) {
-                          handleCellClick(index, 'logo');
-                          setShowLogoOption(false);
-                        }
-                      }}
-                    >
-                      {cell === 'logo' ? (
-                        <div className="w-full h-full flex items-center justify-center bg-[#00D4FF]/10 p-2">
+                  {gridCells.map((cell, index) => {
+                    if (cell === 'banner-end') return null;
+                    return (
+                      <div
+                        key={index}
+                        className={`grid-cell ${cell ? 'grid-cell-filled' : ''} ${cell === 'logo' ? 'grid-cell-logo' : ''} ${cell === 'banner-start' ? 'border-[#FF6B00]/50' : ''}`}
+                        style={{
+                          width: cell === 'banner-start' ? cellSize * 2 + 4 : cellSize,
+                          height: cellSize,
+                          gridColumn: cell === 'banner-start' ? 'span 2' : undefined,
+                        }}
+                        onClick={() => {
+                          if (cell) {
+                            clearCell(index);
+                          } else if (bannerLogoMode) {
+                            handleCellClick(index, 'banner-start');
+                            setBannerLogoMode(false);
+                          } else if (showLogoOption) {
+                            handleCellClick(index, 'logo');
+                            setShowLogoOption(false);
+                          }
+                        }}
+                      >
+                        {cell === 'banner-start' ? (
+                          <div className="w-full h-full flex items-center justify-center bg-[#FF6B00]/10 border border-[#FF6B00]/30 rounded p-2">
+                            <Image
+                              src={bannerLogoUrl}
+                              alt="Banner"
+                              width={cellSize * 2 - 16}
+                              height={cellSize - 16}
+                              className="object-contain"
+                              unoptimized
+                            />
+                          </div>
+                        ) : cell === 'logo' ? (
+                          <div className="w-full h-full flex items-center justify-center bg-[#00D4FF]/10 p-2">
+                            <Image
+                              src="/nodes-logo.png"
+                              alt="NODES"
+                              width={cellSize - 16}
+                              height={cellSize - 16}
+                              className="object-contain"
+                            />
+                          </div>
+                        ) : cell ? (
                           <Image
-                            src="/nodes-logo.png"
-                            alt="NODES"
-                            width={cellSize - 16}
-                            height={cellSize - 16}
-                            className="object-contain"
+                            src={cell.image}
+                            alt={cell.name}
+                            width={cellSize}
+                            height={cellSize}
+                            className="w-full h-full object-cover"
                           />
-                        </div>
-                      ) : cell ? (
-                        <Image
-                          src={cell.image}
-                          alt={cell.name}
-                          width={cellSize}
-                          height={cellSize}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <span className="text-gray-700 text-xs">{index + 1}</span>
-                      )}
-                    </div>
-                  ))}
+                        ) : (
+                          <span className="text-gray-700 text-xs">{index + 1}</span>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
               <p className="text-sm text-gray-600 text-center mt-4">
