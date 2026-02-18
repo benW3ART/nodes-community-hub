@@ -1,0 +1,34 @@
+{
+  "version": "11.0.0",
+  "phase": "NOT_STARTED",
+  "currentSkill": null,
+  "skillHistory": [],
+  "checkpoints": {
+    "discovery": false,
+    "market_analysis": false,
+    "specs_approved": false,
+    "design_chosen": false,
+    "marketing_done": false,
+    "integrations_done": false,
+    "architecture_approved": false,
+    "execution_started": false,
+    "qa_passed": false,
+    "security_passed": false,
+    "deployed": false
+  },
+  "tasks": {
+    "total": 0,
+    "completed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "current_task_id": null
+  },
+  "artifacts": {},
+  "agentTeams": {
+    "active": false,
+    "leadSessionId": null,
+    "teammates": []
+  },
+  "created_at": "2026-02-18T23:14:52+01:00",
+  "updated_at": "2026-02-18T23:14:52+01:00"
+}

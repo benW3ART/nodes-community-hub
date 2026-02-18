@@ -1,0 +1,6 @@
+{
+  "mode": "cli",
+  "engine": "claude",
+  "version": "11.0.0",
+  "project": "nodes-community-hub"
+}

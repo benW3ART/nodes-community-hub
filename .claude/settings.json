@@ -1,0 +1,108 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm *)",
+      "Bash(npx *)",
+      "Bash(pnpm *)",
+      "Bash(yarn *)",
+      "Bash(bun *)",
+      "Bash(node *)",
+      "Bash(git *)",
+      "Bash(vercel *)",
+      "Bash(railway *)",
+      "Bash(supabase *)",
+      "Bash(playwright *)",
+      "Bash(prisma *)",
+      "Bash(uv *)",
+      "Bash(tsc *)",
+      "Bash(eslint *)",
+      "Bash(docker *)",
+      "Bash(cat *)",
+      "Bash(ls *)",
+      "Bash(mkdir *)",
+      "Bash(cp *)",
+      "Bash(mv *)",
+      "Bash(touch *)",
+      "Bash(echo *)",
+      "Bash(grep *)",
+      "Bash(find *)",
+      "Bash(head *)",
+      "Bash(tail *)",
+      "Bash(wc *)",
+      "Bash(sort *)",
+      "Bash(sed *)",
+      "Bash(awk *)",
+      "Bash(date *)",
+      "Bash(jq *)",
+      "Bash(curl *)",
+      "Bash(claude *)",
+      "Bash(*--help)",
+      "Bash(*--version)",
+      "Bash(./scripts/*)",
+      "Bash(bash *)",
+      "Read(*)",
+      "Write(*)",
+      "Edit(*)",
+      "Glob(*)",
+      "Grep(*)",
+      "Task(*)",
+      "WebFetch(domain:*)",
+      "WebSearch"
+    ],
+    "deny": [
+      "Bash(rm -rf /)",
+      "Bash(rm -rf ~)",
+      "Bash(sudo *)",
+      "Bash(su *)",
+      "Bash(*--no-verify)",
+      "Bash(git push --force*)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'echo \"<genius_team_context>\"; echo \"Version: 9.0\"; echo \"\"; bash scripts/memory-briefing.sh 2>/dev/null; echo \"\"; if [ -f .genius/memory/BRIEFING.md ]; then echo \"<briefing>\"; cat .genius/memory/BRIEFING.md; echo \"</briefing>\"; fi; echo \"\"; if [ -f .genius/state.json ]; then echo \"<state>\"; jq -r \".phase, .currentSkill\" .genius/state.json 2>/dev/null; echo \"</state>\"; fi; echo \"\"; STORED_VER=$(cat .genius/claude-code-version.txt 2>/dev/null || echo unknown); CURRENT_VER=$(claude --version 2>/dev/null | head -1 || echo unknown); if [ \"$STORED_VER\" != \"$CURRENT_VER\" ] && [ \"$CURRENT_VER\" != \"unknown\" ]; then echo \"<version_change>Claude Code updated: $STORED_VER -> $CURRENT_VER. Consider running /update-check.</version_change>\"; fi; if [ -f .claude/plan.md ]; then echo \"<tasks>\"; total=$(grep -c \"^- \\\\[\" .claude/plan.md 2>/dev/null || echo 0); completed=$(grep -c \"^- \\\\[x\\\\]\" .claude/plan.md 2>/dev/null || echo 0); pending=$(grep -c \"^- \\\\[ \\\\]\" .claude/plan.md 2>/dev/null || echo 0); in_progress=$(grep -c \"^- \\\\[~\\\\]\" .claude/plan.md 2>/dev/null || echo 0); echo \"TASKS: $completed/$total complete ($pending pending, $in_progress in-progress)\"; next=$(grep -m1 \"^- \\\\[ \\\\]\" .claude/plan.md 2>/dev/null | sed \"s/^- \\\\[ \\\\] //\"); if [ -n \"$next\" ]; then echo \"NEXT: $next\"; fi; echo \"</tasks>\"; fi; echo \"</genius_team_context>\"'"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'bash scripts/memory-extract.sh \"$(cat PROGRESS.md 2>/dev/null; echo ---; grep -E \"^- \\\\[\" .claude/plan.md 2>/dev/null | head -30; echo ---; cat .genius/state.json 2>/dev/null)\" 2>/dev/null || true; echo \"<critical_context>\"; if [ -f .genius/memory/BRIEFING.md ]; then cat .genius/memory/BRIEFING.md; fi; echo \"</critical_context>\"'"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'if [ -f .claude/plan.md ] && [ -f .genius/state.json ]; then total=$(grep -c \"^- \\\\[\" .claude/plan.md 2>/dev/null || echo 0); completed=$(grep -c \"^- \\\\[x\\\\]\" .claude/plan.md 2>/dev/null || echo 0); jq --arg t \"$total\" --arg c \"$completed\" --arg now \"$(date -Iseconds 2>/dev/null || date)\" \".tasks.total = ($t | tonumber) | .tasks.completed = ($c | tonumber) | .updated_at = \\\"$now\\\"\" .genius/state.json > .genius/state.json.tmp && mv .genius/state.json.tmp .genius/state.json; fi 2>/dev/null || true'"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'echo \"[$(date +%H:%M:%S)] FILE: $TOOL_INPUT\" >> .genius/activity.log 2>/dev/null || true'"
+          }
+        ]
+      }
+    ]
+  },
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
+    "GENIUS_TEAM_VERSION": "9.0.0"
+  }
+}
