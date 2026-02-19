@@ -1,7 +1,26 @@
-import { createCanvas, loadImage, CanvasRenderingContext2D, Image as CanvasImage } from 'canvas';
+import { createCanvas, loadImage, registerFont, CanvasRenderingContext2D, Image as CanvasImage } from 'canvas';
 import { parseGIF, decompressFrames } from 'gifuct-js';
 import path from 'path';
 import fs from 'fs';
+
+// Register Space Grotesk for server-side canvas rendering
+const fontPaths = [
+  path.join(process.cwd(), 'public', 'fonts', 'SpaceGrotesk-Bold.ttf'),
+  '/app/public/fonts/SpaceGrotesk-Bold.ttf',
+];
+for (const fontPath of fontPaths) {
+  if (fs.existsSync(fontPath)) {
+    try {
+      registerFont(fontPath, { family: 'Space Grotesk', weight: 'bold' });
+      break;
+    } catch (e) {
+      console.error('Failed to register Space Grotesk font:', e);
+    }
+  }
+}
+
+// Brand font for all canvas text rendering
+export const BRAND_FONT = 'Space Grotesk, Inter, system-ui, sans-serif';
 
 // NODES brand colors
 export const COLORS = {
@@ -112,7 +131,7 @@ export function drawGlowEffect(ctx: CanvasRenderingContext2D, x: number, y: numb
 }
 
 export function drawGradientText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, fontSize: number) {
-  ctx.font = `bold ${fontSize}px Inter, system-ui, sans-serif`;
+  ctx.font = `bold ${fontSize}px ${BRAND_FONT}`;
   const metrics = ctx.measureText(text);
   const gradient = ctx.createLinearGradient(x - metrics.width / 2, y, x + metrics.width / 2, y);
   gradient.addColorStop(0, COLORS.cyan);
@@ -124,7 +143,7 @@ export function drawGradientText(ctx: CanvasRenderingContext2D, text: string, x:
 }
 
 export function drawTextWithGlow(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, fontSize: number, color: string = '#ffffff') {
-  ctx.font = `bold ${fontSize}px Inter, system-ui, sans-serif`;
+  ctx.font = `bold ${fontSize}px ${BRAND_FONT}`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.save();
@@ -168,6 +187,58 @@ export function drawImageWithBorder(ctx: CanvasRenderingContext2D, img: CanvasIm
   ctx.stroke();
 }
 
+/**
+ * Draw an image inside a bounding box preserving aspect ratio (object-fit: cover).
+ * Crops to fill the entire box.
+ */
+export function drawImageCover(ctx: CanvasRenderingContext2D, img: CanvasImage | any, x: number, y: number, boxW: number, boxH: number, borderRadius?: number) {
+  const imgAspect = img.width / img.height;
+  const boxAspect = boxW / boxH;
+  let sx: number, sy: number, sw: number, sh: number;
+  if (imgAspect > boxAspect) {
+    sh = img.height;
+    sw = img.height * boxAspect;
+    sx = (img.width - sw) / 2;
+    sy = 0;
+  } else {
+    sw = img.width;
+    sh = img.width / boxAspect;
+    sx = 0;
+    sy = (img.height - sh) / 2;
+  }
+  ctx.save();
+  if (borderRadius) {
+    drawRoundedRect(ctx, x, y, boxW, boxH, borderRadius);
+    ctx.clip();
+  }
+  ctx.drawImage(img, sx, sy, sw, sh, x, y, boxW, boxH);
+  ctx.restore();
+}
+
+/**
+ * Draw an image with border, preserving aspect ratio via cover crop.
+ */
+export function drawImageWithBorderCover(ctx: CanvasRenderingContext2D, img: CanvasImage | any, x: number, y: number, w: number, h: number) {
+  const borderRadius = Math.min(w, h) * 0.08;
+  const borderWidth = 2;
+
+  ctx.save();
+  ctx.shadowColor = COLORS.cyan;
+  ctx.shadowBlur = 15;
+  ctx.strokeStyle = `${COLORS.cyan}50`;
+  ctx.lineWidth = borderWidth;
+  drawRoundedRect(ctx, x, y, w, h, borderRadius);
+  ctx.stroke();
+  ctx.restore();
+
+  drawImageCover(ctx, img, x, y, w, h, borderRadius);
+
+  ctx.strokeStyle = `${COLORS.cyan}30`;
+  ctx.lineWidth = borderWidth;
+  drawRoundedRect(ctx, x, y, w, h, borderRadius);
+  ctx.stroke();
+}
+
 export function drawWatermark(ctx: CanvasRenderingContext2D, logo: CanvasImage | null, canvasSize: number) {
   const wmY = 30;
   const wmX = canvasSize - 30;
@@ -177,7 +248,7 @@ export function drawWatermark(ctx: CanvasRenderingContext2D, logo: CanvasImage |
     ctx.drawImage(logo, wmX - 130, wmY - 5, logoSize, logoSize);
     ctx.globalAlpha = 1;
   }
-  ctx.font = 'bold 24px Inter, system-ui, sans-serif';
+  ctx.font = `bold 24px ${BRAND_FONT}`;
   ctx.fillStyle = `${COLORS.cyan}80`;
   ctx.textAlign = 'right';
   ctx.textBaseline = 'top';

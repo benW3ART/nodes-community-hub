@@ -3,8 +3,10 @@ import { createCanvas } from 'canvas';
 import GIFEncoder from 'gif-encoder-2';
 import {
   COLORS,
+  BRAND_FONT,
   loadImageSafe,
   drawRoundedRect,
+  drawImageCover,
   drawTextWithGlow,
   drawSubtleGlows,
   fetchGifFrames,
@@ -13,12 +15,14 @@ import {
   GifData,
 } from '@/lib/canvas-utils';
 import {
-  SIZE,
+  DIMENSIONS,
   loadBrandingAssets,
   drawBrandedWatermark,
   drawDRBanner,
+  drawArtIsNeverFinished,
   renderTemplate,
 } from '@/lib/before-after-templates';
+import type { AspectRatio } from '@/lib/before-after-templates';
 
 interface BeforeAfterRequest {
   template: string;
@@ -29,12 +33,16 @@ interface BeforeAfterRequest {
   networkStatus: string;
   text: string;
   outputFormat: 'png' | 'gif';
+  aspectRatio?: AspectRatio;
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body: BeforeAfterRequest = await request.json();
-    const { template, beforeImage, afterImage, tokenId, nftName, networkStatus, text, outputFormat } = body;
+    const { template, beforeImage, afterImage, tokenId, nftName, networkStatus, text, outputFormat, aspectRatio = 'square' } = body;
+    const dims = DIMENSIONS[aspectRatio] || DIMENSIONS.square;
+    const canvasW = dims.w;
+    const canvasH = dims.h;
 
     if (!beforeImage || !afterImage) {
       return NextResponse.json({ error: 'Both before and after images are required' }, { status: 400 });
@@ -76,7 +84,7 @@ export async function POST(request: NextRequest) {
     }
 
     // -----------------------------------------------------------------------
-    // GIF Transition template — always animated
+    // GIF Transition template — glitch/scanline wipe animation
     // -----------------------------------------------------------------------
     if (isGifTransition) {
       const fps = 30;
@@ -84,103 +92,132 @@ export async function POST(request: NextRequest) {
       const totalDuration = 4000;
       const totalFrames = Math.ceil(totalDuration / frameInterval);
 
-      const encoder = new GIFEncoder(SIZE, SIZE);
+      const encoder = new GIFEncoder(canvasW, canvasH);
       encoder.setDelay(frameInterval);
       encoder.setRepeat(0);
       encoder.setQuality(10);
       encoder.start();
 
-      const canvas = createCanvas(SIZE, SIZE);
+      const canvas = createCanvas(canvasW, canvasH);
       const ctx = canvas.getContext('2d');
+
+      // Pre-generate deterministic random offsets for scanline strips
+      const stripCount = 40;
+      const stripOffsets = Array.from({ length: stripCount }, () => (Math.random() - 0.5) * 30);
 
       for (let frameIdx = 0; frameIdx < totalFrames; frameIdx++) {
         const timeMs = frameIdx * frameInterval;
         const phase = timeMs / 1000;
 
         ctx.fillStyle = COLORS.black;
-        ctx.fillRect(0, 0, SIZE, SIZE);
-        drawSubtleGlows(ctx, SIZE);
+        ctx.fillRect(0, 0, canvasW, canvasH);
+        drawSubtleGlows(ctx, Math.max(canvasW, canvasH));
 
-        const imgSize = SIZE * 0.7;
-        const imgX = (SIZE - imgSize) / 2;
-        const imgY = SIZE * 0.1;
+        const imgSize = Math.min(canvasW, canvasH) * 0.7;
+        const imgX = (canvasW - imgSize) / 2;
+        const imgY = canvasH * 0.1;
+        const borderRadius = imgSize * 0.08;
 
-        let beforeAlpha: number;
-        let afterAlpha: number;
+        const bImg = beforeRendered
+          ? beforeRendered.canvases[getFrameAtTime(beforeRendered.timestamps, beforeRendered.totalDuration, timeMs)]
+          : beforeImgStatic;
+        const aImg = afterRendered
+          ? afterRendered.canvases[getFrameAtTime(afterRendered.timestamps, afterRendered.totalDuration, timeMs)]
+          : afterImgStatic;
+
+        // Phase timing: 0-1s show before, 1-2s wipe to after, 2-3s show after, 3-4s wipe to before
+        let showBefore: boolean;
+        let wipeProgress = -1; // -1 = no wipe active
 
         if (phase < 1) {
-          beforeAlpha = 1; afterAlpha = 0;
+          showBefore = true;
         } else if (phase < 2) {
-          const t = phase - 1; beforeAlpha = 1 - t; afterAlpha = t;
+          wipeProgress = phase - 1; // 0→1 wipe from before to after
+          showBefore = true;
         } else if (phase < 3) {
-          beforeAlpha = 0; afterAlpha = 1;
+          showBefore = false;
         } else {
-          const t = phase - 3; beforeAlpha = t; afterAlpha = 1 - t;
+          wipeProgress = phase - 3; // 0→1 wipe from after to before
+          showBefore = false;
         }
 
-        const getBeforeFrame = () => {
-          if (beforeRendered) {
-            return beforeRendered.canvases[getFrameAtTime(beforeRendered.timestamps, beforeRendered.totalDuration, timeMs)];
-          }
-          return beforeImgStatic;
-        };
-        const getAfterFrame = () => {
-          if (afterRendered) {
-            return afterRendered.canvases[getFrameAtTime(afterRendered.timestamps, afterRendered.totalDuration, timeMs)];
-          }
-          return afterImgStatic;
-        };
-
-        if (beforeAlpha > 0) {
-          const bImg = getBeforeFrame();
-          if (bImg) {
+        if (wipeProgress < 0) {
+          // Static frame — show one image fully
+          const img = showBefore ? bImg : aImg;
+          if (img) {
             ctx.save();
-            ctx.globalAlpha = beforeAlpha;
-            const borderRadius = imgSize * 0.08;
             drawRoundedRect(ctx, imgX, imgY, imgSize, imgSize, borderRadius);
             ctx.clip();
-            ctx.drawImage(bImg, 0, 0, bImg.width, bImg.height, imgX, imgY, imgSize, imgSize);
+            drawImageCover(ctx, img, imgX, imgY, imgSize, imgSize);
             ctx.restore();
           }
-        }
+        } else {
+          // Scanline wipe — horizontal strips transition with glitch offset
+          const wipeLine = imgY + imgSize * wipeProgress;
+          const fromImg = showBefore ? bImg : aImg;
+          const toImg = showBefore ? aImg : bImg;
+          const stripH = imgSize / stripCount;
 
-        if (afterAlpha > 0) {
-          const aImg = getAfterFrame();
-          if (aImg) {
-            ctx.save();
-            ctx.globalAlpha = afterAlpha;
-            const borderRadius = imgSize * 0.08;
-            drawRoundedRect(ctx, imgX, imgY, imgSize, imgSize, borderRadius);
-            ctx.clip();
-            ctx.drawImage(aImg, 0, 0, aImg.width, aImg.height, imgX, imgY, imgSize, imgSize);
-            ctx.restore();
+          ctx.save();
+          drawRoundedRect(ctx, imgX, imgY, imgSize, imgSize, borderRadius);
+          ctx.clip();
+
+          for (let i = 0; i < stripCount; i++) {
+            const stripY = imgY + i * stripH;
+            const stripMid = stripY + stripH / 2;
+            const isRevealed = stripMid < wipeLine;
+            const img = isRevealed ? toImg : fromImg;
+            const nearWipe = Math.abs(stripMid - wipeLine) < stripH * 3;
+            const offset = nearWipe ? stripOffsets[i] * (1 - Math.abs(stripMid - wipeLine) / (stripH * 3)) : 0;
+
+            if (img) {
+              ctx.save();
+              ctx.beginPath();
+              ctx.rect(imgX, stripY, imgSize, stripH);
+              ctx.clip();
+              drawImageCover(ctx, img, imgX + offset, imgY, imgSize, imgSize);
+              ctx.restore();
+            }
+
+            // Cyan scanline near wipe edge
+            if (nearWipe && Math.abs(stripMid - wipeLine) < stripH * 1.5) {
+              ctx.fillStyle = `${COLORS.cyan}25`;
+              ctx.fillRect(imgX, stripY, imgSize, 2);
+            }
           }
+
+          // Flash at wipe midpoint
+          if (wipeProgress > 0.45 && wipeProgress < 0.55) {
+            ctx.fillStyle = `${COLORS.cyan}15`;
+            ctx.fillRect(imgX, imgY, imgSize, imgSize);
+          }
+
+          ctx.restore();
         }
 
-        ctx.globalAlpha = 1;
+        // Border
         ctx.strokeStyle = `${COLORS.cyan}30`;
         ctx.lineWidth = 2;
-        const borderRadius = imgSize * 0.08;
         drawRoundedRect(ctx, imgX, imgY, imgSize, imgSize, borderRadius);
         ctx.stroke();
 
-        ctx.font = 'bold 28px Inter, system-ui, sans-serif';
+        // Label
+        ctx.font = `bold 28px ${BRAND_FONT}`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        if (beforeAlpha > afterAlpha) {
+        const showingBefore = wipeProgress < 0 ? showBefore : (wipeProgress < 0.5 ? showBefore : !showBefore);
+        if (showingBefore) {
           ctx.fillStyle = '#888888';
-          ctx.globalAlpha = beforeAlpha;
-          ctx.fillText('LEGACY', SIZE / 2, SIZE * 0.05);
+          ctx.fillText('LEGACY', canvasW / 2, canvasH * 0.05);
         } else {
           ctx.fillStyle = COLORS.cyan;
-          ctx.globalAlpha = afterAlpha;
-          ctx.fillText(networkStatus.toUpperCase(), SIZE / 2, SIZE * 0.05);
+          ctx.fillText(networkStatus.toUpperCase(), canvasW / 2, canvasH * 0.05);
         }
-        ctx.globalAlpha = 1;
 
-        if (text) drawTextWithGlow(ctx, text, SIZE / 2, SIZE * 0.9, 36);
-        drawDRBanner(ctx, assets, networkStatus, SIZE);
-        drawBrandedWatermark(ctx, assets, SIZE);
+        if (text) drawTextWithGlow(ctx, text, canvasW / 2, canvasH * 0.9, 36);
+        drawArtIsNeverFinished(ctx, canvasW, canvasH, networkStatus);
+        drawDRBanner(ctx, assets, networkStatus, canvasW, canvasH);
+        drawBrandedWatermark(ctx, assets, canvasW, canvasH);
 
         encoder.addFrame(ctx as any);
       }
@@ -191,7 +228,7 @@ export async function POST(request: NextRequest) {
       return new NextResponse(new Uint8Array(buffer), {
         headers: {
           'Content-Type': 'image/gif',
-          'Content-Disposition': `attachment; filename="nodes-evolution-${tokenId}-${Date.now()}.gif"`,
+          'Content-Disposition': `attachment; filename="nodes-interference-${tokenId}-${Date.now()}.gif"`,
         },
       });
     }
@@ -210,21 +247,21 @@ export async function POST(request: NextRequest) {
 
       const totalFrames = Math.ceil(maxDuration / frameInterval);
 
-      const encoder = new GIFEncoder(SIZE, SIZE);
+      const encoder = new GIFEncoder(canvasW, canvasH);
       encoder.setDelay(frameInterval);
       encoder.setRepeat(0);
       encoder.setQuality(10);
       encoder.start();
 
-      const canvas = createCanvas(SIZE, SIZE);
+      const canvas = createCanvas(canvasW, canvasH);
       const ctx = canvas.getContext('2d');
 
       for (let frameIdx = 0; frameIdx < totalFrames; frameIdx++) {
         const timeMs = frameIdx * frameInterval;
 
         ctx.fillStyle = COLORS.black;
-        ctx.fillRect(0, 0, SIZE, SIZE);
-        drawSubtleGlows(ctx, SIZE);
+        ctx.fillRect(0, 0, canvasW, canvasH);
+        drawSubtleGlows(ctx, Math.max(canvasW, canvasH));
 
         const bImg = beforeRendered
           ? beforeRendered.canvases[getFrameAtTime(beforeRendered.timestamps, beforeRendered.totalDuration, timeMs)]
@@ -233,7 +270,7 @@ export async function POST(request: NextRequest) {
           ? afterRendered.canvases[getFrameAtTime(afterRendered.timestamps, afterRendered.totalDuration, timeMs)]
           : afterImgStatic;
 
-        renderTemplate(ctx, template, bImg, aImg, text, networkStatus, assets);
+        renderTemplate(ctx, template, bImg, aImg, text, networkStatus, assets, canvasW, canvasH);
 
         encoder.addFrame(ctx as any);
       }
@@ -244,7 +281,7 @@ export async function POST(request: NextRequest) {
       return new NextResponse(new Uint8Array(buffer), {
         headers: {
           'Content-Type': 'image/gif',
-          'Content-Disposition': `attachment; filename="nodes-evolution-${tokenId}-${Date.now()}.gif"`,
+          'Content-Disposition': `attachment; filename="nodes-interference-${tokenId}-${Date.now()}.gif"`,
         },
       });
     }
@@ -252,21 +289,21 @@ export async function POST(request: NextRequest) {
     // -----------------------------------------------------------------------
     // Static PNG output
     // -----------------------------------------------------------------------
-    const canvas = createCanvas(SIZE, SIZE);
+    const canvas = createCanvas(canvasW, canvasH);
     const ctx = canvas.getContext('2d');
 
     ctx.fillStyle = COLORS.black;
-    ctx.fillRect(0, 0, SIZE, SIZE);
-    drawSubtleGlows(ctx, SIZE);
+    ctx.fillRect(0, 0, canvasW, canvasH);
+    drawSubtleGlows(ctx, Math.max(canvasW, canvasH));
 
-    renderTemplate(ctx, template, beforeImgStatic, afterImgStatic, text, networkStatus, assets);
+    renderTemplate(ctx, template, beforeImgStatic, afterImgStatic, text, networkStatus, assets, canvasW, canvasH);
 
     const buffer = canvas.toBuffer('image/png');
 
     return new NextResponse(new Uint8Array(buffer), {
       headers: {
         'Content-Type': 'image/png',
-        'Content-Disposition': `attachment; filename="nodes-evolution-${tokenId}-${Date.now()}.png"`,
+        'Content-Disposition': `attachment; filename="nodes-interference-${tokenId}-${Date.now()}.png"`,
       },
     });
 

@@ -19,13 +19,33 @@ import {
   ArrowDown,
   Film,
   Scissors,
-  Clock,
   Sparkles,
   ChevronDown,
   ChevronUp,
+  Layers,
+  Zap,
+  CreditCard,
 } from 'lucide-react';
 import Image from 'next/image';
 import type { NodeNFT } from '@/types/nft';
+
+type AspectRatio = 'square' | 'landscape' | 'portrait';
+
+const TEMPLATE_FORMATS: Record<string, AspectRatio[]> = {
+  'side-by-side':  ['square', 'landscape'],
+  'vertical':      ['square', 'portrait'],
+  'gif-transition': ['square', 'landscape', 'portrait'],
+  'split-reveal':  ['square', 'landscape', 'portrait'],
+  'frame-overlay': ['square', 'landscape', 'portrait'],
+  'glitch-wipe':   ['square', 'landscape'],
+  'reveal-card':   ['square', 'portrait'],
+};
+
+const FORMAT_LABELS: Record<AspectRatio, string> = {
+  square: '1:1',
+  landscape: '16:9',
+  portrait: '9:16',
+};
 
 interface BeforeAfterTemplate {
   id: string;
@@ -36,18 +56,20 @@ interface BeforeAfterTemplate {
 }
 
 const TEMPLATES: BeforeAfterTemplate[] = [
-  { id: 'side-by-side', name: 'Side by Side', description: 'Before on left, After on right', icon: <ArrowRight className="w-4 h-4" /> },
-  { id: 'vertical', name: 'Vertical', description: 'Before on top, After on bottom', icon: <ArrowDown className="w-4 h-4" /> },
-  { id: 'gif-transition', name: 'Transition', description: 'Animated crossfade loop', icon: <Film className="w-4 h-4" />, forceGif: true },
-  { id: 'split-reveal', name: 'Split', description: 'Diagonal split reveal', icon: <Scissors className="w-4 h-4" /> },
-  { id: 'timeline', name: 'Timeline', description: 'Evolution timeline strip', icon: <Clock className="w-4 h-4" /> },
+  { id: 'side-by-side', name: 'Side by Side', description: 'Before left, After right', icon: <ArrowRight className="w-4 h-4" /> },
+  { id: 'vertical', name: 'Vertical', description: 'Before top, After bottom', icon: <ArrowDown className="w-4 h-4" /> },
+  { id: 'gif-transition', name: 'Transition', description: 'Animated glitch wipe', icon: <Film className="w-4 h-4" />, forceGif: true },
+  { id: 'split-reveal', name: 'Split', description: 'Vertical 50/50 split', icon: <Scissors className="w-4 h-4" /> },
+  { id: 'frame-overlay', name: 'Frame', description: 'Full image with PIP', icon: <Layers className="w-4 h-4" /> },
+  { id: 'glitch-wipe', name: 'Glitch', description: 'Glitchy center divider', icon: <Zap className="w-4 h-4" /> },
+  { id: 'reveal-card', name: 'Card', description: 'Top/bottom reveal card', icon: <CreditCard className="w-4 h-4" /> },
 ];
 
 const PRESET_TEXTS = [
-  'Evolution',
-  'The glow up',
+  'Interfered',
   'Before → After',
-  'Evolved',
+  'The glow up',
+  'Art Is Never Finished',
 ];
 
 export default function BeforeAfterPage() {
@@ -62,9 +84,18 @@ export default function BeforeAfterPage() {
   const [isLoadingLegacy, setIsLoadingLegacy] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState('');
-  const [customText, setCustomText] = useState('Evolution');
+  const [customText, setCustomText] = useState('Interfered');
+  const [aspectRatio, setAspectRatio] = useState<AspectRatio>('square');
   const [showGISection, setShowGISection] = useState(true);
   const [showDRSection, setShowDRSection] = useState(true);
+
+  // When template changes, ensure current aspect ratio is supported
+  useEffect(() => {
+    const supported = TEMPLATE_FORMATS[selectedTemplate.id] || ['square'];
+    if (!supported.includes(aspectRatio)) {
+      setAspectRatio(supported[0]);
+    }
+  }, [selectedTemplate.id, aspectRatio]);
 
   // Fetch NFTs
   useEffect(() => {
@@ -131,12 +162,13 @@ export default function BeforeAfterPage() {
     nftName: selectedNft!.name,
     networkStatus: selectedNft!.networkStatus || '',
     text: customText,
+    aspectRatio,
   });
 
   const triggerDownload = (blob: Blob, ext: string) => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.download = `nodes-evolution-${selectedNft!.tokenId}-${Date.now()}.${ext}`;
+    link.download = `nodes-interference-${selectedNft!.tokenId}-${Date.now()}.${ext}`;
     link.href = url;
     link.click();
     URL.revokeObjectURL(url);
@@ -204,6 +236,16 @@ export default function BeforeAfterPage() {
     }
   };
 
+  // Preview dimensions based on aspect ratio
+  const getPreviewDimensions = () => {
+    switch (aspectRatio) {
+      case 'landscape': return { w: 500, h: 281, sm: { w: 500, h: 281 }, base: { w: 300, h: 169 } };
+      case 'portrait':  return { w: 281, h: 500, sm: { w: 281, h: 500 }, base: { w: 169, h: 300 } };
+      default:          return { w: 500, h: 500, sm: { w: 500, h: 500 }, base: { w: 300, h: 300 } };
+    }
+  };
+  const previewDims = getPreviewDimensions();
+
   // Client-side preview
   const renderPreview = () => {
     if (!selectedNft) return null;
@@ -214,15 +256,16 @@ export default function BeforeAfterPage() {
     const isDR = networkStatus === 'Digital Renaissance';
 
     // DR banner element — shown at the bottom of all templates for Digital Renaissance NFTs
+    // The Digital Renaissance.png is 1200x600 (2:1), render at proper aspect ratio
     const drBannerEl = isDR ? (
-      <div className="absolute bottom-1 sm:bottom-2 left-1/2 -translate-x-1/2 opacity-55">
-        <Image src="/logos/The Digital Renaissance.png" alt="The Digital Renaissance" width={140} height={30} unoptimized className="sm:w-[200px] sm:h-[44px]" />
+      <div className="absolute bottom-0 sm:bottom-1 left-1/2 -translate-x-1/2 opacity-40">
+        <Image src="/logos/The Digital Renaissance.png" alt="The Digital Renaissance" width={100} height={50} unoptimized className="sm:w-[140px] sm:h-[70px] object-contain" />
       </div>
     ) : null;
 
     if (selectedTemplate.id === 'side-by-side') {
       return (
-        <div className="w-[300px] h-[300px] sm:w-[500px] sm:h-[500px] relative overflow-hidden bg-black">
+        <div className="relative overflow-hidden bg-black" style={{ width: previewDims.base.w, height: previewDims.base.h }}>
           <div className="absolute inset-0 pointer-events-none">
             <div className="absolute -top-20 -left-20 w-64 h-64 bg-[#00D4FF]/5 rounded-full blur-3xl" />
             <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-[#4FFFDF]/5 rounded-full blur-3xl" />
@@ -257,7 +300,7 @@ export default function BeforeAfterPage() {
 
     if (selectedTemplate.id === 'vertical') {
       return (
-        <div className="w-[300px] h-[300px] sm:w-[500px] sm:h-[500px] relative overflow-hidden bg-black">
+        <div className="relative overflow-hidden bg-black" style={{ width: previewDims.base.w, height: previewDims.base.h }}>
           <div className="absolute inset-0 pointer-events-none">
             <div className="absolute -top-20 -left-20 w-64 h-64 bg-[#00D4FF]/5 rounded-full blur-3xl" />
             <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-[#4FFFDF]/5 rounded-full blur-3xl" />
@@ -286,7 +329,7 @@ export default function BeforeAfterPage() {
 
     if (selectedTemplate.id === 'gif-transition') {
       return (
-        <div className="w-[300px] h-[300px] sm:w-[500px] sm:h-[500px] relative overflow-hidden bg-black">
+        <div className="relative overflow-hidden bg-black" style={{ width: previewDims.base.w, height: previewDims.base.h }}>
           <div className="absolute inset-0 pointer-events-none">
             <div className="absolute -top-20 -left-20 w-64 h-64 bg-[#00D4FF]/5 rounded-full blur-3xl" />
             <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-[#4FFFDF]/5 rounded-full blur-3xl" />
@@ -314,90 +357,152 @@ export default function BeforeAfterPage() {
 
     if (selectedTemplate.id === 'split-reveal') {
       return (
-        <div className="w-[300px] h-[300px] sm:w-[500px] sm:h-[500px] relative overflow-hidden bg-black">
+        <div className="relative overflow-hidden bg-black" style={{ width: previewDims.base.w, height: previewDims.base.h }}>
           <div className="absolute inset-0 pointer-events-none">
             <div className="absolute -top-20 -left-20 w-64 h-64 bg-[#00D4FF]/5 rounded-full blur-3xl" />
             <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-[#4FFFDF]/5 rounded-full blur-3xl" />
           </div>
-          <div className="absolute inset-0 flex items-center justify-center p-4 sm:p-6">
-            <div className="relative w-[250px] h-[250px] sm:w-[420px] sm:h-[420px]">
-              {/* After image (bottom-right triangle via CSS) */}
-              <div className="absolute inset-0 overflow-hidden rounded-xl" style={{ clipPath: 'polygon(0 0, 100% 0, 100% 100%)' }}>
-                <Image src={afterSrc} alt="After" fill unoptimized className="object-cover" />
-              </div>
-              {/* Before image (top-left triangle via CSS) */}
-              {beforeSrc && (
-                <div className="absolute inset-0 overflow-hidden rounded-xl" style={{ clipPath: 'polygon(0 0, 100% 100%, 0 100%)' }}>
-                  <Image src={beforeSrc} alt="Before" fill unoptimized className="object-cover" />
+          {/* Labels above images */}
+          <div className="absolute top-2 sm:top-4 left-0 right-0 flex justify-between px-6 sm:px-10">
+            <span className="text-[10px] sm:text-xs text-gray-500 font-bold">LEGACY</span>
+            <span className="text-[10px] sm:text-xs text-[#00D4FF] font-bold">{networkStatus.toUpperCase()}</span>
+          </div>
+          {/* Vertical 50/50 split */}
+          <div className="absolute inset-0 flex" style={{ top: '10%', bottom: '12%', left: '4%', right: '4%' }}>
+            {/* Before - left half */}
+            <div className="relative flex-1 overflow-hidden rounded-l-xl">
+              {beforeSrc ? (
+                <Image src={beforeSrc} alt="Before" fill unoptimized className="object-cover" />
+              ) : (
+                <div className="w-full h-full bg-[#0d0d0d] flex items-center justify-center">
+                  {isLoadingLegacy ? <Loader2 className="w-4 h-4 animate-spin text-gray-600" /> : <span className="text-gray-600 text-xs">No image</span>}
                 </div>
               )}
-              {/* Diagonal line */}
-              <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
-                <line x1="0" y1="0" x2="100" y2="100" stroke="#00D4FF" strokeWidth="0.5" style={{ filter: 'drop-shadow(0 0 4px #00D4FF)' }} />
-              </svg>
-              {/* Labels */}
-              <div className="absolute bottom-2 left-2 sm:bottom-4 sm:left-4 text-[10px] sm:text-sm text-gray-400 font-bold">LEGACY</div>
-              <div className="absolute top-2 right-2 sm:top-4 sm:right-4 text-[10px] sm:text-sm text-[#00D4FF] font-bold">{networkStatus.toUpperCase()}</div>
+            </div>
+            {/* Glowing divider */}
+            <div className="w-[3px] bg-[#00D4FF] shadow-[0_0_15px_rgba(0,212,255,0.6)] z-10" />
+            {/* After - right half */}
+            <div className="relative flex-1 overflow-hidden rounded-r-xl">
+              <Image src={afterSrc} alt="After" fill unoptimized className="object-cover" />
             </div>
           </div>
-          {customText && <div className="absolute bottom-3 sm:bottom-5 left-0 right-0 text-center text-xs sm:text-base text-white">{customText}</div>}
+          {customText && <div className="absolute bottom-2 sm:bottom-4 left-0 right-0 text-center text-xs sm:text-sm text-white">{customText}</div>}
           {drBannerEl}
           <div className="absolute top-2 right-2 sm:top-3 sm:right-3 opacity-45">
-            <Image src="/logos/nodes.png" alt="NODES" width={60} height={60} unoptimized className="sm:w-[80px] sm:h-[80px]" />
+            <Image src="/logos/nodes.png" alt="NODES" width={50} height={50} unoptimized className="sm:w-[70px] sm:h-[70px]" />
           </div>
         </div>
       );
     }
 
-    if (selectedTemplate.id === 'timeline') {
+    if (selectedTemplate.id === 'frame-overlay') {
       return (
-        <div className="w-[300px] h-[300px] sm:w-[500px] sm:h-[500px] relative overflow-hidden bg-black">
+        <div className="relative overflow-hidden bg-black" style={{ width: previewDims.base.w, height: previewDims.base.h }}>
+          {/* Full-bleed after image */}
+          <Image src={afterSrc} alt="After" fill unoptimized className="object-cover" />
+          <div className="absolute inset-0 bg-gradient-radial from-transparent to-black/50" />
+          {/* Interference label */}
+          <div className="absolute top-3 left-3 sm:top-5 sm:left-5 text-[10px] sm:text-sm text-[#00D4FF] font-bold drop-shadow-lg">{networkStatus.toUpperCase()}</div>
+          {/* PIP before frame */}
+          <div className="absolute bottom-12 sm:bottom-16 left-3 sm:left-5">
+            <div className="text-[8px] sm:text-[10px] text-gray-400 mb-1 text-center">LEGACY</div>
+            <div className="relative w-[70px] h-[70px] sm:w-[120px] sm:h-[120px] rounded-lg overflow-hidden border-2 border-[#00D4FF]/40 shadow-[0_0_15px_rgba(0,0,0,0.8)]">
+              {beforeSrc ? (
+                <Image src={beforeSrc} alt="Before" fill unoptimized className="object-cover" />
+              ) : (
+                <div className="w-full h-full bg-[#0d0d0d] flex items-center justify-center">
+                  <span className="text-gray-600 text-[8px]">No image</span>
+                </div>
+              )}
+            </div>
+          </div>
+          {customText && <div className="absolute bottom-2 sm:bottom-4 left-0 right-0 text-center text-xs sm:text-sm text-white drop-shadow-lg">{customText}</div>}
+          {drBannerEl}
+          <div className="absolute top-2 right-2 sm:top-3 sm:right-3 opacity-45">
+            <Image src="/logos/nodes.png" alt="NODES" width={50} height={50} unoptimized className="sm:w-[70px] sm:h-[70px]" />
+          </div>
+        </div>
+      );
+    }
+
+    if (selectedTemplate.id === 'glitch-wipe') {
+      return (
+        <div className="relative overflow-hidden bg-black" style={{ width: previewDims.base.w, height: previewDims.base.h }}>
           <div className="absolute inset-0 pointer-events-none">
             <div className="absolute -top-20 -left-20 w-64 h-64 bg-[#00D4FF]/5 rounded-full blur-3xl" />
             <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-[#4FFFDF]/5 rounded-full blur-3xl" />
           </div>
-          <div className="absolute inset-0 p-4 sm:p-8">
-            {/* Images */}
-            <div className="flex justify-between mb-3 sm:mb-6">
-              <div className="flex-shrink-0">
-                {beforeSrc ? (
-                  <Image src={beforeSrc} alt="Before" width={90} height={90} unoptimized className="rounded-lg sm:w-[150px] sm:h-[150px] border border-[#00D4FF]/30" />
-                ) : (
-                  <div className="w-[90px] h-[90px] sm:w-[150px] sm:h-[150px] border border-dashed border-[#1a1a1a] rounded-lg" />
-                )}
-              </div>
-              <div className="flex-shrink-0">
-                <Image src={afterSrc} alt="After" width={90} height={90} unoptimized className="rounded-lg sm:w-[150px] sm:h-[150px] border border-[#00D4FF]/30" />
-              </div>
+          {/* Labels */}
+          <div className="absolute top-2 sm:top-4 left-0 right-0 flex justify-between px-6 sm:px-10">
+            <span className="text-[10px] sm:text-xs text-gray-500 font-bold">LEGACY</span>
+            <span className="text-[10px] sm:text-xs text-[#00D4FF] font-bold">{networkStatus.toUpperCase()}</span>
+          </div>
+          {/* Two halves with glitch band */}
+          <div className="absolute flex" style={{ top: '10%', bottom: '14%', left: '4%', right: '4%' }}>
+            <div className="relative flex-1 overflow-hidden rounded-l-xl">
+              {beforeSrc ? (
+                <Image src={beforeSrc} alt="Before" fill unoptimized className="object-cover" />
+              ) : (
+                <div className="w-full h-full bg-[#0d0d0d]" />
+              )}
             </div>
-            {/* Caption */}
-            {customText && <div className="text-center text-sm sm:text-xl text-white mb-3 sm:mb-6">{customText}</div>}
-            {/* Timeline */}
-            <div className="relative mx-4 sm:mx-8">
-              <div className="h-0.5 bg-[#333333] w-full" />
-              <div
-                className="absolute top-0 h-0.5 bg-gradient-to-r from-[#4FFFDF] to-[#00D4FF]"
-                style={{ width: networkStatus === 'Digital Renaissance' ? '100%' : '50%' }}
-              />
-              {/* Dots */}
-              {['Legacy', 'Genesis Interference', 'Digital Renaissance'].map((label, i) => {
-                const isActive = i === 0 ||
-                  (i === 1 && (networkStatus === 'Genesis Interference' || networkStatus === 'Digital Renaissance')) ||
-                  (i === 2 && networkStatus === 'Digital Renaissance');
-                return (
-                  <div key={label} className="absolute -top-1.5" style={{ left: `${i * 50}%`, transform: 'translateX(-50%)' }}>
-                    <div className={`w-3 h-3 rounded-full ${isActive ? 'bg-[#00D4FF] shadow-[0_0_8px_rgba(0,212,255,0.6)]' : 'bg-[#333333]'}`} />
-                    <div className={`text-[8px] sm:text-[10px] mt-1 text-center whitespace-nowrap ${isActive ? 'text-[#00D4FF]' : 'text-gray-600'}`}>
-                      {label.split(' ').map((w, j) => <div key={j}>{w}</div>)}
-                    </div>
-                  </div>
-                );
-              })}
+            {/* Glitch band */}
+            <div className="w-[16px] sm:w-[24px] bg-black relative overflow-hidden">
+              <div className="absolute inset-0 flex flex-col">
+                {Array.from({ length: 20 }).map((_, i) => (
+                  <div key={i} className="flex-1 bg-[#00D4FF]/10" style={{ opacity: Math.random() * 0.4 + 0.1, transform: `translateX(${(Math.random() - 0.5) * 8}px)` }} />
+                ))}
+              </div>
+              <div className="absolute inset-y-0 left-0 w-px bg-[#00D4FF]/30 shadow-[0_0_6px_rgba(0,212,255,0.4)]" />
+              <div className="absolute inset-y-0 right-0 w-px bg-[#00D4FF]/30 shadow-[0_0_6px_rgba(0,212,255,0.4)]" />
+            </div>
+            <div className="relative flex-1 overflow-hidden rounded-r-xl">
+              <Image src={afterSrc} alt="After" fill unoptimized className="object-cover" />
             </div>
           </div>
+          {customText && <div className="absolute bottom-2 sm:bottom-4 left-0 right-0 text-center text-xs sm:text-sm text-white">{customText}</div>}
           {drBannerEl}
           <div className="absolute top-2 right-2 sm:top-3 sm:right-3 opacity-45">
-            <Image src="/logos/nodes.png" alt="NODES" width={60} height={60} unoptimized className="sm:w-[80px] sm:h-[80px]" />
+            <Image src="/logos/nodes.png" alt="NODES" width={50} height={50} unoptimized className="sm:w-[70px] sm:h-[70px]" />
+          </div>
+        </div>
+      );
+    }
+
+    if (selectedTemplate.id === 'reveal-card') {
+      return (
+        <div className="relative overflow-hidden bg-black" style={{ width: previewDims.base.w, height: previewDims.base.h }}>
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute -top-20 -left-20 w-64 h-64 bg-[#00D4FF]/5 rounded-full blur-3xl" />
+            <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-[#4FFFDF]/5 rounded-full blur-3xl" />
+          </div>
+          <div className="absolute flex flex-col" style={{ top: '8%', bottom: '10%', left: '6%', right: '6%' }}>
+            {/* Before - top half */}
+            <div className="relative flex-1 overflow-hidden rounded-t-xl">
+              {beforeSrc ? (
+                <Image src={beforeSrc} alt="Before" fill unoptimized className="object-cover" />
+              ) : (
+                <div className="w-full h-full bg-[#0d0d0d] flex items-center justify-center">
+                  <span className="text-gray-600 text-xs">No image</span>
+                </div>
+              )}
+              <div className="absolute bottom-1 left-2 text-[8px] sm:text-[10px] text-gray-400 font-bold">LEGACY</div>
+            </div>
+            {/* Glitch band separator */}
+            <div className="h-[8px] sm:h-[12px] bg-black relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-r from-[#4FFFDF]/20 via-[#00D4FF]/30 to-[#4FFFDF]/20" />
+              <div className="absolute inset-x-0 top-1/2 h-px bg-[#00D4FF] shadow-[0_0_8px_rgba(0,212,255,0.6)]" />
+            </div>
+            {/* After - bottom half */}
+            <div className="relative flex-1 overflow-hidden rounded-b-xl">
+              <Image src={afterSrc} alt="After" fill unoptimized className="object-cover" />
+              <div className="absolute top-1 right-2 text-[8px] sm:text-[10px] text-[#00D4FF] font-bold">{networkStatus.toUpperCase()}</div>
+            </div>
+          </div>
+          {customText && <div className="absolute bottom-1 sm:bottom-2 left-0 right-0 text-center text-[10px] sm:text-xs text-white">{customText}</div>}
+          {drBannerEl}
+          <div className="absolute top-2 right-2 sm:top-3 sm:right-3 opacity-45">
+            <Image src="/logos/nodes.png" alt="NODES" width={50} height={50} unoptimized className="sm:w-[70px] sm:h-[70px]" />
           </div>
         </div>
       );
@@ -443,7 +548,7 @@ export default function BeforeAfterPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-12">
         <h1 className="section-title text-xl sm:text-2xl md:text-3xl">Before / After</h1>
         <p className="text-gray-500 text-sm sm:text-base mb-6 sm:mb-8">
-          See how your NODES evolved — compare legacy and current states
+          See how your NODES were interfered — compare legacy and current states
         </p>
 
         {!isConnected ? (
@@ -512,7 +617,7 @@ export default function BeforeAfterPage() {
                 {/* Template Selector */}
                 <div>
                   <h4 className="font-semibold text-xs sm:text-sm uppercase tracking-wide mb-3">Template</h4>
-                  <div className="grid grid-cols-5 gap-2">
+                  <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
                     {TEMPLATES.map((tmpl) => (
                       <button
                         key={tmpl.id}
@@ -527,6 +632,32 @@ export default function BeforeAfterPage() {
                         <div className="font-medium text-[10px] sm:text-xs">{tmpl.name}</div>
                       </button>
                     ))}
+                  </div>
+                </div>
+
+                {/* Format / Aspect Ratio */}
+                <div>
+                  <h4 className="font-semibold text-xs sm:text-sm uppercase tracking-wide mb-3">Format</h4>
+                  <div className="flex gap-2">
+                    {(['square', 'landscape', 'portrait'] as AspectRatio[]).map((ar) => {
+                      const supported = (TEMPLATE_FORMATS[selectedTemplate.id] || ['square']).includes(ar);
+                      return (
+                        <button
+                          key={ar}
+                          onClick={() => supported && setAspectRatio(ar)}
+                          disabled={!supported}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                            aspectRatio === ar
+                              ? 'bg-gradient-to-br from-[#00D4FF] to-[#4FFFDF] text-black'
+                              : supported
+                                ? 'bg-black border border-[#1a1a1a] hover:border-[#4FFFDF]/50'
+                                : 'bg-black/50 border border-[#1a1a1a]/50 text-gray-600 cursor-not-allowed'
+                          }`}
+                        >
+                          {FORMAT_LABELS[ar]}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 

@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import { Inter, Space_Grotesk } from 'next/font/google';
 import { ClientProviders } from '@/components/ClientProviders';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
+const spaceGrotesk = Space_Grotesk({ subsets: ['latin'], variable: '--font-space' });
 
 export const metadata: Metadata = {
   title: 'NODES Community Hub',
@@ -44,7 +45,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
-      <body className={`${inter.className} min-h-screen bg-black`}>
+      <body className={`${inter.className} ${spaceGrotesk.variable} min-h-screen bg-black`}>
         <ClientProviders>
           {children}
         </ClientProviders>

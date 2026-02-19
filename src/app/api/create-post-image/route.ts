@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createCanvas, CanvasRenderingContext2D } from 'canvas';
 import {
   COLORS,
+  BRAND_FONT,
   loadImageSafe,
   loadLogo,
   drawRoundedRect,
@@ -25,7 +26,7 @@ const SIZE = 1200;
 
 async function renderTextOnly(ctx: CanvasRenderingContext2D, text: string) {
   drawGradientText(ctx, text, SIZE / 2, SIZE / 2 - 40, 80);
-  ctx.font = 'bold 32px Inter, system-ui, sans-serif';
+  ctx.font = `bold 32px ${BRAND_FONT}`;
   ctx.fillStyle = COLORS.cyan;
   ctx.textAlign = 'center';
   ctx.fillText('NODES COMMUNITY', SIZE / 2, SIZE / 2 + 60);
@@ -109,7 +110,7 @@ async function renderEight(ctx: CanvasRenderingContext2D, nfts: { image: string;
 }
 
 async function renderGMPost(ctx: CanvasRenderingContext2D, nfts: { image: string; name: string }[], text: string) {
-  ctx.font = 'bold 200px Inter, system-ui, sans-serif';
+  ctx.font = `bold 200px ${BRAND_FONT}`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   const gradient = ctx.createLinearGradient(SIZE * 0.2, SIZE * 0.3, SIZE * 0.8, SIZE * 0.5);
@@ -128,7 +129,7 @@ async function renderGMPost(ctx: CanvasRenderingContext2D, nfts: { image: string
     }
   }
   if (text && text.toLowerCase() !== 'gm') {
-    ctx.font = 'bold 36px Inter, system-ui, sans-serif';
+    ctx.font = `bold 36px ${BRAND_FONT}`;
     ctx.fillStyle = '#ffffff';
     ctx.fillText(text, SIZE / 2, SIZE * 0.88);
   }
@@ -172,7 +173,7 @@ async function renderQuote(ctx: CanvasRenderingContext2D, nfts: { image: string;
 
 async function renderStats(ctx: CanvasRenderingContext2D, nfts: { image: string; name: string }[], text: string) {
   const parts = text.split('|').map(s => s.trim());
-  ctx.font = 'bold 48px Inter, system-ui, sans-serif';
+  ctx.font = `bold 48px ${BRAND_FONT}`;
   ctx.fillStyle = '#ffffff';
   ctx.textAlign = 'center';
   ctx.fillText('COLLECTION STATS', SIZE / 2, SIZE * 0.15);
@@ -192,11 +193,11 @@ async function renderStats(ctx: CanvasRenderingContext2D, nfts: { image: string;
     ctx.strokeStyle = `${COLORS.cyan}30`;
     ctx.lineWidth = 2;
     ctx.stroke();
-    ctx.font = 'bold 56px Inter, system-ui, sans-serif';
+    ctx.font = `bold 56px ${BRAND_FONT}`;
     ctx.fillStyle = COLORS.cyan;
     ctx.textAlign = 'center';
     ctx.fillText(value || '', x, y - 10);
-    ctx.font = '24px Inter, system-ui, sans-serif';
+    ctx.font = `24px ${BRAND_FONT}`;
     ctx.fillStyle = '#888888';
     ctx.fillText(label || '', x, y + 35);
   }
@@ -213,7 +214,7 @@ async function renderStats(ctx: CanvasRenderingContext2D, nfts: { image: string;
 }
 
 async function renderGiveaway(ctx: CanvasRenderingContext2D, nfts: { image: string; name: string }[], text: string) {
-  ctx.font = 'bold 72px Inter, system-ui, sans-serif';
+  ctx.font = `bold 72px ${BRAND_FONT}`;
   const gradient = ctx.createLinearGradient(SIZE * 0.2, 0, SIZE * 0.8, 0);
   gradient.addColorStop(0, '#FFD700');
   gradient.addColorStop(0.5, '#FFA500');
@@ -231,16 +232,16 @@ async function renderGiveaway(ctx: CanvasRenderingContext2D, nfts: { image: stri
     ctx.fillText('⭐', SIZE * 0.25, SIZE * 0.6);
     ctx.fillText('⭐', SIZE * 0.75, SIZE * 0.55);
   }
-  ctx.font = '32px Inter, system-ui, sans-serif';
+  ctx.font = `32px ${BRAND_FONT}`;
   ctx.fillStyle = '#ffffff';
   ctx.fillText(text || 'Follow + RT + Tag 3 friends', SIZE / 2, SIZE * 0.78);
-  ctx.font = '24px Inter, system-ui, sans-serif';
+  ctx.font = `24px ${BRAND_FONT}`;
   ctx.fillStyle = COLORS.cyan;
   ctx.fillText('Ends in 48 hours ⏰', SIZE / 2, SIZE * 0.88);
 }
 
 async function renderShowcase(ctx: CanvasRenderingContext2D, nfts: { image: string; name: string }[], text: string) {
-  ctx.font = 'bold 48px Inter, system-ui, sans-serif';
+  ctx.font = `bold 48px ${BRAND_FONT}`;
   ctx.fillStyle = '#ffffff';
   ctx.textAlign = 'center';
   ctx.fillText(text || 'MY COLLECTION', SIZE / 2, SIZE * 0.1);
@@ -259,7 +260,7 @@ async function renderShowcase(ctx: CanvasRenderingContext2D, nfts: { image: stri
       }
     }
   }
-  ctx.font = 'bold 28px Inter, system-ui, sans-serif';
+  ctx.font = `bold 28px ${BRAND_FONT}`;
   ctx.fillStyle = COLORS.cyan;
   ctx.fillText('NODES INNER STATES', SIZE / 2, SIZE * 0.92);
 }
@@ -321,7 +322,7 @@ export async function POST(request: NextRequest) {
 
     // Text overlay for basic templates
     if (text && !['text-only', 'gm', 'quote', 'stats', 'giveaway', 'showcase'].includes(template)) {
-      ctx.font = 'bold 36px Inter, system-ui, sans-serif';
+      ctx.font = `bold 36px ${BRAND_FONT}`;
       const metrics = ctx.measureText(text);
       const pillWidth = metrics.width + 60;
       const pillHeight = 70;

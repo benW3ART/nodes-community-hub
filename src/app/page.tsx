@@ -191,46 +191,62 @@ export default function Home() {
         {/* Character Forms */}
         <section className="mt-10 sm:mt-16">
           <h2 className="section-title text-center text-lg sm:text-2xl">Character Forms</h2>
-          <div className="flex flex-wrap justify-center gap-3 sm:gap-4 mb-6">
-            {['Full Circle', 'Skull', 'Ghost'].map((form) => (
-              <span
-                key={form}
-                className="px-4 py-2 sm:px-6 sm:py-3 bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg text-sm sm:text-base text-white hover:border-[#00D4FF]/50 hover:text-[#00D4FF] transition-all cursor-default font-medium"
+          <div className="grid grid-cols-3 gap-3 sm:gap-6 max-w-2xl mx-auto mb-6">
+            {[
+              { name: 'Full Circle', tokenId: '1', count: 1948 },
+              { name: 'Skull', tokenId: '4', count: 1104 },
+              { name: 'Ghost', tokenId: '3', count: 281 },
+            ].map((form) => (
+              <div
+                key={form.name}
+                className="flex flex-col items-center gap-2 sm:gap-3 p-3 sm:p-4 bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl hover:border-[#00D4FF]/30 transition-all"
               >
-                {form}
-              </span>
+                <div className="relative w-16 h-16 sm:w-24 sm:h-24 rounded-lg overflow-hidden border border-[#1a1a1a]">
+                  <Image
+                    src={`/api/proxy-gif?url=https://storage.googleapis.com/node-nft/metadata/${form.tokenId}.gif`}
+                    alt={form.name}
+                    fill
+                    unoptimized
+                    className="object-cover"
+                  />
+                </div>
+                <div className="text-center">
+                  <div className="text-xs sm:text-sm font-medium text-white">{form.name}</div>
+                  <div className="text-[10px] sm:text-xs text-gray-500">{form.count.toLocaleString()} NFTs</div>
+                </div>
+              </div>
             ))}
-          </div>
-          <div className="flex justify-center">
-            <Image
-              src="/logos/banner.png"
-              alt="NODES"
-              width={600}
-              height={200}
-              className="w-full max-w-md sm:max-w-lg opacity-40 hover:opacity-60 transition-opacity"
-            />
           </div>
         </section>
 
         {/* Inner States */}
         <section className="mt-10 sm:mt-16">
           <h2 className="section-title text-center text-lg sm:text-2xl">Inner States</h2>
-          <div className="flex justify-center mb-4 sm:mb-6">
-            <Image
-              src="/logos/NODES symbol.png"
-              alt="NODES Symbol"
-              width={200}
-              height={200}
-              className="w-24 h-24 sm:w-32 sm:h-32 opacity-50 hover:opacity-70 transition-opacity"
-            />
-          </div>
           <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
-            {['Ascended', 'Diamond Hand', 'Enlightened', 'Equilibrium', 'HyperConnected', 'Uncoded', 'Verified'].map((state) => (
+            {([
+              { name: 'Verified', icon: '/icons/verified.png' },
+              { name: 'HyperConnected', icon: '/icons/hyperconnected.png' },
+              { name: 'Equilibrium', icon: '/icons/equilibrium.png' },
+              { name: 'Enlightened', icon: '/icons/enlightened.png' },
+              { name: 'Ascended', icon: '/icons/ascended.png' },
+              { name: 'Diamond Hand', icon: '/icons/diamond-hand.png' },
+              { name: 'Uncoded', icon: null },
+            ] as const).map((state) => (
               <span
-                key={state}
-                className="px-3 py-1.5 sm:px-4 sm:py-2 bg-[#0a0a0a] border border-[#1a1a1a] rounded-full text-xs sm:text-sm text-gray-400 hover:border-[#00D4FF]/50 hover:text-[#00D4FF] transition-all cursor-default"
+                key={state.name}
+                className="inline-flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 sm:px-4 sm:py-2 bg-[#0a0a0a] border border-[#1a1a1a] rounded-full text-xs sm:text-sm text-gray-400 hover:border-[#00D4FF]/50 hover:text-[#00D4FF] transition-all cursor-default"
               >
-                {state}
+                {state.icon && (
+                  <Image
+                    src={state.icon}
+                    alt={state.name}
+                    width={20}
+                    height={20}
+                    unoptimized
+                    className="w-4 h-4 sm:w-5 sm:h-5 opacity-80"
+                  />
+                )}
+                {state.name}
               </span>
             ))}
           </div>
