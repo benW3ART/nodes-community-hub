@@ -25,7 +25,6 @@ import {
   Quote,
   BarChart3,
   Megaphone,
-  ArrowRight,
   Grid3X3
 } from 'lucide-react';
 import Image from 'next/image';
@@ -57,7 +56,6 @@ const POST_TEMPLATES: PostTemplate[] = [
   { id: 'stats', name: 'Stats', slots: 6, layout: 'stats', description: 'Show off your stats', icon: <BarChart3 className="w-4 h-4" />, category: 'styled' },
   { id: 'giveaway', name: 'Giveaway', slots: 1, layout: 'giveaway', description: 'Announce a giveaway', icon: <Gift className="w-4 h-4" />, category: 'styled' },
   { id: 'showcase', name: 'Showcase', slots: 5, layout: 'showcase', description: 'Feature your collection', icon: <Grid3X3 className="w-4 h-4" />, category: 'styled' },
-  { id: 'before-after', name: 'Before/After', slots: 2, layout: 'before-after', description: 'Compare two states', icon: <ArrowRight className="w-4 h-4" />, category: 'styled' },
 ];
 
 const PRESET_TEXTS: Record<string, string[]> = {
@@ -66,7 +64,6 @@ const PRESET_TEXTS: Record<string, string[]> = {
   'stats': ['Floor: 0.1 ETH | Holders: 500 | Volume: 10 ETH', 'Minted: 8/8 | Rarity: Top 5% | Held: 100 days'],
   'giveaway': ['Follow + RT + Tag 3 friends', 'Like + RT to enter! 🎁', '48h giveaway - don\'t miss out!'],
   'showcase': ['My Inner States Collection', 'NODES Journey', 'The Full Set 🎯'],
-  'before-after': ['Evolution 🔥', 'The glow up', 'From paper hands to diamond 💎'],
 };
 
 export default function PostCreatorPage() {
@@ -299,33 +296,6 @@ export default function PostCreatorPage() {
           </div>
         )}
 
-        {selectedTemplate.id === 'before-after' && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center p-4 sm:p-8">
-            <div className="flex items-center gap-4 sm:gap-8">
-              <div className="text-center">
-                <div className="text-xs sm:text-lg text-gray-500 mb-2">BEFORE</div>
-                {slots[0] ? (
-                  <Image src={slots[0].image} alt={slots[0].name} width={120} height={120} className="rounded-xl sm:w-[240px] sm:h-[240px] border border-[#00D4FF]/30" />
-                ) : (
-                  <div className="w-[120px] h-[120px] sm:w-[240px] sm:h-[240px] border border-dashed border-[#1a1a1a] rounded-xl flex items-center justify-center text-gray-600">1</div>
-                )}
-              </div>
-              <div className="text-3xl sm:text-6xl text-[#4FFFDF]">→</div>
-              <div className="text-center">
-                <div className="text-xs sm:text-lg text-[#00D4FF] mb-2">AFTER</div>
-                {slots[1] ? (
-                  <Image src={slots[1].image} alt={slots[1].name} width={120} height={120} className="rounded-xl sm:w-[240px] sm:h-[240px] border border-[#00D4FF]/30" />
-                ) : (
-                  <div className="w-[120px] h-[120px] sm:w-[240px] sm:h-[240px] border border-dashed border-[#1a1a1a] rounded-xl flex items-center justify-center text-gray-600">2</div>
-                )}
-              </div>
-            </div>
-            {customText && (
-              <div className="text-lg sm:text-3xl text-white mt-6 sm:mt-12">{customText}</div>
-            )}
-          </div>
-        )}
-
         {/* Basic layouts */}
         {selectedTemplate.id === 'single' && slots[0] && (
           <div className="absolute inset-4 sm:inset-8 flex items-center justify-center">
@@ -461,7 +431,7 @@ export default function PostCreatorPage() {
         <div className="absolute top-2 right-2 sm:top-4 sm:right-4 flex items-center gap-1.5 text-[#00D4FF]/50 text-xs sm:text-sm font-medium">
           <div className="w-4 h-4 sm:w-5 sm:h-5 relative opacity-50">
             <Image
-              src="/nodes-logo.png"
+              src="/logos/nodes.png"
               alt="NODES"
               fill
               className="object-cover rounded"

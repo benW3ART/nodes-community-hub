@@ -11,9 +11,11 @@ export async function GET(request: NextRequest) {
     const response = await fetch(url);
     const buffer = await response.arrayBuffer();
     
+    const contentType = response.headers.get('Content-Type') || 'image/gif';
+
     return new NextResponse(buffer, {
       headers: {
-        'Content-Type': 'image/gif',
+        'Content-Type': contentType,
         'Cache-Control': 'public, max-age=86400',
       },
     });

@@ -8,13 +8,14 @@ import Image from 'next/image';
 import { AddBaseButton } from './NetworkHelper';
 import { ViewOnlyInput } from './ViewOnlyInput';
 import { useWalletAddress } from '@/hooks/useWalletAddress';
-import { 
-  Home, 
-  Image as ImageIcon, 
-  Grid3X3, 
-  Layout, 
-  Target, 
+import {
+  Home,
+  Image as ImageIcon,
+  Grid3X3,
+  Layout,
+  Target,
   Trophy,
+  GitCompareArrows,
   Menu,
   X,
   Eye
@@ -26,6 +27,7 @@ const navItems = [
   { href: '/post-creator', label: 'Posts', icon: Layout },
   { href: '/grid-creator', label: 'Grids', icon: Grid3X3 },
   { href: '/banner-creator', label: 'Banners', icon: Layout },
+  { href: '/before-after', label: 'Before/After', icon: GitCompareArrows },
   { href: '/full-sets', label: 'Full Sets', icon: Target },
   { href: '/leaderboard', label: 'Leaderboard', icon: Trophy },
 ];
@@ -43,7 +45,7 @@ export function Header() {
           <Link href="/" className="flex items-center space-x-2 sm:space-x-3 group">
             <div className="w-8 h-8 sm:w-10 sm:h-10 relative rounded-lg overflow-hidden group-hover:shadow-[0_0_20px_rgba(0,212,255,0.5)] transition-shadow">
               <Image
-                src="/nodes-logo.png"
+                src="/logos/nodes.png"
                 alt="NODES"
                 fill
                 className="object-cover"

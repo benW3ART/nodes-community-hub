@@ -182,7 +182,7 @@ export default function FullSetsPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-12">
         <h1 className="section-title text-xl sm:text-2xl md:text-3xl">Full Set Tracker</h1>
         <p className="text-gray-500 text-sm sm:text-base mb-6 sm:mb-8">
-          Collect all 7 Inner States to complete a Full Set and become eligible for Interference!
+          Collecting a full set, composed of the 7 ensures your participation in the NODES Network&apos;s upcoming chapters.
         </p>
 
         {!isConnected ? (

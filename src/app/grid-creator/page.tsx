@@ -263,7 +263,7 @@ export default function GridCreatorPage() {
         // skip
       } else if (cell === 'logo') {
         cells.push({
-          image: '/nodes-logo.png',
+          image: '/logos/nodes.png',
           row: Math.floor(i / gridConfig.cols),
           col: i % gridConfig.cols,
           isLogo: true
@@ -276,12 +276,12 @@ export default function GridCreatorPage() {
         });
       }
     }
-    
+
     if (cells.length === 0) {
       alert('Add some NFTs to the grid first!');
       return;
     }
-    
+
     setIsExporting(true);
     setExportProgress('Creating animated GIF (server-side)...');
     
@@ -335,7 +335,7 @@ export default function GridCreatorPage() {
         // skip
       } else if (cell === 'logo') {
         cells.push({
-          image: '/nodes-logo.png',
+          image: '/logos/nodes.png',
           row: Math.floor(i / gridConfig.cols),
           col: i % gridConfig.cols,
           isLogo: true
@@ -348,12 +348,12 @@ export default function GridCreatorPage() {
         });
       }
     }
-    
+
     if (cells.length === 0) {
       alert('Add some NFTs to the grid first!');
       return;
     }
-    
+
     setIsExporting(true);
     setExportProgress('Creating animated video (server-side)...');
     
@@ -706,7 +706,7 @@ export default function GridCreatorPage() {
                         ) : cell === 'logo' ? (
                           <div className="w-full h-full flex items-center justify-center bg-[#00D4FF]/10 p-2">
                             <Image
-                              src="/nodes-logo.png"
+                              src="/logos/nodes.png"
                               alt="NODES"
                               width={cellSize - 16}
                               height={cellSize - 16}

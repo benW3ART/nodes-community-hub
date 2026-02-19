@@ -19,6 +19,7 @@ export interface NodeNFT {
   gradient: string;
   glow: string;
   interference: boolean;
+  networkStatus?: string;
   metadata: NFTMetadata;
 }
 

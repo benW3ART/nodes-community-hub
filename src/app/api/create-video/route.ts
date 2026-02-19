@@ -174,12 +174,17 @@ export async function POST(request: NextRequest) {
       // Handle logo specially - try multiple paths
       if (cell.isLogo) {
         const cwd = process.cwd();
-        const logoFile = cell.isBanner ? 'nodes-banner-logo.jpg' : 'nodes-logo.png';
+        const logoFile = cell.isBanner ? 'nodes-banner-logo.jpg' : 'logos/nodes.png';
         const logoPaths = [
           `${cwd}/public/${logoFile}`,
           `${cwd}/.next/standalone/public/${logoFile}`,
           `${cwd}/.next/static/${logoFile}`,
           `/app/public/${logoFile}`,
+          // Fallback to old logo path
+          ...(cell.isBanner ? [] : [
+            `${cwd}/public/nodes-logo.png`,
+            `/app/public/nodes-logo.png`,
+          ]),
         ];
         console.log(`  Logo paths to try (cwd=${cwd}, banner=${!!cell.isBanner}):`, logoPaths);
         

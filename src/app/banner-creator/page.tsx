@@ -399,7 +399,7 @@ export default function BannerCreatorPage() {
           <div className="absolute top-4 right-4 flex items-center gap-2">
             <div className="w-6 h-6 relative">
               <Image
-                src="/nodes-logo.png"
+                src="/logos/nodes.png"
                 alt="NODES"
                 fill
                 className="object-cover rounded"

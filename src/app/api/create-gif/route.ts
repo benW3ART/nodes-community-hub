@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createCanvas, loadImage, Image as CanvasImage } from 'canvas';
 import GIFEncoder from 'gif-encoder-2';
-import { parseGIF, decompressFrames } from 'gifuct-js';
+import {
+  fetchGifFrames,
+  prerenderGifFrames,
+  getFrameAtTime,
+} from '@/lib/canvas-utils';
 
 interface GridCell {
   image: string;
@@ -17,66 +21,6 @@ interface GridConfig {
   name: string;
 }
 
-interface GifData {
-  frames: any[];
-  width: number;
-  height: number;
-  isAnimated: true;
-  frameDelays: number[]; // delay in ms for each frame
-}
-
-interface StaticData {
-  staticImg: CanvasImage;
-  isAnimated: false;
-}
-
-type ImageData = (GridCell & GifData) | (GridCell & StaticData);
-
-// Helper to fetch and parse GIF frames with error handling
-async function fetchGifFrames(url: string): Promise<GifData | null> {
-  try {
-    const response = await fetch(url, { 
-      signal: AbortSignal.timeout(10000) // 10s timeout
-    });
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-    const buffer = await response.arrayBuffer();
-    const gif = parseGIF(buffer);
-    const frames = decompressFrames(gif, true);
-    
-    if (!frames || frames.length === 0) {
-      throw new Error('No frames found');
-    }
-    
-    // Validate frames have required data
-    const validFrames = frames.filter(f => f && f.dims && f.patch);
-    if (validFrames.length === 0) {
-      throw new Error('No valid frames');
-    }
-    
-    // gifuct-js already converts delay to milliseconds (see lib/index.js:78)
-    // Just use it directly, with 20ms minimum (browser floor)
-    const frameDelays = validFrames.map(f => {
-      const delay = f.delay || 0; // already in ms from gifuct-js
-      return delay >= 20 ? delay : (delay > 0 ? 20 : 50);
-    });
-    
-    console.log(`GIF frame delays (first 5): ${frameDelays.slice(0, 5).join(', ')}ms`);
-    
-    return {
-      frames: validFrames,
-      width: gif.lsd.width,
-      height: gif.lsd.height,
-      isAnimated: true,
-      frameDelays
-    };
-  } catch (error) {
-    console.error('GIF parsing failed for', url, error);
-    return null;
-  }
-}
-
 // Fallback: load image as static
 async function loadStaticImage(url: string): Promise<CanvasImage | null> {
   try {
@@ -88,132 +32,56 @@ async function loadStaticImage(url: string): Promise<CanvasImage | null> {
   }
 }
 
-// Pre-render all frames of an animated GIF into complete canvases
-// Also calculates cumulative timestamps for time-based frame lookup
-function prerenderGifFrames(gifData: GifData): { canvases: any[], delays: number[], timestamps: number[], totalDuration: number } {
-  const { frames, width, height, frameDelays } = gifData;
-  const canvases: any[] = [];
-  const delays: number[] = [];
-  const timestamps: number[] = []; // cumulative time at start of each frame
-  let cumulative = 0;
-  
-  // Create a persistent canvas to composite frames (GIF disposal handling)
-  const compositeCanvas = createCanvas(width, height);
-  const compositeCtx = compositeCanvas.getContext('2d');
-  
-  for (let i = 0; i < frames.length; i++) {
-    const frame = frames[i];
-    
-    try {
-      // Handle disposal from previous frame
-      if (i > 0) {
-        const prevFrame = frames[i - 1];
-        if (prevFrame.disposalType === 2) {
-          // Restore to background (clear)
-          compositeCtx.clearRect(
-            prevFrame.dims.left, 
-            prevFrame.dims.top, 
-            prevFrame.dims.width, 
-            prevFrame.dims.height
-          );
-        }
-        // disposalType 3 (restore to previous) is complex, skip for now
-      }
-      
-      // Create ImageData for this frame's patch
-      const patchCanvas = createCanvas(frame.dims.width, frame.dims.height);
-      const patchCtx = patchCanvas.getContext('2d');
-      const imageData = patchCtx.createImageData(frame.dims.width, frame.dims.height);
-      imageData.data.set(new Uint8ClampedArray(frame.patch));
-      patchCtx.putImageData(imageData, 0, 0);
-      
-      // Draw patch onto composite
-      compositeCtx.drawImage(patchCanvas, frame.dims.left, frame.dims.top);
-      
-      // Save a copy of current composite state
-      const frameCanvas = createCanvas(width, height);
-      const frameCtx = frameCanvas.getContext('2d');
-      frameCtx.drawImage(compositeCanvas, 0, 0);
-      
-      const frameDelay = frameDelays[i] || 50;
-      timestamps.push(cumulative);
-      cumulative += frameDelay;
-      canvases.push(frameCanvas);
-      delays.push(frameDelay);
-    } catch (err) {
-      console.error(`Failed to render frame ${i}:`, err);
-      const frameDelay = delays.length > 0 ? delays[delays.length - 1] : 50;
-      timestamps.push(cumulative);
-      cumulative += frameDelay;
-      if (canvases.length > 0) {
-        canvases.push(canvases[canvases.length - 1]);
-        delays.push(frameDelay);
-      } else {
-        canvases.push(createCanvas(width, height));
-        delays.push(frameDelay);
-      }
-    }
-  }
-  
-  return { canvases, delays, timestamps, totalDuration: cumulative };
-}
-
-// Find which frame to show at a given time (with looping)
-function getFrameAtTime(timestamps: number[], totalDuration: number, timeMs: number): number {
-  const loopedTime = timeMs % totalDuration;
-  for (let i = timestamps.length - 1; i >= 0; i--) {
-    if (loopedTime >= timestamps[i]) {
-      return i;
-    }
-  }
-  return 0;
-}
-
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { gridConfig, cells, gridStyle: rawGridStyle }: { gridConfig: GridConfig; cells: GridCell[]; gridStyle?: { exportGap?: number; bgColor?: string; border?: boolean } } = body;
-    
+
     if (!gridConfig || !cells || cells.length === 0) {
       return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
     }
-    
+
     const styleGap = rawGridStyle?.exportGap ?? 24;
     const styleBgColor = rawGridStyle?.bgColor ?? '#000000';
     const styleBorder = rawGridStyle?.border ?? true;
-    
+
     const cellSize = 600;
     const gap = styleGap;
     const padding = 16;
-    
+
     const totalWidth = gridConfig.cols * cellSize + (gridConfig.cols - 1) * gap + padding * 2;
     const totalHeight = gridConfig.rows * cellSize + (gridConfig.rows - 1) * gap + padding * 2;
-    
+
     console.log(`Creating GIF: ${gridConfig.cols}x${gridConfig.rows} grid with ${cells.length} cells`);
-    
+
     // Load all images - try GIF first, then static
-    const loadedCells: { 
-      cell: GridCell; 
-      renderedFrames?: { canvases: any[], delays: number[], timestamps: number[], totalDuration: number }; 
+    const loadedCells: {
+      cell: GridCell;
+      renderedFrames?: { canvases: any[], delays: number[], timestamps: number[], totalDuration: number };
       staticImg?: CanvasImage;
       isAnimated: boolean;
     }[] = [];
-    
+
     for (const cell of cells) {
       console.log(`Loading cell [${cell.row},${cell.col}]: ${cell.isLogo ? 'LOGO' : cell.image.substring(0, 50)}...`);
-      
+
       // Handle logo specially - try multiple paths
       if (cell.isLogo) {
         const cwd = process.cwd();
-        const logoFile = cell.isBanner ? 'nodes-banner-logo.jpg' : 'nodes-logo.png';
+        const logoFile = cell.isBanner ? 'nodes-banner-logo.jpg' : 'logos/nodes.png';
         const logoPaths = [
           `${cwd}/public/${logoFile}`,
           `${cwd}/.next/standalone/public/${logoFile}`,
           `${cwd}/.next/static/${logoFile}`,
           `/app/public/${logoFile}`,
+          // Fallback to old logo path
+          ...(cell.isBanner ? [] : [
+            `${cwd}/public/nodes-logo.png`,
+            `/app/public/nodes-logo.png`,
+          ]),
         ];
         console.log(`  Logo paths to try (cwd=${cwd}, banner=${!!cell.isBanner}):`, logoPaths);
-        
+
         let logoLoaded = false;
         for (const logoPath of logoPaths) {
           try {
@@ -226,13 +94,13 @@ export async function POST(request: NextRequest) {
             // Try next path
           }
         }
-        
+
         if (!logoLoaded) {
           console.error(`  -> Failed to load logo from any path`);
         }
         continue;
       }
-      
+
       // Try as animated GIF first
       const gifData = await fetchGifFrames(cell.image);
       if (gifData) {
@@ -241,7 +109,7 @@ export async function POST(request: NextRequest) {
         loadedCells.push({ cell, renderedFrames, isAnimated: true });
         continue;
       }
-      
+
       // Fallback to static image
       const staticImg = await loadStaticImage(cell.image);
       if (staticImg) {
@@ -249,55 +117,53 @@ export async function POST(request: NextRequest) {
         loadedCells.push({ cell, staticImg, isAnimated: false });
         continue;
       }
-      
+
       // Both failed - log but continue (cell will show as empty)
       console.warn(`  -> FAILED to load image for cell [${cell.row},${cell.col}]`);
     }
-    
+
     if (loadedCells.length === 0) {
       return NextResponse.json({ error: 'Could not load any images' }, { status: 400 });
     }
-    
+
     console.log(`Loaded ${loadedCells.length}/${cells.length} cells successfully`);
-    
+
     // Find the longest animation duration to determine output length
     const animatedCells = loadedCells.filter(c => c.isAnimated && c.renderedFrames);
     let totalDuration = 1000; // default 1 second for static only
-    
+
     if (animatedCells.length > 0) {
-      // Use the longest animation duration (so all GIFs complete at least one loop)
       totalDuration = Math.max(...animatedCells.map(c => c.renderedFrames!.totalDuration));
     }
-    
-    // Use fixed 30fps output (33ms per frame), each GIF plays at its own speed
-    // Cap at 10 seconds max to prevent huge files, but allow full loop of longest GIF
+
+    // Use fixed 30fps output, cap at 10 seconds
     const outputFps = 30;
-    const frameInterval = Math.round(1000 / outputFps); // ~33ms
-    const maxDuration = Math.min(totalDuration, 10000); // cap at 10 seconds
+    const frameInterval = Math.round(1000 / outputFps);
+    const maxDuration = Math.min(totalDuration, 10000);
     const totalFrames = Math.ceil(maxDuration / frameInterval);
-    
+
     console.log(`Output: ${totalFrames} frames at ${outputFps}fps (${maxDuration}ms duration, original: ${totalDuration}ms)`);
-    
+
     // Create GIF encoder
     const encoder = new GIFEncoder(totalWidth, totalHeight);
-    encoder.setDelay(frameInterval); // fixed frame rate
-    encoder.setRepeat(0);  // Loop forever
+    encoder.setDelay(frameInterval);
+    encoder.setRepeat(0);
     encoder.setQuality(10);
     encoder.start();
-    
+
     // Create main canvas
     const canvas = createCanvas(totalWidth, totalHeight);
     const ctx = canvas.getContext('2d');
-    
+
     // Generate each frame based on elapsed time
     for (let frameIdx = 0; frameIdx < totalFrames; frameIdx++) {
       const currentTimeMs = frameIdx * frameInterval;
-      
+
       // Clear with background color
       ctx.fillStyle = styleBgColor;
       ctx.fillRect(0, 0, totalWidth, totalHeight);
-      
-      // Draw cell borders for ALL grid positions (including empty ones)
+
+      // Draw cell borders for ALL grid positions
       if (styleBorder) {
         ctx.strokeStyle = '#1a1a1a';
         ctx.lineWidth = 2;
@@ -309,22 +175,21 @@ export async function POST(request: NextRequest) {
           }
         }
       }
-      
+
       // Draw each loaded image at the correct frame for this time
       for (const { cell, renderedFrames, staticImg, isAnimated } of loadedCells) {
         const x = padding + cell.col * (cellSize + gap);
         const y = padding + cell.row * (cellSize + gap);
-        
+
         try {
           if (isAnimated && renderedFrames && renderedFrames.canvases.length > 0) {
-            // Find the correct frame for this GIF at current time
             const frameIndex = getFrameAtTime(
-              renderedFrames.timestamps, 
-              renderedFrames.totalDuration, 
+              renderedFrames.timestamps,
+              renderedFrames.totalDuration,
               currentTimeMs
             );
             const frameCanvas = renderedFrames.canvases[frameIndex];
-            
+
             if (frameCanvas) {
               ctx.drawImage(frameCanvas, 0, 0, frameCanvas.width, frameCanvas.height, x, y, cellSize, cellSize);
             }
@@ -354,22 +219,22 @@ export async function POST(request: NextRequest) {
           ctx.fillText('?', x + cellSize/2, y + cellSize/2);
         }
       }
-      
+
       encoder.addFrame(ctx as any);
     }
-    
+
     encoder.finish();
-    
+
     const buffer = encoder.out.getData();
     console.log(`GIF created: ${buffer.length} bytes`);
-    
+
     return new NextResponse(new Uint8Array(buffer), {
       headers: {
         'Content-Type': 'image/gif',
         'Content-Disposition': `attachment; filename="nodes-grid-${gridConfig.name}-${Date.now()}.gif"`,
       },
     });
-    
+
   } catch (error) {
     console.error('Create GIF error:', error);
     return NextResponse.json({ error: 'Failed to create GIF: ' + (error instanceof Error ? error.message : 'Unknown') }, { status: 500 });

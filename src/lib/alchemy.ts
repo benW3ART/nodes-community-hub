@@ -81,6 +81,7 @@ function parseMetadataToNFT(tokenId: string, metadata: FreshMetadata): NodeNFT {
     gradient: getAttribute('Gradient'),
     glow: getAttribute('Glow'),
     interference: hasInterference,
+    networkStatus: getAttribute('Network Status') || undefined,
     metadata: {
       name: metadata.name || '',
       description: metadata.description || '',
@@ -172,6 +173,7 @@ export async function getNFTsForOwner(ownerAddress: string): Promise<NodeNFT[]> 
         gradient: getAttribute('Gradient'),
         glow: getAttribute('Glow'),
         interference: hasInterference,
+        networkStatus: getAttribute('Network Status') || undefined,
         metadata: {
           name: metadata.name || '',
           description: metadata.description || '',

@@ -9,13 +9,14 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { ViewOnlyLink } from '@/components/ViewOnlyInput';
 import Link from 'next/link';
 import Image from 'next/image';
-import { 
-  Image as ImageIcon, 
-  Grid3X3, 
-  Layout, 
-  Target, 
+import {
+  Image as ImageIcon,
+  Grid3X3,
+  Layout,
+  Target,
   Trophy,
   Sparkles,
+  GitCompareArrows,
   ArrowRight
 } from 'lucide-react';
 import { TwitterFeed } from '@/components/TwitterFeed';
@@ -44,6 +45,12 @@ const features = [
     icon: Sparkles,
     title: 'Banner Creator',
     description: 'Design X banners featuring your NODES',
+  },
+  {
+    href: '/before-after',
+    icon: GitCompareArrows,
+    title: 'Before / After',
+    description: 'See how your NFTs evolved over time',
   },
   {
     href: '/full-sets',
@@ -87,7 +94,7 @@ export default function Home() {
             <div className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6 flex items-center gap-3">
               <div className="relative w-12 h-12 sm:w-16 sm:h-16 rounded-xl overflow-hidden shadow-[0_0_30px_rgba(0,212,255,0.5)]">
                 <Image
-                  src="/nodes-logo.png"
+                  src="/logos/nodes.png"
                   alt="NODES"
                   fill
                   className="object-cover"
@@ -167,7 +174,7 @@ export default function Home() {
               <div className="text-gray-500 text-xs sm:text-sm uppercase tracking-wide">Total Supply</div>
             </div>
             <div className="p-2 sm:p-0">
-              <div className="text-2xl sm:text-3xl font-bold text-[#4FFFDF]">8</div>
+              <div className="text-2xl sm:text-3xl font-bold text-[#4FFFDF]">7</div>
               <div className="text-gray-500 text-xs sm:text-sm uppercase tracking-wide">Inner States</div>
             </div>
             <div className="p-2 sm:p-0">
@@ -184,9 +191,9 @@ export default function Home() {
         {/* Character Forms */}
         <section className="mt-10 sm:mt-16">
           <h2 className="section-title text-center text-lg sm:text-2xl">Character Forms</h2>
-          <div className="flex flex-wrap justify-center gap-3 sm:gap-4">
+          <div className="flex flex-wrap justify-center gap-3 sm:gap-4 mb-6">
             {['Full Circle', 'Skull', 'Ghost'].map((form) => (
-              <span 
+              <span
                 key={form}
                 className="px-4 py-2 sm:px-6 sm:py-3 bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg text-sm sm:text-base text-white hover:border-[#00D4FF]/50 hover:text-[#00D4FF] transition-all cursor-default font-medium"
               >
@@ -194,14 +201,32 @@ export default function Home() {
               </span>
             ))}
           </div>
+          <div className="flex justify-center">
+            <Image
+              src="/logos/banner.png"
+              alt="NODES"
+              width={600}
+              height={200}
+              className="w-full max-w-md sm:max-w-lg opacity-40 hover:opacity-60 transition-opacity"
+            />
+          </div>
         </section>
 
         {/* Inner States */}
         <section className="mt-10 sm:mt-16">
           <h2 className="section-title text-center text-lg sm:text-2xl">Inner States</h2>
+          <div className="flex justify-center mb-4 sm:mb-6">
+            <Image
+              src="/logos/NODES symbol.png"
+              alt="NODES Symbol"
+              width={200}
+              height={200}
+              className="w-24 h-24 sm:w-32 sm:h-32 opacity-50 hover:opacity-70 transition-opacity"
+            />
+          </div>
           <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
-            {['Awakened', 'Ascended', 'Calm', 'Curious', 'Determined', 'Ethereal', 'Hopeful', 'Radiant'].map((state) => (
-              <span 
+            {['Ascended', 'Diamond Hand', 'Enlightened', 'Equilibrium', 'HyperConnected', 'Uncoded', 'Verified'].map((state) => (
+              <span
                 key={state}
                 className="px-3 py-1.5 sm:px-4 sm:py-2 bg-[#0a0a0a] border border-[#1a1a1a] rounded-full text-xs sm:text-sm text-gray-400 hover:border-[#00D4FF]/50 hover:text-[#00D4FF] transition-all cursor-default"
               >
@@ -262,7 +287,7 @@ export default function Home() {
             <div className="flex items-center gap-3 mb-4">
               <div className="relative w-8 h-8 sm:w-10 sm:h-10 rounded-lg overflow-hidden">
                 <Image
-                  src="/nodes-logo.png"
+                  src="/logos/nodes.png"
                   alt="NODES"
                   fill
                   className="object-cover"
