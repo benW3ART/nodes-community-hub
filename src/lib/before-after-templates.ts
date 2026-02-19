@@ -29,13 +29,16 @@ export const DIMENSIONS: Record<AspectRatio, { w: number; h: number }> = {
 
 /** Which aspect ratios each template supports */
 export const TEMPLATE_FORMATS: Record<string, AspectRatio[]> = {
-  'side-by-side':  ['square', 'landscape'],
-  'vertical':      ['square', 'portrait'],
-  'gif-transition': ['square', 'landscape', 'portrait'],
-  'split-reveal':  ['square', 'landscape', 'portrait'],
-  'frame-overlay': ['square', 'landscape', 'portrait'],
-  'glitch-wipe':   ['square', 'landscape'],
-  'reveal-card':   ['square', 'portrait'],
+  'side-by-side':       ['square', 'landscape'],
+  'vertical':           ['square', 'portrait'],
+  'gif-transition':     ['square', 'landscape', 'portrait'],
+  'split-reveal':       ['square', 'landscape', 'portrait'],
+  'frame-overlay':      ['square', 'landscape', 'portrait'],
+  'glitch-wipe':        ['square', 'landscape'],
+  'reveal-card':        ['square', 'portrait'],
+  'slider-horizontal':  ['square', 'landscape', 'portrait'],
+  'slider-vertical':    ['square', 'landscape', 'portrait'],
+  'slider-diagonal':    ['square', 'landscape', 'portrait'],
 };
 
 // ---------------------------------------------------------------------------
@@ -87,16 +90,19 @@ export function drawDRBanner(ctx: CanvasRenderingContext2D, assets: BrandingAsse
   ctx.restore();
 }
 
-/** "ART IS NEVER FINISHED" branding text — subtle, above DR banner */
-export function drawArtIsNeverFinished(ctx: CanvasRenderingContext2D, canvasW: number, canvasH: number, networkStatus: string) {
+/**
+ * "ART IS NEVER FINISHED" branding text — only shown when there's no custom text,
+ * to avoid overlapping with caption. Positioned above DR banner.
+ */
+export function drawArtIsNeverFinished(ctx: CanvasRenderingContext2D, canvasW: number, canvasH: number, networkStatus: string, hasCustomText: boolean = false) {
+  if (hasCustomText) return; // Don't show when there's a caption — they'd overlap
   ctx.save();
   ctx.font = `bold 14px ${BRAND_FONT}`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = '#ffffff';
   ctx.globalAlpha = 0.25;
-  // Position above DR banner if DR, otherwise near bottom
-  const yPos = networkStatus === 'Digital Renaissance' ? canvasH - 54 : canvasH - 20;
+  const yPos = networkStatus === 'Digital Renaissance' ? canvasH - 56 : canvasH - 20;
   ctx.fillText('ART IS NEVER FINISHED', canvasW / 2, yPos);
   ctx.restore();
 }
@@ -151,7 +157,7 @@ export function renderSideBySideFrame(
 
   if (text) drawTextWithGlow(ctx, text, cW / 2, cH * 0.78, 36);
 
-  drawArtIsNeverFinished(ctx, cW, cH, networkStatus);
+  drawArtIsNeverFinished(ctx, cW, cH, networkStatus, !!text);
   drawDRBanner(ctx, assets, networkStatus, cW, cH);
   drawBrandedWatermark(ctx, assets, cW, cH);
 }
@@ -169,27 +175,38 @@ export function renderVerticalFrame(
   cW: number = SIZE,
   cH: number = SIZE,
 ) {
-  const nftSize = Math.min(cW, cH) * 0.36;
+  // Adapt sizing: for portrait (tall), use more of the width; for square, keep moderate
+  const isPortrait = cH > cW * 1.2;
+  const nftSize = isPortrait ? cW * 0.58 : Math.min(cW, cH) * 0.32;
   const centerX = (cW - nftSize) / 2;
+  const labelSize = isPortrait ? 20 : 24;
+  const arrowSize = isPortrait ? 40 : 48;
 
-  ctx.font = `bold 24px ${BRAND_FONT}`;
+  ctx.font = `bold ${labelSize}px ${BRAND_FONT}`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = '#666666';
-  ctx.fillText('LEGACY', cW / 2, cH * 0.07);
-  if (beforeImg) drawImageWithBorderCover(ctx, beforeImg, centerX, cH * 0.10, nftSize, nftSize);
+  const startY = isPortrait ? cH * 0.05 : cH * 0.07;
+  ctx.fillText('LEGACY', cW / 2, startY);
+  const beforeImgY = startY + cH * 0.03;
+  if (beforeImg) drawImageWithBorderCover(ctx, beforeImg, centerX, beforeImgY, nftSize, nftSize);
 
-  drawGradientText(ctx, '↓', cW / 2, cH * 0.51, 48);
+  const arrowY = beforeImgY + nftSize + cH * 0.025;
+  drawGradientText(ctx, '↓', cW / 2, arrowY, arrowSize);
 
+  const afterLabelY = arrowY + cH * 0.03;
   ctx.fillStyle = COLORS.cyan;
-  ctx.font = `bold 24px ${BRAND_FONT}`;
+  ctx.font = `bold ${labelSize}px ${BRAND_FONT}`;
   ctx.textAlign = 'center';
-  ctx.fillText(getInterferenceLabel(networkStatus), cW / 2, cH * 0.56);
-  if (afterImg) drawImageWithBorderCover(ctx, afterImg, centerX, cH * 0.59, nftSize, nftSize);
+  ctx.fillText(getInterferenceLabel(networkStatus), cW / 2, afterLabelY);
 
-  if (text) drawTextWithGlow(ctx, text, cW / 2, cH * 0.92, 30);
+  const afterImgY = afterLabelY + cH * 0.025;
+  if (afterImg) drawImageWithBorderCover(ctx, afterImg, centerX, afterImgY, nftSize, nftSize);
 
-  drawArtIsNeverFinished(ctx, cW, cH, networkStatus);
+  const textY = Math.min(cH * 0.90, afterImgY + nftSize + cH * 0.035);
+  if (text) drawTextWithGlow(ctx, text, cW / 2, textY, isPortrait ? 24 : 30);
+
+  drawArtIsNeverFinished(ctx, cW, cH, networkStatus, !!text);
   drawDRBanner(ctx, assets, networkStatus, cW, cH);
   drawBrandedWatermark(ctx, assets, cW, cH);
 }
@@ -255,23 +272,32 @@ export function renderSplitRevealFrame(
   }
   ctx.restore();
 
-  ctx.font = `bold 22px ${BRAND_FONT}`;
+  // Adapt label size for narrow canvases to avoid watermark collision
+  const isNarrow = cW < 800;
+  const splitLabelSize = isNarrow ? 16 : 22;
+  ctx.font = `bold ${splitLabelSize}px ${BRAND_FONT}`;
   ctx.textBaseline = 'middle';
   ctx.fillStyle = '#666666';
   ctx.textAlign = 'center';
   ctx.fillText('LEGACY', leftX + leftW / 2, cH * 0.055);
   ctx.fillStyle = COLORS.cyan;
-  ctx.fillText(getInterferenceLabel(networkStatus), rightX + rightW / 2, cH * 0.055);
+  // For narrow canvases, left-align the right label to avoid NODES watermark
+  if (isNarrow) {
+    ctx.textAlign = 'left';
+    ctx.fillText(getInterferenceLabel(networkStatus), rightX + 8, cH * 0.055);
+  } else {
+    ctx.fillText(getInterferenceLabel(networkStatus), rightX + rightW / 2, cH * 0.055);
+  }
 
-  if (text) drawTextWithGlow(ctx, text, cW / 2, cH * 0.93, 28);
+  if (text) drawTextWithGlow(ctx, text, cW / 2, cH * 0.89, 28);
 
-  drawArtIsNeverFinished(ctx, cW, cH, networkStatus);
+  drawArtIsNeverFinished(ctx, cW, cH, networkStatus, !!text);
   drawDRBanner(ctx, assets, networkStatus, cW, cH);
   drawBrandedWatermark(ctx, assets, cW, cH);
 }
 
 /**
- * FRAME OVERLAY — Full-bleed after image with small before frame (PIP)
+ * FRAME OVERLAY — Large after image centered, small before PIP at bottom-left
  */
 export function renderFrameOverlayFrame(
   ctx: CanvasRenderingContext2D,
@@ -283,49 +309,40 @@ export function renderFrameOverlayFrame(
   cW: number = SIZE,
   cH: number = SIZE,
 ) {
-  if (afterImg) {
-    drawImageCover(ctx, afterImg, 0, 0, cW, cH);
-    const grad = ctx.createRadialGradient(cW / 2, cH / 2, Math.min(cW, cH) * 0.3, cW / 2, cH / 2, Math.min(cW, cH) * 0.7);
-    grad.addColorStop(0, 'transparent');
-    grad.addColorStop(1, 'rgba(0,0,0,0.5)');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, cW, cH);
-  }
+  // Main after image — large centered with border (not full-bleed)
+  const mainSize = Math.min(cW, cH) * 0.60;
+  const mainX = (cW - mainSize) / 2;
+  const mainY = cH * 0.08;
 
-  const pipSize = Math.min(cW, cH) * 0.28;
-  const pipX = cW * 0.04;
-  const pipY = cH - pipSize - cH * 0.12;
+  if (afterImg) drawImageWithBorderCover(ctx, afterImg, mainX, mainY, mainSize, mainSize);
 
-  ctx.fillStyle = 'rgba(0,0,0,0.6)';
+  // Network status label above main image
+  ctx.font = `bold 26px ${BRAND_FONT}`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = COLORS.cyan;
+  ctx.fillText(getInterferenceLabel(networkStatus), cW / 2, mainY - 20);
+
+  // PIP (before image) at bottom-left, overlapping the main image slightly
+  const pipSize = Math.min(cW, cH) * 0.25;
+  const pipX = mainX - pipSize * 0.15;
+  const pipY = mainY + mainSize - pipSize * 0.6;
+
+  ctx.fillStyle = 'rgba(0,0,0,0.7)';
   drawRoundedRect(ctx, pipX - 6, pipY - 6, pipSize + 12, pipSize + 12, pipSize * 0.08);
   ctx.fill();
 
   if (beforeImg) drawImageWithBorderCover(ctx, beforeImg, pipX, pipY, pipSize, pipSize);
 
-  ctx.font = `bold 16px ${BRAND_FONT}`;
+  ctx.font = `bold 14px ${BRAND_FONT}`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = '#999999';
-  ctx.fillText('LEGACY', pipX + pipSize / 2, pipY - 18);
+  ctx.fillText('LEGACY', pipX + pipSize / 2, pipY - 16);
 
-  ctx.font = `bold 28px ${BRAND_FONT}`;
-  ctx.textAlign = 'left';
-  ctx.fillStyle = COLORS.cyan;
-  ctx.save();
-  ctx.shadowColor = 'rgba(0,0,0,0.8)';
-  ctx.shadowBlur = 10;
-  ctx.fillText(getInterferenceLabel(networkStatus), cW * 0.04, cH * 0.06);
-  ctx.restore();
+  if (text) drawTextWithGlow(ctx, text, cW / 2, mainY + mainSize + (cH - mainY - mainSize) * 0.45, 32);
 
-  if (text) {
-    ctx.save();
-    ctx.shadowColor = 'rgba(0,0,0,0.8)';
-    ctx.shadowBlur = 10;
-    drawTextWithGlow(ctx, text, cW / 2, cH * 0.93, 32);
-    ctx.restore();
-  }
-
-  drawArtIsNeverFinished(ctx, cW, cH, networkStatus);
+  drawArtIsNeverFinished(ctx, cW, cH, networkStatus, !!text);
   drawDRBanner(ctx, assets, networkStatus, cW, cH);
   drawBrandedWatermark(ctx, assets, cW, cH);
 }
@@ -419,9 +436,9 @@ export function renderGlitchWipeFrame(
   ctx.fillStyle = COLORS.cyan;
   ctx.fillText(getInterferenceLabel(networkStatus), rightX + rightW / 2, cH * 0.055);
 
-  if (text) drawTextWithGlow(ctx, text, cW / 2, cH * 0.92, 30);
+  if (text) drawTextWithGlow(ctx, text, cW / 2, cH * 0.89, 30);
 
-  drawArtIsNeverFinished(ctx, cW, cH, networkStatus);
+  drawArtIsNeverFinished(ctx, cW, cH, networkStatus, !!text);
   drawDRBanner(ctx, assets, networkStatus, cW, cH);
   drawBrandedWatermark(ctx, assets, cW, cH);
 }
@@ -500,9 +517,9 @@ export function renderRevealCardFrame(
   ctx.textAlign = 'right';
   ctx.fillText(getInterferenceLabel(networkStatus), padding + cardW - 12, bandY + glitchH + 14);
 
-  if (text) drawTextWithGlow(ctx, text, cW / 2, cH * 0.93, 28);
+  if (text) drawTextWithGlow(ctx, text, cW / 2, cH * 0.89, 28);
 
-  drawArtIsNeverFinished(ctx, cW, cH, networkStatus);
+  drawArtIsNeverFinished(ctx, cW, cH, networkStatus, !!text);
   drawDRBanner(ctx, assets, networkStatus, cW, cH);
   drawBrandedWatermark(ctx, assets, cW, cH);
 }
@@ -543,4 +560,194 @@ export function renderTemplate(
     default:
       renderSideBySideFrame(ctx, beforeImg, afterImg, text, networkStatus, assets, canvasW, canvasH);
   }
+}
+
+// ---------------------------------------------------------------------------
+// Slider templates — animated reveal (horizontal / vertical / diagonal)
+// ---------------------------------------------------------------------------
+
+export type SliderDirection = 'horizontal' | 'vertical' | 'diagonal';
+
+export const SLIDER_TEMPLATES = ['slider-horizontal', 'slider-vertical', 'slider-diagonal'] as const;
+
+export function isSliderTemplate(template: string): boolean {
+  return (SLIDER_TEMPLATES as readonly string[]).includes(template);
+}
+
+export function getSliderDirection(template: string): SliderDirection {
+  if (template === 'slider-vertical') return 'vertical';
+  if (template === 'slider-diagonal') return 'diagonal';
+  return 'horizontal';
+}
+
+/** Cubic ease-in-out for smooth slider motion */
+export function sliderEase(t: number): number {
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+
+/** Total slider animation duration in ms */
+export const SLIDER_DURATION = 4000;
+
+/**
+ * Get slider progress (0-1) at a given time.
+ * Timing: 0-0.5s hold before → 0.5-2s slide to after → 2-2.5s hold after → 2.5-4s slide back
+ */
+export function getSliderProgress(timeMs: number): number {
+  const t = (timeMs % SLIDER_DURATION) / 1000;
+  if (t < 0.5) return 0;
+  if (t < 2) return sliderEase((t - 0.5) / 1.5);
+  if (t < 2.5) return 1;
+  return 1 - sliderEase((t - 2.5) / 1.5);
+}
+
+/**
+ * SLIDER — Renders a single frame of the slider animation.
+ * Minimal overlay: NODES watermark top-right, token ID bottom-center.
+ */
+export function renderSliderFrame(
+  ctx: CanvasRenderingContext2D,
+  direction: SliderDirection,
+  progress: number,
+  beforeImg: any,
+  afterImg: any,
+  tokenId: string,
+  assets: BrandingAssets,
+  cW: number = SIZE,
+  cH: number = SIZE,
+) {
+  const padding = Math.min(cW, cH) * 0.03;
+  const bottomReserve = 35;
+  const imgX = padding;
+  const imgY = padding;
+  const imgW = cW - padding * 2;
+  const imgH = cH - padding - bottomReserve;
+  const borderRadius = Math.min(imgW, imgH) * 0.03;
+
+  // 1) Draw before image (full area)
+  if (beforeImg) {
+    ctx.save();
+    drawRoundedRect(ctx, imgX, imgY, imgW, imgH, borderRadius);
+    ctx.clip();
+    drawImageCover(ctx, beforeImg, imgX, imgY, imgW, imgH);
+    ctx.restore();
+  }
+
+  // 2) Draw after image clipped by slider position
+  if (afterImg && progress > 0) {
+    ctx.save();
+    // Clip to rounded image area first
+    drawRoundedRect(ctx, imgX, imgY, imgW, imgH, borderRadius);
+    ctx.clip();
+
+    // Then clip to the revealed slider region
+    ctx.beginPath();
+    if (direction === 'horizontal') {
+      ctx.rect(imgX, imgY, imgW * progress, imgH);
+    } else if (direction === 'vertical') {
+      ctx.rect(imgX, imgY, imgW, imgH * progress);
+    } else {
+      // Diagonal: angled line sweeping from top-left to bottom-right
+      const tilt = imgH * 0.35;
+      const travel = imgW + tilt;
+      const x = progress * travel;
+      ctx.moveTo(imgX, imgY);
+      ctx.lineTo(imgX + Math.min(x, imgW), imgY);
+      if (x > imgW) {
+        ctx.lineTo(imgX + imgW, imgY);
+        ctx.lineTo(imgX + imgW, imgY + imgH * Math.min(1, (x - imgW) / tilt));
+      }
+      ctx.lineTo(imgX + Math.max(0, x - tilt), imgY + imgH);
+      ctx.lineTo(imgX, imgY + imgH);
+      ctx.closePath();
+    }
+    ctx.clip();
+
+    drawImageCover(ctx, afterImg, imgX, imgY, imgW, imgH);
+    ctx.restore();
+  }
+
+  // 3) Draw border around image area
+  ctx.strokeStyle = `${COLORS.cyan}30`;
+  ctx.lineWidth = 2;
+  drawRoundedRect(ctx, imgX, imgY, imgW, imgH, borderRadius);
+  ctx.stroke();
+
+  // 4) Draw the slider line (clipped to image area)
+  if (progress > 0.005 && progress < 0.995) {
+    ctx.save();
+    drawRoundedRect(ctx, imgX, imgY, imgW, imgH, borderRadius);
+    ctx.clip();
+
+    // Glowing cyan line
+    ctx.strokeStyle = COLORS.cyan;
+    ctx.lineWidth = 3;
+    ctx.shadowColor = COLORS.cyan;
+    ctx.shadowBlur = 20;
+
+    let handleX: number, handleY: number;
+
+    ctx.beginPath();
+    if (direction === 'horizontal') {
+      const x = imgX + imgW * progress;
+      ctx.moveTo(x, imgY);
+      ctx.lineTo(x, imgY + imgH);
+      handleX = x;
+      handleY = imgY + imgH / 2;
+    } else if (direction === 'vertical') {
+      const y = imgY + imgH * progress;
+      ctx.moveTo(imgX, y);
+      ctx.lineTo(imgX + imgW, y);
+      handleX = imgX + imgW / 2;
+      handleY = y;
+    } else {
+      const tilt = imgH * 0.35;
+      const travel = imgW + tilt;
+      const x = progress * travel;
+      const topX = imgX + Math.min(x, imgW);
+      const botX = imgX + Math.max(0, x - tilt);
+      ctx.moveTo(topX, imgY);
+      ctx.lineTo(botX, imgY + imgH);
+      handleX = (topX + botX) / 2;
+      handleY = imgY + imgH / 2;
+    }
+    ctx.stroke();
+
+    // Draw slider handle (small circle at center of line)
+    ctx.beginPath();
+    ctx.arc(handleX, handleY, 10, 0, Math.PI * 2);
+    ctx.fillStyle = COLORS.cyan;
+    ctx.shadowBlur = 25;
+    ctx.fill();
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.shadowBlur = 0;
+    ctx.stroke();
+
+    // Small arrows on handle
+    ctx.fillStyle = '#000000';
+    ctx.font = 'bold 10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    if (direction === 'horizontal') {
+      ctx.fillText('◂▸', handleX, handleY);
+    } else if (direction === 'vertical') {
+      ctx.fillText('▴▾', handleX, handleY);
+    } else {
+      ctx.fillText('◂▸', handleX, handleY);
+    }
+
+    ctx.restore();
+  }
+
+  // 5) Token ID at bottom center
+  ctx.save();
+  ctx.font = `bold 22px ${BRAND_FONT}`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = 'rgba(255,255,255,0.45)';
+  ctx.fillText(`#${tokenId}`, cW / 2, cH - bottomReserve / 2);
+  ctx.restore();
+
+  // 6) NODES watermark top-right
+  drawBrandedWatermark(ctx, assets, cW, cH);
 }

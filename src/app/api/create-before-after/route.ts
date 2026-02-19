@@ -21,6 +21,11 @@ import {
   drawDRBanner,
   drawArtIsNeverFinished,
   renderTemplate,
+  isSliderTemplate,
+  getSliderDirection,
+  getSliderProgress,
+  renderSliderFrame,
+  SLIDER_DURATION,
 } from '@/lib/before-after-templates';
 import type { AspectRatio } from '@/lib/before-after-templates';
 
@@ -52,7 +57,8 @@ export async function POST(request: NextRequest) {
 
     // Determine if we need GIF output
     const isGifTransition = template === 'gif-transition';
-    const needsGif = outputFormat === 'gif' || isGifTransition;
+    const isSlider = isSliderTemplate(template);
+    const needsGif = outputFormat === 'gif' || isGifTransition || isSlider;
 
     // Try loading as GIF frames first for animated content
     let beforeGifData: GifData | null = null;
@@ -214,8 +220,8 @@ export async function POST(request: NextRequest) {
           ctx.fillText(networkStatus.toUpperCase(), canvasW / 2, canvasH * 0.05);
         }
 
-        if (text) drawTextWithGlow(ctx, text, canvasW / 2, canvasH * 0.9, 36);
-        drawArtIsNeverFinished(ctx, canvasW, canvasH, networkStatus);
+        if (text) drawTextWithGlow(ctx, text, canvasW / 2, canvasH * 0.88, 36);
+        drawArtIsNeverFinished(ctx, canvasW, canvasH, networkStatus, !!text);
         drawDRBanner(ctx, assets, networkStatus, canvasW, canvasH);
         drawBrandedWatermark(ctx, assets, canvasW, canvasH);
 
@@ -229,6 +235,55 @@ export async function POST(request: NextRequest) {
         headers: {
           'Content-Type': 'image/gif',
           'Content-Disposition': `attachment; filename="nodes-interference-${tokenId}-${Date.now()}.gif"`,
+        },
+      });
+    }
+
+    // -----------------------------------------------------------------------
+    // Slider templates — animated slider reveal
+    // -----------------------------------------------------------------------
+    if (isSlider) {
+      const direction = getSliderDirection(template);
+      const fps = 30;
+      const frameInterval = Math.round(1000 / fps);
+      const totalFrames = Math.ceil(SLIDER_DURATION / frameInterval);
+
+      const encoder = new GIFEncoder(canvasW, canvasH);
+      encoder.setDelay(frameInterval);
+      encoder.setRepeat(0);
+      encoder.setQuality(10);
+      encoder.start();
+
+      const canvas = createCanvas(canvasW, canvasH);
+      const ctx = canvas.getContext('2d');
+
+      for (let frameIdx = 0; frameIdx < totalFrames; frameIdx++) {
+        const timeMs = frameIdx * frameInterval;
+        const progress = getSliderProgress(timeMs);
+
+        ctx.fillStyle = COLORS.black;
+        ctx.fillRect(0, 0, canvasW, canvasH);
+        drawSubtleGlows(ctx, Math.max(canvasW, canvasH));
+
+        const bImg = beforeRendered
+          ? beforeRendered.canvases[getFrameAtTime(beforeRendered.timestamps, beforeRendered.totalDuration, timeMs)]
+          : beforeImgStatic;
+        const aImg = afterRendered
+          ? afterRendered.canvases[getFrameAtTime(afterRendered.timestamps, afterRendered.totalDuration, timeMs)]
+          : afterImgStatic;
+
+        renderSliderFrame(ctx, direction, progress, bImg, aImg, tokenId, assets, canvasW, canvasH);
+
+        encoder.addFrame(ctx as any);
+      }
+
+      encoder.finish();
+      const buffer = encoder.out.getData();
+
+      return new NextResponse(new Uint8Array(buffer), {
+        headers: {
+          'Content-Type': 'image/gif',
+          'Content-Disposition': `attachment; filename="nodes-slider-${tokenId}-${Date.now()}.gif"`,
         },
       });
     }

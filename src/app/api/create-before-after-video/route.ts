@@ -24,6 +24,11 @@ import {
   drawDRBanner,
   drawArtIsNeverFinished,
   renderTemplate,
+  isSliderTemplate,
+  getSliderDirection,
+  getSliderProgress,
+  renderSliderFrame,
+  SLIDER_DURATION,
 } from '@/lib/before-after-templates';
 import type { AspectRatio } from '@/lib/before-after-templates';
 
@@ -76,11 +81,12 @@ export async function POST(request: NextRequest) {
     }
 
     const isGifTransition = template === 'gif-transition';
+    const isSlider = isSliderTemplate(template);
 
     // Determine duration
     let totalDuration: number;
-    if (isGifTransition) {
-      totalDuration = 4000; // 4s crossfade loop
+    if (isGifTransition || isSlider) {
+      totalDuration = isSlider ? SLIDER_DURATION : 4000;
     } else {
       totalDuration = 1000;
       if (beforeRendered) totalDuration = Math.max(totalDuration, beforeRendered.totalDuration);
@@ -104,7 +110,20 @@ export async function POST(request: NextRequest) {
       ctx.fillRect(0, 0, canvasW, canvasH);
       drawSubtleGlows(ctx, Math.max(canvasW, canvasH));
 
-      if (isGifTransition) {
+      if (isSlider) {
+        // Slider reveal animation
+        const direction = getSliderDirection(template);
+        const progress = getSliderProgress(timeMs);
+
+        const bImg = beforeRendered
+          ? beforeRendered.canvases[getFrameAtTime(beforeRendered.timestamps, beforeRendered.totalDuration, timeMs)]
+          : beforeImgStatic;
+        const aImg = afterRendered
+          ? afterRendered.canvases[getFrameAtTime(afterRendered.timestamps, afterRendered.totalDuration, timeMs)]
+          : afterImgStatic;
+
+        renderSliderFrame(ctx, direction, progress, bImg, aImg, tokenId, assets, canvasW, canvasH);
+      } else if (isGifTransition) {
         // Glitch/scanline wipe transition
         const phase = timeMs / 1000;
         const imgSize = Math.min(canvasW, canvasH) * 0.7;
@@ -203,8 +222,8 @@ export async function POST(request: NextRequest) {
           ctx.fillText(networkStatus.toUpperCase(), canvasW / 2, canvasH * 0.05);
         }
 
-        if (text) drawTextWithGlow(ctx, text, canvasW / 2, canvasH * 0.9, 36);
-        drawArtIsNeverFinished(ctx, canvasW, canvasH, networkStatus);
+        if (text) drawTextWithGlow(ctx, text, canvasW / 2, canvasH * 0.88, 36);
+        drawArtIsNeverFinished(ctx, canvasW, canvasH, networkStatus, !!text);
         drawDRBanner(ctx, assets, networkStatus, canvasW, canvasH);
         drawBrandedWatermark(ctx, assets, canvasW, canvasH);
       } else {

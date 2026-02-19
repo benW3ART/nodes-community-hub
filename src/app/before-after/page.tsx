@@ -25,6 +25,9 @@ import {
   Layers,
   Zap,
   CreditCard,
+  MoveHorizontal,
+  MoveVertical,
+  MoveDiagonal2,
 } from 'lucide-react';
 import Image from 'next/image';
 import type { NodeNFT } from '@/types/nft';
@@ -32,13 +35,16 @@ import type { NodeNFT } from '@/types/nft';
 type AspectRatio = 'square' | 'landscape' | 'portrait';
 
 const TEMPLATE_FORMATS: Record<string, AspectRatio[]> = {
-  'side-by-side':  ['square', 'landscape'],
-  'vertical':      ['square', 'portrait'],
-  'gif-transition': ['square', 'landscape', 'portrait'],
-  'split-reveal':  ['square', 'landscape', 'portrait'],
-  'frame-overlay': ['square', 'landscape', 'portrait'],
-  'glitch-wipe':   ['square', 'landscape'],
-  'reveal-card':   ['square', 'portrait'],
+  'side-by-side':       ['square', 'landscape'],
+  'vertical':           ['square', 'portrait'],
+  'gif-transition':     ['square', 'landscape', 'portrait'],
+  'split-reveal':       ['square', 'landscape', 'portrait'],
+  'frame-overlay':      ['square', 'landscape', 'portrait'],
+  'glitch-wipe':        ['square', 'landscape'],
+  'reveal-card':        ['square', 'portrait'],
+  'slider-horizontal':  ['square', 'landscape', 'portrait'],
+  'slider-vertical':    ['square', 'landscape', 'portrait'],
+  'slider-diagonal':    ['square', 'landscape', 'portrait'],
 };
 
 const FORMAT_LABELS: Record<AspectRatio, string> = {
@@ -63,6 +69,9 @@ const TEMPLATES: BeforeAfterTemplate[] = [
   { id: 'frame-overlay', name: 'Frame', description: 'Full image with PIP', icon: <Layers className="w-4 h-4" /> },
   { id: 'glitch-wipe', name: 'Glitch', description: 'Glitchy center divider', icon: <Zap className="w-4 h-4" /> },
   { id: 'reveal-card', name: 'Card', description: 'Top/bottom reveal card', icon: <CreditCard className="w-4 h-4" /> },
+  { id: 'slider-horizontal', name: 'Slider H', description: 'Horizontal slider reveal', icon: <MoveHorizontal className="w-4 h-4" />, forceGif: true },
+  { id: 'slider-vertical', name: 'Slider V', description: 'Vertical slider reveal', icon: <MoveVertical className="w-4 h-4" />, forceGif: true },
+  { id: 'slider-diagonal', name: 'Slider D', description: 'Diagonal slider reveal', icon: <MoveDiagonal2 className="w-4 h-4" />, forceGif: true },
 ];
 
 const PRESET_TEXTS = [
@@ -246,167 +255,126 @@ export default function BeforeAfterPage() {
   };
   const previewDims = getPreviewDimensions();
 
-  // Client-side preview
+  // Client-side preview — clean representation of each template layout
+  // Branding elements (NODES watermark, DR banner, ART IS NEVER FINISHED) only appear in exports
   const renderPreview = () => {
     if (!selectedNft) return null;
 
     const beforeSrc = legacyProxyUrl || '';
     const afterSrc = selectedNft.image;
     const networkStatus = selectedNft.networkStatus || '';
-    const isDR = networkStatus === 'Digital Renaissance';
+    const w = previewDims.base.w;
+    const h = previewDims.base.h;
 
-    // DR banner element — shown at the bottom of all templates for Digital Renaissance NFTs
-    // The Digital Renaissance.png is 1200x600 (2:1), render at proper aspect ratio
-    const drBannerEl = isDR ? (
-      <div className="absolute bottom-0 sm:bottom-1 left-1/2 -translate-x-1/2 opacity-40">
-        <Image src="/logos/The Digital Renaissance.png" alt="The Digital Renaissance" width={100} height={50} unoptimized className="sm:w-[140px] sm:h-[70px] object-contain" />
+    // Helper: before image element
+    const beforeEl = (size: number, rounded = 'rounded-lg') => beforeSrc ? (
+      <div className={`relative ${rounded} overflow-hidden border border-[#00D4FF]/20 shrink-0`} style={{ width: size, height: size }}>
+        <Image src={beforeSrc} alt="Before" fill unoptimized className="object-cover" />
       </div>
+    ) : (
+      <div className={`${rounded} border border-dashed border-[#1a1a1a] flex items-center justify-center shrink-0`} style={{ width: size, height: size }}>
+        {isLoadingLegacy ? <Loader2 className="w-3 h-3 animate-spin text-gray-600" /> : <span className="text-gray-600 text-[8px]">No image</span>}
+      </div>
+    );
+
+    // Helper: after image element
+    const afterEl = (size: number, rounded = 'rounded-lg') => (
+      <div className={`relative ${rounded} overflow-hidden border border-[#00D4FF]/20 shrink-0`} style={{ width: size, height: size }}>
+        <Image src={afterSrc} alt="After" fill unoptimized className="object-cover" />
+      </div>
+    );
+
+    // Helper: background glow
+    const bgGlow = (
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute -top-20 -left-20 w-40 h-40 bg-[#00D4FF]/5 rounded-full blur-3xl" />
+        <div className="absolute -bottom-20 -right-20 w-40 h-40 bg-[#4FFFDF]/5 rounded-full blur-3xl" />
+      </div>
+    );
+
+    // Helper: caption text
+    const captionEl = customText ? (
+      <div className="text-[10px] sm:text-xs text-white/80 text-center truncate max-w-full px-2">{customText}</div>
     ) : null;
 
+    // ---- SIDE BY SIDE ----
     if (selectedTemplate.id === 'side-by-side') {
+      const imgSize = Math.min(Math.floor((w - 60) / 2.5), Math.floor(h * 0.45));
       return (
-        <div className="relative overflow-hidden bg-black" style={{ width: previewDims.base.w, height: previewDims.base.h }}>
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute -top-20 -left-20 w-64 h-64 bg-[#00D4FF]/5 rounded-full blur-3xl" />
-            <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-[#4FFFDF]/5 rounded-full blur-3xl" />
-          </div>
-          <div className="absolute inset-0 flex flex-col items-center justify-center p-4 sm:p-8">
-            <div className="flex items-center gap-3 sm:gap-6">
-              <div className="text-center">
-                <div className="text-[10px] sm:text-sm text-gray-500 mb-1 sm:mb-2">LEGACY</div>
-                {beforeSrc ? (
-                  <Image src={beforeSrc} alt="Before" width={110} height={110} unoptimized className="rounded-xl sm:w-[190px] sm:h-[190px] border border-[#00D4FF]/30" />
-                ) : (
-                  <div className="w-[110px] h-[110px] sm:w-[190px] sm:h-[190px] border border-dashed border-[#1a1a1a] rounded-xl flex items-center justify-center">
-                    {isLoadingLegacy ? <Loader2 className="w-4 h-4 animate-spin text-gray-600" /> : <span className="text-gray-600 text-xs">No image</span>}
-                  </div>
-                )}
-              </div>
-              <div className="text-2xl sm:text-4xl text-[#4FFFDF]">→</div>
-              <div className="text-center">
-                <div className="text-[10px] sm:text-sm text-[#00D4FF] mb-1 sm:mb-2">{networkStatus.toUpperCase()}</div>
-                <Image src={afterSrc} alt="After" width={110} height={110} unoptimized className="rounded-xl sm:w-[190px] sm:h-[190px] border border-[#00D4FF]/30" />
-              </div>
+        <div className="relative overflow-hidden bg-black flex flex-col items-center justify-center" style={{ width: w, height: h }}>
+          {bgGlow}
+          <div className="flex items-center gap-3 z-10">
+            <div className="text-center">
+              <div className="text-[9px] text-gray-500 mb-1 font-bold">LEGACY</div>
+              {beforeEl(imgSize)}
             </div>
-            {customText && <div className="text-sm sm:text-xl text-white mt-4 sm:mt-8">{customText}</div>}
+            <div className="text-lg text-[#4FFFDF]">→</div>
+            <div className="text-center">
+              <div className="text-[9px] text-[#00D4FF] mb-1 font-bold">{networkStatus.toUpperCase()}</div>
+              {afterEl(imgSize)}
+            </div>
           </div>
-          {drBannerEl}
-          <div className="absolute top-2 right-2 sm:top-3 sm:right-3 opacity-45">
-            <Image src="/logos/nodes.png" alt="NODES" width={60} height={60} unoptimized className="sm:w-[80px] sm:h-[80px]" />
-          </div>
+          {captionEl && <div className="mt-3 z-10">{captionEl}</div>}
         </div>
       );
     }
 
+    // ---- VERTICAL ----
     if (selectedTemplate.id === 'vertical') {
+      const imgSize = Math.min(Math.floor(w * 0.45), Math.floor((h - 80) / 2.6));
       return (
-        <div className="relative overflow-hidden bg-black" style={{ width: previewDims.base.w, height: previewDims.base.h }}>
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute -top-20 -left-20 w-64 h-64 bg-[#00D4FF]/5 rounded-full blur-3xl" />
-            <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-[#4FFFDF]/5 rounded-full blur-3xl" />
-          </div>
-          <div className="absolute inset-0 flex flex-col items-center justify-center p-3 sm:p-6">
-            <div className="text-[10px] sm:text-sm text-gray-500 mb-1">LEGACY</div>
+        <div className="relative overflow-hidden bg-black flex flex-col items-center justify-center gap-1" style={{ width: w, height: h }}>
+          {bgGlow}
+          <div className="text-[9px] text-gray-500 font-bold z-10">LEGACY</div>
+          <div className="z-10">{beforeEl(imgSize)}</div>
+          <div className="text-base text-[#4FFFDF] z-10">↓</div>
+          <div className="text-[9px] text-[#00D4FF] font-bold z-10">{networkStatus.toUpperCase()}</div>
+          <div className="z-10">{afterEl(imgSize)}</div>
+          {captionEl && <div className="mt-1 z-10">{captionEl}</div>}
+        </div>
+      );
+    }
+
+    // ---- TRANSITION ----
+    if (selectedTemplate.id === 'gif-transition') {
+      const imgSize = Math.min(Math.floor(w * 0.6), Math.floor(h * 0.55));
+      return (
+        <div className="relative overflow-hidden bg-black flex flex-col items-center justify-center gap-2" style={{ width: w, height: h }}>
+          {bgGlow}
+          <div className="text-[9px] text-[#00D4FF] font-bold z-10">ANIMATED TRANSITION</div>
+          <div className="relative z-10">
             {beforeSrc ? (
-              <Image src={beforeSrc} alt="Before" width={100} height={100} unoptimized className="rounded-lg sm:w-[170px] sm:h-[170px] border border-[#00D4FF]/30" />
+              <div className={`relative rounded-xl overflow-hidden border border-[#00D4FF]/20`} style={{ width: imgSize, height: imgSize }}>
+                <Image src={beforeSrc} alt="Before" fill unoptimized className="object-cover" />
+                <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                  <Film className="w-8 h-8 text-[#00D4FF]/70" />
+                </div>
+              </div>
             ) : (
-              <div className="w-[100px] h-[100px] sm:w-[170px] sm:h-[170px] border border-dashed border-[#1a1a1a] rounded-lg flex items-center justify-center">
-                {isLoadingLegacy ? <Loader2 className="w-4 h-4 animate-spin text-gray-600" /> : <span className="text-gray-600 text-xs">No image</span>}
+              <div className="rounded-xl border border-dashed border-[#1a1a1a] flex items-center justify-center" style={{ width: imgSize, height: imgSize }}>
+                <Film className="w-6 h-6 text-gray-600" />
               </div>
             )}
-            <div className="text-xl sm:text-3xl text-[#4FFFDF] my-2">↓</div>
-            <div className="text-[10px] sm:text-sm text-[#00D4FF] mb-1">{networkStatus.toUpperCase()}</div>
-            <Image src={afterSrc} alt="After" width={100} height={100} unoptimized className="rounded-lg sm:w-[170px] sm:h-[170px] border border-[#00D4FF]/30" />
-            {customText && <div className="text-xs sm:text-base text-white mt-2 sm:mt-4">{customText}</div>}
           </div>
-          {drBannerEl}
-          <div className="absolute top-2 right-2 sm:top-3 sm:right-3 opacity-45">
-            <Image src="/logos/nodes.png" alt="NODES" width={60} height={60} unoptimized className="sm:w-[80px] sm:h-[80px]" />
-          </div>
+          <div className="text-[8px] text-gray-500 z-10">Export for animation</div>
+          {captionEl && <div className="z-10">{captionEl}</div>}
         </div>
       );
     }
 
-    if (selectedTemplate.id === 'gif-transition') {
-      return (
-        <div className="relative overflow-hidden bg-black" style={{ width: previewDims.base.w, height: previewDims.base.h }}>
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute -top-20 -left-20 w-64 h-64 bg-[#00D4FF]/5 rounded-full blur-3xl" />
-            <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-[#4FFFDF]/5 rounded-full blur-3xl" />
-          </div>
-          <div className="absolute inset-0 flex flex-col items-center justify-center p-4 sm:p-8">
-            <div className="text-[10px] sm:text-sm text-[#00D4FF] mb-2">ANIMATED TRANSITION</div>
-            <div className="relative">
-              {beforeSrc && (
-                <Image src={beforeSrc} alt="Before" width={170} height={170} unoptimized className="rounded-xl sm:w-[300px] sm:h-[300px] border border-[#00D4FF]/30 animate-pulse" />
-              )}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <Film className="w-8 h-8 sm:w-12 sm:h-12 text-[#00D4FF]/60" />
-              </div>
-            </div>
-            <div className="text-[10px] sm:text-xs text-gray-500 mt-2 sm:mt-4">Preview shows static — export for animation</div>
-            {customText && <div className="text-sm sm:text-lg text-white mt-2">{customText}</div>}
-          </div>
-          {drBannerEl}
-          <div className="absolute top-2 right-2 sm:top-3 sm:right-3 opacity-45">
-            <Image src="/logos/nodes.png" alt="NODES" width={60} height={60} unoptimized className="sm:w-[80px] sm:h-[80px]" />
-          </div>
-        </div>
-      );
-    }
-
+    // ---- SPLIT ----
     if (selectedTemplate.id === 'split-reveal') {
       return (
-        <div className="relative overflow-hidden bg-black" style={{ width: previewDims.base.w, height: previewDims.base.h }}>
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute -top-20 -left-20 w-64 h-64 bg-[#00D4FF]/5 rounded-full blur-3xl" />
-            <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-[#4FFFDF]/5 rounded-full blur-3xl" />
+        <div className="relative overflow-hidden bg-black" style={{ width: w, height: h }}>
+          {bgGlow}
+          {/* Labels */}
+          <div className="absolute top-1 left-0 right-0 flex justify-between px-4 z-20">
+            <span className="text-[8px] text-gray-500 font-bold">LEGACY</span>
+            <span className="text-[8px] text-[#00D4FF] font-bold">{networkStatus.toUpperCase()}</span>
           </div>
-          {/* Labels above images */}
-          <div className="absolute top-2 sm:top-4 left-0 right-0 flex justify-between px-6 sm:px-10">
-            <span className="text-[10px] sm:text-xs text-gray-500 font-bold">LEGACY</span>
-            <span className="text-[10px] sm:text-xs text-[#00D4FF] font-bold">{networkStatus.toUpperCase()}</span>
-          </div>
-          {/* Vertical 50/50 split */}
-          <div className="absolute inset-0 flex" style={{ top: '10%', bottom: '12%', left: '4%', right: '4%' }}>
-            {/* Before - left half */}
-            <div className="relative flex-1 overflow-hidden rounded-l-xl">
-              {beforeSrc ? (
-                <Image src={beforeSrc} alt="Before" fill unoptimized className="object-cover" />
-              ) : (
-                <div className="w-full h-full bg-[#0d0d0d] flex items-center justify-center">
-                  {isLoadingLegacy ? <Loader2 className="w-4 h-4 animate-spin text-gray-600" /> : <span className="text-gray-600 text-xs">No image</span>}
-                </div>
-              )}
-            </div>
-            {/* Glowing divider */}
-            <div className="w-[3px] bg-[#00D4FF] shadow-[0_0_15px_rgba(0,212,255,0.6)] z-10" />
-            {/* After - right half */}
-            <div className="relative flex-1 overflow-hidden rounded-r-xl">
-              <Image src={afterSrc} alt="After" fill unoptimized className="object-cover" />
-            </div>
-          </div>
-          {customText && <div className="absolute bottom-2 sm:bottom-4 left-0 right-0 text-center text-xs sm:text-sm text-white">{customText}</div>}
-          {drBannerEl}
-          <div className="absolute top-2 right-2 sm:top-3 sm:right-3 opacity-45">
-            <Image src="/logos/nodes.png" alt="NODES" width={50} height={50} unoptimized className="sm:w-[70px] sm:h-[70px]" />
-          </div>
-        </div>
-      );
-    }
-
-    if (selectedTemplate.id === 'frame-overlay') {
-      return (
-        <div className="relative overflow-hidden bg-black" style={{ width: previewDims.base.w, height: previewDims.base.h }}>
-          {/* Full-bleed after image */}
-          <Image src={afterSrc} alt="After" fill unoptimized className="object-cover" />
-          <div className="absolute inset-0 bg-gradient-radial from-transparent to-black/50" />
-          {/* Interference label */}
-          <div className="absolute top-3 left-3 sm:top-5 sm:left-5 text-[10px] sm:text-sm text-[#00D4FF] font-bold drop-shadow-lg">{networkStatus.toUpperCase()}</div>
-          {/* PIP before frame */}
-          <div className="absolute bottom-12 sm:bottom-16 left-3 sm:left-5">
-            <div className="text-[8px] sm:text-[10px] text-gray-400 mb-1 text-center">LEGACY</div>
-            <div className="relative w-[70px] h-[70px] sm:w-[120px] sm:h-[120px] rounded-lg overflow-hidden border-2 border-[#00D4FF]/40 shadow-[0_0_15px_rgba(0,0,0,0.8)]">
+          {/* 50/50 split */}
+          <div className="absolute flex" style={{ top: '8%', bottom: captionEl ? '10%' : '4%', left: '3%', right: '3%' }}>
+            <div className="relative flex-1 overflow-hidden rounded-l-lg">
               {beforeSrc ? (
                 <Image src={beforeSrc} alt="Before" fill unoptimized className="object-cover" />
               ) : (
@@ -415,31 +383,72 @@ export default function BeforeAfterPage() {
                 </div>
               )}
             </div>
+            <div className="w-[2px] bg-[#00D4FF] shadow-[0_0_10px_rgba(0,212,255,0.5)] z-10 shrink-0" />
+            <div className="relative flex-1 overflow-hidden rounded-r-lg">
+              <Image src={afterSrc} alt="After" fill unoptimized className="object-cover" />
+            </div>
           </div>
-          {customText && <div className="absolute bottom-2 sm:bottom-4 left-0 right-0 text-center text-xs sm:text-sm text-white drop-shadow-lg">{customText}</div>}
-          {drBannerEl}
-          <div className="absolute top-2 right-2 sm:top-3 sm:right-3 opacity-45">
-            <Image src="/logos/nodes.png" alt="NODES" width={50} height={50} unoptimized className="sm:w-[70px] sm:h-[70px]" />
-          </div>
+          {captionEl && <div className="absolute bottom-1 left-0 right-0 z-20">{captionEl}</div>}
         </div>
       );
     }
 
+    // ---- FRAME OVERLAY ----
+    if (selectedTemplate.id === 'frame-overlay') {
+      const mainSize = Math.floor(Math.min(w, h) * 0.55);
+      const pipSize = Math.floor(Math.min(w, h) * 0.22);
+      return (
+        <div className="relative overflow-hidden bg-black" style={{ width: w, height: h }}>
+          {bgGlow}
+          {/* Network label above main image */}
+          <div className="absolute top-1 left-0 right-0 text-center z-10">
+            <span className="text-[9px] text-[#00D4FF] font-bold">{networkStatus.toUpperCase()}</span>
+          </div>
+          {/* Main after image centered */}
+          <div className="absolute z-10 rounded-lg overflow-hidden border-2 border-[#00D4FF]/20" style={{
+            width: mainSize, height: mainSize,
+            left: (w - mainSize) / 2, top: h * 0.1,
+          }}>
+            {afterSrc ? (
+              <Image src={afterSrc} alt="After" fill unoptimized className="object-cover" />
+            ) : (
+              <div className="w-full h-full bg-[#0d0d0d]" />
+            )}
+          </div>
+          {/* PIP before at bottom-left overlapping */}
+          <div className="absolute z-20" style={{
+            left: (w - mainSize) / 2 - pipSize * 0.1,
+            top: h * 0.1 + mainSize - pipSize * 0.5,
+          }}>
+            <div className="text-[7px] text-gray-300 mb-0.5 text-center">LEGACY</div>
+            <div className="relative rounded-md overflow-hidden border-2 border-[#00D4FF]/30 shadow-lg bg-black/70" style={{ width: pipSize, height: pipSize }}>
+              {beforeSrc ? (
+                <Image src={beforeSrc} alt="Before" fill unoptimized className="object-cover" />
+              ) : (
+                <div className="w-full h-full bg-[#0d0d0d] flex items-center justify-center">
+                  <span className="text-gray-600 text-[7px]">No image</span>
+                </div>
+              )}
+            </div>
+          </div>
+          {captionEl && <div className="absolute bottom-2 left-0 right-0 z-20">{captionEl}</div>}
+        </div>
+      );
+    }
+
+    // ---- GLITCH WIPE ----
     if (selectedTemplate.id === 'glitch-wipe') {
       return (
-        <div className="relative overflow-hidden bg-black" style={{ width: previewDims.base.w, height: previewDims.base.h }}>
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute -top-20 -left-20 w-64 h-64 bg-[#00D4FF]/5 rounded-full blur-3xl" />
-            <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-[#4FFFDF]/5 rounded-full blur-3xl" />
-          </div>
+        <div className="relative overflow-hidden bg-black" style={{ width: w, height: h }}>
+          {bgGlow}
           {/* Labels */}
-          <div className="absolute top-2 sm:top-4 left-0 right-0 flex justify-between px-6 sm:px-10">
-            <span className="text-[10px] sm:text-xs text-gray-500 font-bold">LEGACY</span>
-            <span className="text-[10px] sm:text-xs text-[#00D4FF] font-bold">{networkStatus.toUpperCase()}</span>
+          <div className="absolute top-1 left-0 right-0 flex justify-between px-4 z-20">
+            <span className="text-[8px] text-gray-500 font-bold">LEGACY</span>
+            <span className="text-[8px] text-[#00D4FF] font-bold">{networkStatus.toUpperCase()}</span>
           </div>
           {/* Two halves with glitch band */}
-          <div className="absolute flex" style={{ top: '10%', bottom: '14%', left: '4%', right: '4%' }}>
-            <div className="relative flex-1 overflow-hidden rounded-l-xl">
+          <div className="absolute flex" style={{ top: '8%', bottom: captionEl ? '10%' : '4%', left: '3%', right: '3%' }}>
+            <div className="relative flex-1 overflow-hidden rounded-l-lg">
               {beforeSrc ? (
                 <Image src={beforeSrc} alt="Before" fill unoptimized className="object-cover" />
               ) : (
@@ -447,62 +456,124 @@ export default function BeforeAfterPage() {
               )}
             </div>
             {/* Glitch band */}
-            <div className="w-[16px] sm:w-[24px] bg-black relative overflow-hidden">
-              <div className="absolute inset-0 flex flex-col">
-                {Array.from({ length: 20 }).map((_, i) => (
-                  <div key={i} className="flex-1 bg-[#00D4FF]/10" style={{ opacity: Math.random() * 0.4 + 0.1, transform: `translateX(${(Math.random() - 0.5) * 8}px)` }} />
-                ))}
-              </div>
-              <div className="absolute inset-y-0 left-0 w-px bg-[#00D4FF]/30 shadow-[0_0_6px_rgba(0,212,255,0.4)]" />
-              <div className="absolute inset-y-0 right-0 w-px bg-[#00D4FF]/30 shadow-[0_0_6px_rgba(0,212,255,0.4)]" />
+            <div className="w-3 bg-black relative overflow-hidden shrink-0">
+              <div className="absolute inset-y-0 left-0 w-px bg-[#00D4FF]/30" />
+              <div className="absolute inset-y-0 right-0 w-px bg-[#00D4FF]/30" />
+              {Array.from({ length: 12 }).map((_, i) => (
+                <div key={i} className="absolute w-full bg-[#00D4FF]/15" style={{ top: `${(i / 12) * 100}%`, height: `${100 / 12}%`, opacity: 0.1 + (i % 3) * 0.15 }} />
+              ))}
             </div>
-            <div className="relative flex-1 overflow-hidden rounded-r-xl">
+            <div className="relative flex-1 overflow-hidden rounded-r-lg">
               <Image src={afterSrc} alt="After" fill unoptimized className="object-cover" />
             </div>
           </div>
-          {customText && <div className="absolute bottom-2 sm:bottom-4 left-0 right-0 text-center text-xs sm:text-sm text-white">{customText}</div>}
-          {drBannerEl}
-          <div className="absolute top-2 right-2 sm:top-3 sm:right-3 opacity-45">
-            <Image src="/logos/nodes.png" alt="NODES" width={50} height={50} unoptimized className="sm:w-[70px] sm:h-[70px]" />
-          </div>
+          {captionEl && <div className="absolute bottom-1 left-0 right-0 z-20">{captionEl}</div>}
         </div>
       );
     }
 
+    // ---- REVEAL CARD ----
     if (selectedTemplate.id === 'reveal-card') {
       return (
-        <div className="relative overflow-hidden bg-black" style={{ width: previewDims.base.w, height: previewDims.base.h }}>
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute -top-20 -left-20 w-64 h-64 bg-[#00D4FF]/5 rounded-full blur-3xl" />
-            <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-[#4FFFDF]/5 rounded-full blur-3xl" />
-          </div>
-          <div className="absolute flex flex-col" style={{ top: '8%', bottom: '10%', left: '6%', right: '6%' }}>
+        <div className="relative overflow-hidden bg-black" style={{ width: w, height: h }}>
+          {bgGlow}
+          <div className="absolute flex flex-col" style={{ top: '4%', bottom: captionEl ? '8%' : '4%', left: '5%', right: '5%' }}>
             {/* Before - top half */}
-            <div className="relative flex-1 overflow-hidden rounded-t-xl">
+            <div className="relative flex-1 overflow-hidden rounded-t-lg">
               {beforeSrc ? (
                 <Image src={beforeSrc} alt="Before" fill unoptimized className="object-cover" />
               ) : (
                 <div className="w-full h-full bg-[#0d0d0d] flex items-center justify-center">
-                  <span className="text-gray-600 text-xs">No image</span>
+                  <span className="text-gray-600 text-[8px]">No image</span>
                 </div>
               )}
-              <div className="absolute bottom-1 left-2 text-[8px] sm:text-[10px] text-gray-400 font-bold">LEGACY</div>
+              <div className="absolute bottom-0.5 left-1 text-[7px] text-gray-400 font-bold drop-shadow-lg">LEGACY</div>
             </div>
-            {/* Glitch band separator */}
-            <div className="h-[8px] sm:h-[12px] bg-black relative overflow-hidden">
+            {/* Glitch separator */}
+            <div className="h-[6px] bg-black relative overflow-hidden shrink-0">
               <div className="absolute inset-0 bg-gradient-to-r from-[#4FFFDF]/20 via-[#00D4FF]/30 to-[#4FFFDF]/20" />
-              <div className="absolute inset-x-0 top-1/2 h-px bg-[#00D4FF] shadow-[0_0_8px_rgba(0,212,255,0.6)]" />
+              <div className="absolute inset-x-0 top-1/2 h-px bg-[#00D4FF] shadow-[0_0_6px_rgba(0,212,255,0.5)]" />
             </div>
             {/* After - bottom half */}
-            <div className="relative flex-1 overflow-hidden rounded-b-xl">
+            <div className="relative flex-1 overflow-hidden rounded-b-lg">
               <Image src={afterSrc} alt="After" fill unoptimized className="object-cover" />
-              <div className="absolute top-1 right-2 text-[8px] sm:text-[10px] text-[#00D4FF] font-bold">{networkStatus.toUpperCase()}</div>
+              <div className="absolute top-0.5 right-1 text-[7px] text-[#00D4FF] font-bold drop-shadow-lg">{networkStatus.toUpperCase()}</div>
             </div>
           </div>
-          {customText && <div className="absolute bottom-1 sm:bottom-2 left-0 right-0 text-center text-[10px] sm:text-xs text-white">{customText}</div>}
-          {drBannerEl}
-          <div className="absolute top-2 right-2 sm:top-3 sm:right-3 opacity-45">
-            <Image src="/logos/nodes.png" alt="NODES" width={50} height={50} unoptimized className="sm:w-[70px] sm:h-[70px]" />
+          {captionEl && <div className="absolute bottom-0.5 left-0 right-0 z-20">{captionEl}</div>}
+        </div>
+      );
+    }
+
+    // ---- SLIDER TEMPLATES ----
+    if (selectedTemplate.id.startsWith('slider-')) {
+      const isHoriz = selectedTemplate.id === 'slider-horizontal';
+      const isVert = selectedTemplate.id === 'slider-vertical';
+      const sliderPos = 0.4; // show slider at 40% for preview
+      return (
+        <div className="relative overflow-hidden bg-black" style={{ width: w, height: h }}>
+          {bgGlow}
+          {/* Full before image */}
+          <div className="absolute rounded-lg overflow-hidden" style={{ top: '3%', left: '3%', right: '3%', bottom: '10%' }}>
+            {beforeSrc ? (
+              <Image src={beforeSrc} alt="Before" fill unoptimized className="object-cover" />
+            ) : (
+              <div className="w-full h-full bg-[#0d0d0d] flex items-center justify-center">
+                <span className="text-gray-600 text-[8px]">No image</span>
+              </div>
+            )}
+            {/* After image clipped to slider region */}
+            <div
+              className="absolute inset-0 overflow-hidden"
+              style={
+                isHoriz ? { width: `${sliderPos * 100}%` } :
+                isVert ? { height: `${sliderPos * 100}%` } :
+                { clipPath: `polygon(0 0, ${sliderPos * 100 + 15}% 0, ${sliderPos * 100 - 15}% 100%, 0 100%)` }
+              }
+            >
+              <Image src={afterSrc} alt="After" fill unoptimized className="object-cover" />
+            </div>
+            {/* Slider line */}
+            {isHoriz && (
+              <div
+                className="absolute top-0 bottom-0 w-[2px] bg-[#00D4FF] shadow-[0_0_8px_rgba(0,212,255,0.6)] z-10"
+                style={{ left: `${sliderPos * 100}%` }}
+              >
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-[#00D4FF] border border-white shadow-[0_0_10px_rgba(0,212,255,0.8)]" />
+              </div>
+            )}
+            {isVert && (
+              <div
+                className="absolute left-0 right-0 h-[2px] bg-[#00D4FF] shadow-[0_0_8px_rgba(0,212,255,0.6)] z-10"
+                style={{ top: `${sliderPos * 100}%` }}
+              >
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-[#00D4FF] border border-white shadow-[0_0_10px_rgba(0,212,255,0.8)]" />
+              </div>
+            )}
+            {!isHoriz && !isVert && (
+              <div className="absolute inset-0 z-10 pointer-events-none">
+                <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none">
+                  <line
+                    x1={`${sliderPos * 100 + 15}%`} y1="0%"
+                    x2={`${sliderPos * 100 - 15}%`} y2="100%"
+                    stroke="#00D4FF" strokeWidth="2"
+                    filter="drop-shadow(0 0 4px rgba(0,212,255,0.6))"
+                  />
+                </svg>
+                <div
+                  className="absolute w-3 h-3 rounded-full bg-[#00D4FF] border border-white shadow-[0_0_10px_rgba(0,212,255,0.8)]"
+                  style={{ top: '50%', left: `${sliderPos * 100}%`, transform: 'translate(-50%, -50%)' }}
+                />
+              </div>
+            )}
+          </div>
+          {/* Token ID */}
+          <div className="absolute bottom-0.5 left-0 right-0 text-center z-20">
+            <span className="text-[8px] text-white/40 font-bold">#{selectedNft.tokenId}</span>
+          </div>
+          {/* Animated label */}
+          <div className="absolute top-0.5 left-2 z-20">
+            <span className="text-[7px] text-[#00D4FF]/60 font-medium">ANIMATED</span>
           </div>
         </div>
       );
@@ -617,7 +688,7 @@ export default function BeforeAfterPage() {
                 {/* Template Selector */}
                 <div>
                   <h4 className="font-semibold text-xs sm:text-sm uppercase tracking-wide mb-3">Template</h4>
-                  <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
+                  <div className="grid grid-cols-5 sm:grid-cols-10 gap-2">
                     {TEMPLATES.map((tmpl) => (
                       <button
                         key={tmpl.id}

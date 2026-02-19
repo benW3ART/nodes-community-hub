@@ -9,6 +9,7 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { ViewOnlyLink } from '@/components/ViewOnlyInput';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useState, useEffect } from 'react';
 import {
   Image as ImageIcon,
   Grid3X3,
@@ -66,8 +67,37 @@ const features = [
   },
 ];
 
+const CHARACTER_FORMS = [
+  { name: 'Full Circle', tokenId: '2', count: 1948 },
+  { name: 'Skull', tokenId: '4', count: 1104 },
+  { name: 'Ghost', tokenId: '3', count: 281 },
+];
+
 export default function Home() {
   const { isConnected } = useWalletAddress();
+  const [characterImages, setCharacterImages] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const fetchImages = async () => {
+      const results: Record<string, string> = {};
+      await Promise.all(
+        CHARACTER_FORMS.map(async (form) => {
+          try {
+            const res = await fetch(`/api/metadata/${form.tokenId}`);
+            if (res.ok) {
+              const data = await res.json();
+              const imgUrl = data.image || data.cleanimage || '';
+              if (imgUrl) {
+                results[form.tokenId] = `/api/proxy-gif?url=${encodeURIComponent(imgUrl)}`;
+              }
+            }
+          } catch { /* ignore */ }
+        })
+      );
+      setCharacterImages(results);
+    };
+    fetchImages();
+  }, []);
 
   return (
     <div className="min-h-screen bg-black">
@@ -77,34 +107,16 @@ export default function Home() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         {/* Hero Section with Banner */}
         <section className="text-center mb-10 sm:mb-16">
-          {/* Banner Image */}
-          <div className="relative w-full max-w-4xl mx-auto mb-6 sm:mb-8 rounded-2xl overflow-hidden border border-[#1a1a1a]">
+          {/* Main Logo */}
+          <div className="w-full max-w-md mx-auto mb-6 sm:mb-8">
             <Image
-              src="/nodes-banner.png"
-              alt="NODES - Digital Renaissance"
-              width={1200}
-              height={400}
-              className="w-full h-auto object-cover"
+              src="/logos/banner-cropped.png"
+              alt="NODES"
+              width={675}
+              height={375}
+              className="w-full h-auto"
               priority
             />
-            {/* Overlay gradient */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-            
-            {/* Logo overlay */}
-            <div className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6 flex items-center gap-3">
-              <div className="relative w-12 h-12 sm:w-16 sm:h-16 rounded-xl overflow-hidden shadow-[0_0_30px_rgba(0,212,255,0.5)]">
-                <Image
-                  src="/logos/nodes.png"
-                  alt="NODES"
-                  fill
-                  className="object-cover"
-                />
-              </div>
-              <div className="text-left">
-                <h1 className="text-xl sm:text-3xl font-bold text-white tracking-wider">NODES</h1>
-                <p className="text-xs sm:text-sm text-[#00D4FF]">Digital Renaissance</p>
-              </div>
-            </div>
           </div>
           
           <div className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-[#00D4FF]/10 border border-[#00D4FF]/30 mb-4 sm:mb-6">
@@ -192,30 +204,35 @@ export default function Home() {
         <section className="mt-10 sm:mt-16">
           <h2 className="section-title text-center text-lg sm:text-2xl">Character Forms</h2>
           <div className="grid grid-cols-3 gap-3 sm:gap-6 max-w-2xl mx-auto mb-6">
-            {[
-              { name: 'Full Circle', tokenId: '1', count: 1948 },
-              { name: 'Skull', tokenId: '4', count: 1104 },
-              { name: 'Ghost', tokenId: '3', count: 281 },
-            ].map((form) => (
-              <div
-                key={form.name}
-                className="flex flex-col items-center gap-2 sm:gap-3 p-3 sm:p-4 bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl hover:border-[#00D4FF]/30 transition-all"
-              >
-                <div className="relative w-16 h-16 sm:w-24 sm:h-24 rounded-lg overflow-hidden border border-[#1a1a1a]">
-                  <Image
-                    src={`/api/proxy-gif?url=https://storage.googleapis.com/node-nft/metadata/${form.tokenId}.gif`}
-                    alt={form.name}
-                    fill
-                    unoptimized
-                    className="object-cover"
-                  />
+            {CHARACTER_FORMS.map((form) => {
+              const imgSrc = characterImages[form.tokenId];
+              return (
+                <div
+                  key={form.name}
+                  className="flex flex-col items-center gap-2 sm:gap-3 p-3 sm:p-4 bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl hover:border-[#00D4FF]/30 transition-all"
+                >
+                  <div className="relative w-16 h-16 sm:w-24 sm:h-24 rounded-lg overflow-hidden border border-[#1a1a1a] bg-[#111]">
+                    {imgSrc ? (
+                      <Image
+                        src={imgSrc}
+                        alt={form.name}
+                        fill
+                        unoptimized
+                        className="object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <div className="w-4 h-4 border-2 border-[#00D4FF]/30 border-t-transparent rounded-full animate-spin" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-center">
+                    <div className="text-xs sm:text-sm font-medium text-white">{form.name}</div>
+                    <div className="text-[10px] sm:text-xs text-gray-500">{form.count.toLocaleString()} NFTs</div>
+                  </div>
                 </div>
-                <div className="text-center">
-                  <div className="text-xs sm:text-sm font-medium text-white">{form.name}</div>
-                  <div className="text-[10px] sm:text-xs text-gray-500">{form.count.toLocaleString()} NFTs</div>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
 
