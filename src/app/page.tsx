@@ -68,14 +68,15 @@ const features = [
 ];
 
 const CHARACTER_FORMS = [
-  { name: 'Full Circle', tokenId: '2', count: 1948 },
-  { name: 'Skull', tokenId: '4', count: 1104 },
-  { name: 'Ghost', tokenId: '3', count: 281 },
+  { name: 'Full Circle', tokenId: '2', traitKey: 'Full Circle' },
+  { name: 'Skull', tokenId: '4', traitKey: 'Skull' },
+  { name: 'Ghost', tokenId: '3', traitKey: 'Ghost' },
 ];
 
 export default function Home() {
   const { isConnected } = useWalletAddress();
   const [characterImages, setCharacterImages] = useState<Record<string, string>>({});
+  const [typeCounts, setTypeCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
     const fetchImages = async () => {
@@ -97,6 +98,13 @@ export default function Home() {
       setCharacterImages(results);
     };
     fetchImages();
+
+    fetch('/data/rarity.json')
+      .then(res => res.json())
+      .then(data => {
+        if (data?.traitCounts?.Type) setTypeCounts(data.traitCounts.Type);
+      })
+      .catch(() => { /* ignore */ });
   }, []);
 
   return (
@@ -228,7 +236,7 @@ export default function Home() {
                   </div>
                   <div className="text-center">
                     <div className="text-xs sm:text-sm font-medium text-white">{form.name}</div>
-                    <div className="text-[10px] sm:text-xs text-gray-500">{form.count.toLocaleString()} NFTs</div>
+                    <div className="text-[10px] sm:text-xs text-gray-500">{(typeCounts[form.traitKey] || 0).toLocaleString()} NFTs</div>
                   </div>
                 </div>
               );

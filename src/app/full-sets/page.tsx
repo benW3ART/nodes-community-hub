@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Header } from '@/components/Header';
 import { useWalletAddress } from '@/hooks/useWalletAddress';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
@@ -20,7 +20,6 @@ import {
   Sparkles,
   AlertTriangle,
   CheckCircle2,
-  Info,
   Zap,
   Target
 } from 'lucide-react';
@@ -97,6 +96,52 @@ export default function FullSetsPage() {
   const [openSeaListings, setOpenSeaListings] = useState<Record<string, OpenSeaListing[]>>({});
   const [loadingListings, setLoadingListings] = useState(false);
   const [interferenceEligibility, setInterferenceEligibility] = useState<InterferenceEligibility | null>(null);
+  const [filters, setFilters] = useState<Record<string, string>>({});
+
+  const FILTER_ATTRIBUTES = ['Background', 'Grid', 'Shade', 'Glow', 'Type', 'Network Status'] as const;
+
+  // Extract unique attribute values from user's NFTs for each filterable attribute
+  const filterOptions = useMemo(() => {
+    const options: Record<string, string[]> = {};
+    for (const attr of FILTER_ATTRIBUTES) {
+      const values = new Set<string>();
+      for (const nft of nfts) {
+        const found = nft.metadata?.attributes?.find(
+          (a) => a.trait_type === attr
+        );
+        if (found && found.value) values.add(found.value);
+      }
+      options[attr] = Array.from(values).sort();
+    }
+    return options;
+  }, [nfts]);
+
+  // Filter NFTs by active filters and compute per-Inner-State counts
+  const filteredStateCounts = useMemo(() => {
+    let filtered = nfts;
+    for (const [attr, value] of Object.entries(filters)) {
+      if (!value) continue;
+      filtered = filtered.filter((nft) => {
+        const found = nft.metadata?.attributes?.find(
+          (a) => a.trait_type === attr
+        );
+        return found?.value === value;
+      });
+    }
+    const counts: Record<string, { count: number; tokenIds: string[] }> = {};
+    for (const state of INNER_STATES) {
+      counts[state] = { count: 0, tokenIds: [] };
+    }
+    for (const nft of filtered) {
+      if (counts[nft.innerState]) {
+        counts[nft.innerState].count++;
+        counts[nft.innerState].tokenIds.push(nft.tokenId);
+      }
+    }
+    return counts;
+  }, [nfts, filters]);
+
+  const hasActiveFilters = Object.values(filters).some((v) => v);
 
   useEffect(() => {
     async function fetchNFTs() {
@@ -146,8 +191,6 @@ export default function FullSetsPage() {
 
     fetchListings();
   }, [missingStates]);
-
-  const progressPercentage = ((7 - missingStates.length) / 7) * 100;
 
   const getEligibilityIcon = (status: InterferenceEligibility['status']) => {
     switch (status) {
@@ -206,62 +249,24 @@ export default function FullSetsPage() {
           <>
             {/* Summary Card */}
             <div className="card mb-6 sm:mb-8">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-6">
-                <div className="flex-1">
-                  <h2 className="text-xl sm:text-2xl font-bold mb-2">
-                    {completeSets > 0 ? (
-                      <span className="text-[#4FFFDF] flex items-center gap-2">
-                        <Sparkles className="w-5 h-5 sm:w-6 sm:h-6" />
-                        {completeSets} Complete Full Set{completeSets > 1 ? 's' : ''}!
-                      </span>
-                    ) : (
-                      <span className="text-[#00D4FF]">
-                        {7 - missingStates.length}/7 Inner States
-                      </span>
-                    )}
-                  </h2>
-                  <p className="text-gray-500 text-sm sm:text-base">
-                    {missingStates.length === 0 
-                      ? '🎉 Congratulations! You have a complete Full Set!'
-                      : `You need ${missingStates.length} more Inner State${missingStates.length > 1 ? 's' : ''}`
-                    }
-                  </p>
-                </div>
-                
-                {/* Progress Ring */}
-                <div className="relative w-24 h-24 sm:w-32 sm:h-32 mx-auto sm:mx-0 flex-shrink-0">
-                  <svg className="w-full h-full transform -rotate-90">
-                    <circle
-                      cx="50%"
-                      cy="50%"
-                      r="40%"
-                      stroke="currentColor"
-                      strokeWidth="8"
-                      fill="none"
-                      className="text-[#1a1a1a]"
-                    />
-                    <circle
-                      cx="50%"
-                      cy="50%"
-                      r="40%"
-                      stroke="url(#progress-gradient)"
-                      strokeWidth="8"
-                      fill="none"
-                      strokeLinecap="round"
-                      strokeDasharray={`${progressPercentage * 2.51} 251`}
-                    />
-                    <defs>
-                      <linearGradient id="progress-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stopColor="#00D4FF" />
-                        <stop offset="100%" stopColor="#4FFFDF" />
-                      </linearGradient>
-                    </defs>
-                  </svg>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-xl sm:text-2xl font-bold">{7 - missingStates.length}/7</span>
-                  </div>
-                </div>
-              </div>
+              <h2 className="text-xl sm:text-2xl font-bold mb-2">
+                {completeSets > 0 ? (
+                  <span className="text-[#4FFFDF] flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 sm:w-6 sm:h-6" />
+                    {completeSets} Complete Full Set{completeSets > 1 ? 's' : ''}!
+                  </span>
+                ) : (
+                  <span className="text-[#00D4FF]">
+                    {7 - missingStates.length}/7 Inner States
+                  </span>
+                )}
+              </h2>
+              <p className="text-gray-500 text-sm sm:text-base">
+                {completeSets > 0
+                  ? `Congratulations! You have ${completeSets} complete full set${completeSets > 1 ? 's' : ''}. You're ready for the next interference.`
+                  : `You need ${missingStates.length} more Inner State${missingStates.length > 1 ? 's' : ''} to complete a full set.`
+                }
+              </p>
             </div>
 
             {/* Interference Eligibility Checker */}
@@ -278,52 +283,32 @@ export default function FullSetsPage() {
                     </h2>
                     
                     {interferenceEligibility.status === 'not-eligible' && (
-                      <>
-                        <p className="text-amber-400 font-semibold mb-2 text-sm sm:text-base">
-                          ⚠️ Not Yet Eligible
-                        </p>
-                        <p className="text-gray-400 text-xs sm:text-sm mb-4">
-                          Complete at least one Full Set (all 7 Inner States) to become eligible.
-                        </p>
-                      </>
+                      <p className="text-amber-400 font-semibold mb-2 text-sm sm:text-base">
+                        Not Yet Eligible
+                      </p>
                     )}
 
                     {interferenceEligibility.status === 'eligible' && (
-                      <>
-                        <p className="text-[#4FFFDF] font-semibold mb-2 text-sm sm:text-base">
-                          ⚡️ You Are Eligible!
-                        </p>
-                        <p className="text-gray-400 text-xs sm:text-sm mb-4">
-                          With {interferenceEligibility.completeSets} complete Full Set{interferenceEligibility.completeSets > 1 ? 's' : ''}, 
-                          you can claim {interferenceEligibility.completeSets} Interference NFT{interferenceEligibility.completeSets > 1 ? 's' : ''}.
-                        </p>
-                      </>
+                      <p className="text-[#4FFFDF] font-semibold mb-2 text-sm sm:text-base">
+                        You Are Eligible!
+                      </p>
                     )}
 
                     {interferenceEligibility.status === 'has-interference' && (
-                      <>
-                        <p className="text-[#00D4FF] font-semibold mb-2 text-sm sm:text-base">
-                          ⚡ Interference Holder
-                        </p>
-                        <p className="text-gray-400 text-xs sm:text-sm mb-4">
-                          You own {interferenceEligibility.interferenceNftsOwned} Interference NFT{interferenceEligibility.interferenceNftsOwned > 1 ? 's' : ''}.
-                          {interferenceEligibility.canClaimMore && (
-                            <span className="text-[#4FFFDF]"> You can claim {interferenceEligibility.completeSets - interferenceEligibility.interferenceNftsOwned} more!</span>
-                          )}
-                        </p>
-                      </>
+                      <p className="text-[#00D4FF] font-semibold mb-2 text-sm sm:text-base">
+                        Interference Holder
+                      </p>
                     )}
 
                     {interferenceEligibility.status === 'maxed-out' && (
-                      <>
-                        <p className="text-[#00D4FF] font-semibold mb-2 text-sm sm:text-base">
-                          🏆 Maximum Reached
-                        </p>
-                        <p className="text-gray-400 text-xs sm:text-sm mb-4">
-                          You&apos;ve claimed all available Interference NFTs ({interferenceEligibility.interferenceNftsOwned} total).
-                        </p>
-                      </>
+                      <p className="text-[#00D4FF] font-semibold mb-2 text-sm sm:text-base">
+                        Maximum Reached
+                      </p>
                     )}
+
+                    <p className="text-gray-400 text-xs sm:text-sm mb-4">
+                      Details about the next interference will be shared here when available.
+                    </p>
 
                     {/* Stats Grid */}
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 pt-3 sm:pt-4 border-t border-white/10">
@@ -331,36 +316,19 @@ export default function FullSetsPage() {
                         <p className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide">Full Sets</p>
                         <p className="text-base sm:text-lg font-bold">{interferenceEligibility.completeSets}</p>
                       </div>
-                      <div className="p-2 sm:p-3 bg-black/30 rounded-lg">
+                      <div className="p-2 sm:p-3 bg-black/30 rounded-lg" title="Information not available yet">
                         <p className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide">Interference</p>
-                        <p className="text-base sm:text-lg font-bold text-[#00D4FF]">{interferenceEligibility.interferenceNftsOwned}</p>
+                        <p className="text-base sm:text-lg font-bold text-gray-600 cursor-help">#N/A</p>
                       </div>
-                      <div className="p-2 sm:p-3 bg-black/30 rounded-lg">
+                      <div className="p-2 sm:p-3 bg-black/30 rounded-lg" title="Information not available yet">
                         <p className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide">Can Claim</p>
-                        <p className="text-base sm:text-lg font-bold text-[#4FFFDF]">
-                          {Math.max(0, interferenceEligibility.completeSets - interferenceEligibility.interferenceNftsOwned)}
-                        </p>
+                        <p className="text-base sm:text-lg font-bold text-gray-600 cursor-help">#N/A</p>
                       </div>
-                      <div className="p-2 sm:p-3 bg-black/30 rounded-lg">
+                      <div className="p-2 sm:p-3 bg-black/30 rounded-lg" title="Information not available yet">
                         <p className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide">Status</p>
-                        <p className={`text-base sm:text-lg font-bold ${
-                          interferenceEligibility.eligible ? 'text-[#4FFFDF]' : 'text-amber-400'
-                        }`}>
-                          {interferenceEligibility.eligible ? '✓' : '✗'}
-                        </p>
+                        <p className="text-base sm:text-lg font-bold text-gray-600 cursor-help">#N/A</p>
                       </div>
                     </div>
-
-                    {/* Next Requirement */}
-                    {interferenceEligibility.nextClaimRequirement && (
-                      <div className="mt-3 sm:mt-4 p-2 sm:p-3 bg-black/50 rounded-lg flex items-start gap-2">
-                        <Info className="w-4 h-4 text-[#00D4FF] mt-0.5 flex-shrink-0" />
-                        <p className="text-xs sm:text-sm text-gray-400">
-                          <span className="text-gray-500">Next:</span>{' '}
-                          {interferenceEligibility.nextClaimRequirement}
-                        </p>
-                      </div>
-                    )}
 
                     {/* CTA */}
                     {interferenceEligibility.eligible && interferenceEligibility.canClaimMore && (
@@ -423,15 +391,54 @@ export default function FullSetsPage() {
 
             {/* Inner States Grid */}
             <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 uppercase tracking-wide">Inner States Collection</h3>
+
+            {/* Metadata Attribute Filters */}
+            {nfts.length > 0 && (
+              <div className="mb-4 p-3 sm:p-4 bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-xs sm:text-sm text-gray-500 uppercase tracking-wide font-medium">Filter by attributes</p>
+                  {hasActiveFilters && (
+                    <button
+                      onClick={() => setFilters({})}
+                      className="text-xs text-[#00D4FF] hover:text-[#4FFFDF] transition-colors"
+                    >
+                      Clear all
+                    </button>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+                  {FILTER_ATTRIBUTES.map((attr) => {
+                    const options = filterOptions[attr] || [];
+                    if (options.length === 0) return null;
+                    return (
+                      <select
+                        key={attr}
+                        value={filters[attr] || ''}
+                        onChange={(e) => setFilters((prev) => ({ ...prev, [attr]: e.target.value }))}
+                        className="bg-black border border-[#1a1a1a] rounded-lg px-2 py-1.5 text-xs sm:text-sm text-white focus:border-[#00D4FF]/50 focus:outline-none transition-colors cursor-pointer"
+                      >
+                        <option value="">{attr} (All)</option>
+                        {options.map((val) => (
+                          <option key={val} value={val}>{val}</option>
+                        ))}
+                      </select>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
               {INNER_STATES.map((state) => {
-                const status = fullSetStatus.find(s => s.innerState === state);
-                const owned = status?.owned || false;
-                const count = status?.count || 0;
+                // Use filtered counts when filters are active, otherwise use the full set status
+                const filtered = filteredStateCounts[state];
+                const baseStatus = fullSetStatus.find(s => s.innerState === state);
+                const count = hasActiveFilters ? (filtered?.count || 0) : (baseStatus?.count || 0);
+                const owned = count > 0;
                 const listings = openSeaListings[state] || [];
-                
+
                 return (
-                  <div 
+                  <div
                     key={state}
                     className={`card p-4 ${owned ? 'full-set-complete' : 'full-set-incomplete'}`}
                   >
@@ -446,8 +453,8 @@ export default function FullSetsPage() {
                         <X className="w-4 h-4 sm:w-5 sm:h-5 text-red-400" />
                       )}
                     </div>
-                    
-                    {!owned && (
+
+                    {!owned && !hasActiveFilters && (
                       <div className="mt-3 sm:mt-4">
                         <p className="text-xs sm:text-sm text-gray-500 mb-2">Available on OpenSea:</p>
                         {loadingListings ? (
@@ -498,6 +505,12 @@ export default function FullSetsPage() {
                             <ExternalLink className="w-3 h-3" />
                           </a>
                         )}
+                      </div>
+                    )}
+
+                    {!owned && hasActiveFilters && (
+                      <div className="mt-2">
+                        <p className="text-xs text-gray-600">No NFTs match the selected filters</p>
                       </div>
                     )}
                   </div>
