@@ -32,10 +32,7 @@ export const TEMPLATE_FORMATS: Record<string, AspectRatio[]> = {
   'side-by-side':       ['square', 'landscape'],
   'vertical':           ['square', 'portrait'],
   'gif-transition':     ['square', 'landscape', 'portrait'],
-  'split-reveal':       ['square', 'landscape', 'portrait'],
   'frame-overlay':      ['square', 'landscape', 'portrait'],
-  'glitch-wipe':        ['square', 'landscape'],
-  'reveal-card':        ['square', 'portrait'],
   'slider-horizontal':  ['square', 'landscape', 'portrait'],
   'slider-vertical':    ['square', 'landscape', 'portrait'],
   'slider-diagonal':    ['square', 'landscape', 'portrait'],
@@ -215,87 +212,6 @@ export function renderVerticalFrame(
  * SPLIT — Vertical 50/50 split (before left, after right) with glowing divider
  * Clean layout: minimal text, no clutter
  */
-export function renderSplitRevealFrame(
-  ctx: CanvasRenderingContext2D,
-  beforeImg: any,
-  afterImg: any,
-  text: string,
-  networkStatus: string,
-  assets: BrandingAssets,
-  cW: number = SIZE,
-  cH: number = SIZE,
-) {
-  const padding = cW * 0.04;
-  const imgTop = cH * 0.10;
-  const imgBottom = cH * 0.88;
-  const imgH = imgBottom - imgTop;
-  const gap = 4;
-  const leftX = padding;
-  const rightX = cW / 2 + gap / 2;
-  const leftW = cW / 2 - gap / 2 - padding;
-  const rightW = cW / 2 - gap / 2 - padding;
-
-  if (beforeImg) {
-    ctx.save();
-    drawRoundedRect(ctx, leftX, imgTop, leftW, imgH, 16);
-    ctx.clip();
-    drawImageCover(ctx, beforeImg, leftX, imgTop, leftW, imgH);
-    ctx.restore();
-  }
-
-  if (afterImg) {
-    ctx.save();
-    drawRoundedRect(ctx, rightX, imgTop, rightW, imgH, 16);
-    ctx.clip();
-    drawImageCover(ctx, afterImg, rightX, imgTop, rightW, imgH);
-    ctx.restore();
-  }
-
-  ctx.save();
-  ctx.strokeStyle = COLORS.cyan;
-  ctx.lineWidth = 3;
-  ctx.shadowColor = COLORS.cyan;
-  ctx.shadowBlur = 25;
-  ctx.beginPath();
-  ctx.moveTo(cW / 2, imgTop);
-  ctx.lineTo(cW / 2, imgBottom);
-  ctx.stroke();
-  ctx.restore();
-
-  ctx.save();
-  const bandW = 6;
-  for (let y = imgTop; y < imgBottom; y += 12) {
-    const stripH = 4 + Math.floor(Math.random() * 4);
-    const offset = Math.random() > 0.5 ? bandW : -bandW;
-    ctx.fillStyle = `${COLORS.cyan}20`;
-    ctx.fillRect(cW / 2 - bandW / 2 + offset, y, bandW, stripH);
-  }
-  ctx.restore();
-
-  // Adapt label size for narrow canvases to avoid watermark collision
-  const isNarrow = cW < 800;
-  const splitLabelSize = isNarrow ? 16 : 22;
-  ctx.font = `bold ${splitLabelSize}px ${BRAND_FONT}`;
-  ctx.textBaseline = 'middle';
-  ctx.fillStyle = '#666666';
-  ctx.textAlign = 'center';
-  ctx.fillText('LEGACY', leftX + leftW / 2, cH * 0.055);
-  ctx.fillStyle = COLORS.cyan;
-  // For narrow canvases, left-align the right label to avoid NODES watermark
-  if (isNarrow) {
-    ctx.textAlign = 'left';
-    ctx.fillText(getInterferenceLabel(networkStatus), rightX + 8, cH * 0.055);
-  } else {
-    ctx.fillText(getInterferenceLabel(networkStatus), rightX + rightW / 2, cH * 0.055);
-  }
-
-  if (text) drawTextWithGlow(ctx, text, cW / 2, cH * 0.89, 28);
-
-  drawArtIsNeverFinished(ctx, cW, cH, networkStatus, !!text);
-  drawDRBanner(ctx, assets, networkStatus, cW, cH);
-  drawBrandedWatermark(ctx, assets, cW, cH);
-}
-
 /**
  * FRAME OVERLAY — Large after image centered, small before PIP at bottom-left
  */
@@ -348,183 +264,6 @@ export function renderFrameOverlayFrame(
 }
 
 /**
- * GLITCH WIPE — Before left half, After right half, glitchy center divider
- */
-export function renderGlitchWipeFrame(
-  ctx: CanvasRenderingContext2D,
-  beforeImg: any,
-  afterImg: any,
-  text: string,
-  networkStatus: string,
-  assets: BrandingAssets,
-  cW: number = SIZE,
-  cH: number = SIZE,
-) {
-  const imgTop = cH * 0.10;
-  const imgBottom = cH * 0.85;
-  const imgH = imgBottom - imgTop;
-  const padding = cW * 0.04;
-  const glitchBandW = cW * 0.05;
-
-  const leftW = (cW - padding * 2 - glitchBandW) / 2;
-  const rightW = leftW;
-  const leftX = padding;
-  const rightX = cW - padding - rightW;
-  const centerX = leftX + leftW;
-
-  if (beforeImg) {
-    ctx.save();
-    drawRoundedRect(ctx, leftX, imgTop, leftW, imgH, 12);
-    ctx.clip();
-    drawImageCover(ctx, beforeImg, leftX, imgTop, leftW, imgH);
-    ctx.restore();
-  }
-
-  if (afterImg) {
-    ctx.save();
-    drawRoundedRect(ctx, rightX, imgTop, rightW, imgH, 12);
-    ctx.clip();
-    drawImageCover(ctx, afterImg, rightX, imgTop, rightW, imgH);
-    ctx.restore();
-  }
-
-  const stripCount = 40;
-  const stripH = imgH / stripCount;
-  for (let i = 0; i < stripCount; i++) {
-    const y = imgTop + i * stripH;
-    const useAfter = Math.random() > 0.5;
-    const offset = (Math.random() - 0.5) * glitchBandW * 0.8;
-    const img = useAfter ? afterImg : beforeImg;
-    if (img) {
-      ctx.save();
-      ctx.beginPath();
-      ctx.rect(centerX, y, glitchBandW, stripH);
-      ctx.clip();
-      const srcScale = img.width / cW;
-      const srcY = (y - imgTop) / imgH * img.height;
-      const srcH = stripH / imgH * img.height;
-      const srcX = (centerX + offset) / cW * img.width;
-      const srcW = glitchBandW / cW * img.width;
-      ctx.drawImage(img, Math.max(0, srcX * srcScale), srcY, Math.max(1, srcW), srcH, centerX + offset, y, glitchBandW, stripH);
-      ctx.restore();
-    }
-
-    if (Math.random() > 0.6) {
-      ctx.fillStyle = `${COLORS.cyan}15`;
-      ctx.fillRect(centerX, y, glitchBandW, 2);
-    }
-  }
-
-  ctx.save();
-  ctx.strokeStyle = `${COLORS.cyan}40`;
-  ctx.lineWidth = 1;
-  ctx.shadowColor = COLORS.cyan;
-  ctx.shadowBlur = 15;
-  ctx.beginPath();
-  ctx.moveTo(centerX, imgTop);
-  ctx.lineTo(centerX, imgBottom);
-  ctx.moveTo(centerX + glitchBandW, imgTop);
-  ctx.lineTo(centerX + glitchBandW, imgBottom);
-  ctx.stroke();
-  ctx.restore();
-
-  ctx.font = `bold 22px ${BRAND_FONT}`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillStyle = '#666666';
-  ctx.fillText('LEGACY', leftX + leftW / 2, cH * 0.055);
-  ctx.fillStyle = COLORS.cyan;
-  ctx.fillText(getInterferenceLabel(networkStatus), rightX + rightW / 2, cH * 0.055);
-
-  if (text) drawTextWithGlow(ctx, text, cW / 2, cH * 0.89, 30);
-
-  drawArtIsNeverFinished(ctx, cW, cH, networkStatus, !!text);
-  drawDRBanner(ctx, assets, networkStatus, cW, cH);
-  drawBrandedWatermark(ctx, assets, cW, cH);
-}
-
-/**
- * REVEAL CARD — Top half before, bottom half after, horizontal glitch separator
- */
-export function renderRevealCardFrame(
-  ctx: CanvasRenderingContext2D,
-  beforeImg: any,
-  afterImg: any,
-  text: string,
-  networkStatus: string,
-  assets: BrandingAssets,
-  cW: number = SIZE,
-  cH: number = SIZE,
-) {
-  const padding = cW * 0.06;
-  const cardW = cW - padding * 2;
-  const glitchH = cH * 0.03;
-  const topH = (cH * 0.80 - glitchH) / 2;
-  const botH = topH;
-  const topY = cH * 0.08;
-  const botY = topY + topH + glitchH;
-
-  ctx.fillStyle = '#0d0d0d';
-  drawRoundedRect(ctx, padding - 4, topY - 4, cardW + 8, topH + glitchH + botH + 8, 20);
-  ctx.fill();
-
-  if (beforeImg) {
-    ctx.save();
-    drawRoundedRect(ctx, padding, topY, cardW, topH, 12);
-    ctx.clip();
-    drawImageCover(ctx, beforeImg, padding, topY, cardW, topH);
-    ctx.restore();
-  }
-
-  if (afterImg) {
-    ctx.save();
-    drawRoundedRect(ctx, padding, botY, cardW, botH, 12);
-    ctx.clip();
-    drawImageCover(ctx, afterImg, padding, botY, cardW, botH);
-    ctx.restore();
-  }
-
-  const bandY = topY + topH;
-  ctx.fillStyle = '#000000';
-  ctx.fillRect(padding, bandY, cardW, glitchH);
-
-  const stripW = cardW / 30;
-  for (let i = 0; i < 30; i++) {
-    const x = padding + i * stripW;
-    const h = glitchH * (0.3 + Math.random() * 0.7);
-    const yOff = (glitchH - h) * Math.random();
-    ctx.fillStyle = Math.random() > 0.5 ? `${COLORS.cyan}30` : `${COLORS.teal}20`;
-    ctx.fillRect(x, bandY + yOff, stripW - 1, h);
-  }
-
-  ctx.save();
-  ctx.strokeStyle = COLORS.cyan;
-  ctx.lineWidth = 2;
-  ctx.shadowColor = COLORS.cyan;
-  ctx.shadowBlur = 20;
-  ctx.beginPath();
-  ctx.moveTo(padding, bandY + glitchH / 2);
-  ctx.lineTo(padding + cardW, bandY + glitchH / 2);
-  ctx.stroke();
-  ctx.restore();
-
-  ctx.font = `bold 18px ${BRAND_FONT}`;
-  ctx.textBaseline = 'middle';
-  ctx.fillStyle = '#666666';
-  ctx.textAlign = 'left';
-  ctx.fillText('LEGACY', padding + 12, bandY - 14);
-  ctx.fillStyle = COLORS.cyan;
-  ctx.textAlign = 'right';
-  ctx.fillText(getInterferenceLabel(networkStatus), padding + cardW - 12, bandY + glitchH + 14);
-
-  if (text) drawTextWithGlow(ctx, text, cW / 2, cH * 0.89, 28);
-
-  drawArtIsNeverFinished(ctx, cW, cH, networkStatus, !!text);
-  drawDRBanner(ctx, assets, networkStatus, cW, cH);
-  drawBrandedWatermark(ctx, assets, cW, cH);
-}
-
-/**
  * Render any template by name. Dispatches to the correct renderer.
  */
 export function renderTemplate(
@@ -545,17 +284,8 @@ export function renderTemplate(
     case 'vertical':
       renderVerticalFrame(ctx, beforeImg, afterImg, text, networkStatus, assets, canvasW, canvasH);
       break;
-    case 'split-reveal':
-      renderSplitRevealFrame(ctx, beforeImg, afterImg, text, networkStatus, assets, canvasW, canvasH);
-      break;
     case 'frame-overlay':
       renderFrameOverlayFrame(ctx, beforeImg, afterImg, text, networkStatus, assets, canvasW, canvasH);
-      break;
-    case 'glitch-wipe':
-      renderGlitchWipeFrame(ctx, beforeImg, afterImg, text, networkStatus, assets, canvasW, canvasH);
-      break;
-    case 'reveal-card':
-      renderRevealCardFrame(ctx, beforeImg, afterImg, text, networkStatus, assets, canvasW, canvasH);
       break;
     default:
       renderSideBySideFrame(ctx, beforeImg, afterImg, text, networkStatus, assets, canvasW, canvasH);

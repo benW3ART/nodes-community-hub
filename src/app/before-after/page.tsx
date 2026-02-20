@@ -18,13 +18,10 @@ import {
   ArrowRight,
   ArrowDown,
   Film,
-  Scissors,
   Sparkles,
   ChevronDown,
   ChevronUp,
   Layers,
-  Zap,
-  CreditCard,
   MoveHorizontal,
   MoveVertical,
   MoveDiagonal2,
@@ -38,10 +35,7 @@ const TEMPLATE_FORMATS: Record<string, AspectRatio[]> = {
   'side-by-side':       ['square', 'landscape'],
   'vertical':           ['square', 'portrait'],
   'gif-transition':     ['square', 'landscape', 'portrait'],
-  'split-reveal':       ['square', 'landscape', 'portrait'],
   'frame-overlay':      ['square', 'landscape', 'portrait'],
-  'glitch-wipe':        ['square', 'landscape'],
-  'reveal-card':        ['square', 'portrait'],
   'slider-horizontal':  ['square', 'landscape', 'portrait'],
   'slider-vertical':    ['square', 'landscape', 'portrait'],
   'slider-diagonal':    ['square', 'landscape', 'portrait'],
@@ -65,10 +59,7 @@ const TEMPLATES: BeforeAfterTemplate[] = [
   { id: 'side-by-side', name: 'Side by Side', description: 'Before left, After right', icon: <ArrowRight className="w-4 h-4" /> },
   { id: 'vertical', name: 'Vertical', description: 'Before top, After bottom', icon: <ArrowDown className="w-4 h-4" /> },
   { id: 'gif-transition', name: 'Transition', description: 'Animated glitch wipe', icon: <Film className="w-4 h-4" />, forceGif: true },
-  { id: 'split-reveal', name: 'Split', description: 'Vertical 50/50 split', icon: <Scissors className="w-4 h-4" /> },
   { id: 'frame-overlay', name: 'Frame', description: 'Full image with PIP', icon: <Layers className="w-4 h-4" /> },
-  { id: 'glitch-wipe', name: 'Glitch', description: 'Glitchy center divider', icon: <Zap className="w-4 h-4" /> },
-  { id: 'reveal-card', name: 'Card', description: 'Top/bottom reveal card', icon: <CreditCard className="w-4 h-4" /> },
   { id: 'slider-horizontal', name: 'Slider H', description: 'Horizontal slider reveal', icon: <MoveHorizontal className="w-4 h-4" />, forceGif: true },
   { id: 'slider-vertical', name: 'Slider V', description: 'Vertical slider reveal', icon: <MoveVertical className="w-4 h-4" />, forceGif: true },
   { id: 'slider-diagonal', name: 'Slider D', description: 'Diagonal slider reveal', icon: <MoveDiagonal2 className="w-4 h-4" />, forceGif: true },
@@ -362,37 +353,6 @@ export default function BeforeAfterPage() {
       );
     }
 
-    // ---- SPLIT ----
-    if (selectedTemplate.id === 'split-reveal') {
-      return (
-        <div className="relative overflow-hidden bg-black" style={{ width: w, height: h }}>
-          {bgGlow}
-          {/* Labels */}
-          <div className="absolute top-1 left-0 right-0 flex justify-between px-4 z-20">
-            <span className="text-[8px] text-gray-500 font-bold">LEGACY</span>
-            <span className="text-[8px] text-[#00D4FF] font-bold">{networkStatus.toUpperCase()}</span>
-          </div>
-          {/* 50/50 split */}
-          <div className="absolute flex" style={{ top: '8%', bottom: captionEl ? '10%' : '4%', left: '3%', right: '3%' }}>
-            <div className="relative flex-1 overflow-hidden rounded-l-lg">
-              {beforeSrc ? (
-                <Image src={beforeSrc} alt="Before" fill unoptimized className="object-cover" />
-              ) : (
-                <div className="w-full h-full bg-[#0d0d0d] flex items-center justify-center">
-                  <span className="text-gray-600 text-[8px]">No image</span>
-                </div>
-              )}
-            </div>
-            <div className="w-[2px] bg-[#00D4FF] shadow-[0_0_10px_rgba(0,212,255,0.5)] z-10 shrink-0" />
-            <div className="relative flex-1 overflow-hidden rounded-r-lg">
-              <Image src={afterSrc} alt="After" fill unoptimized className="object-cover" />
-            </div>
-          </div>
-          {captionEl && <div className="absolute bottom-1 left-0 right-0 z-20">{captionEl}</div>}
-        </div>
-      );
-    }
-
     // ---- FRAME OVERLAY ----
     if (selectedTemplate.id === 'frame-overlay') {
       const mainSize = Math.floor(Math.min(w, h) * 0.55);
@@ -432,75 +392,6 @@ export default function BeforeAfterPage() {
             </div>
           </div>
           {captionEl && <div className="absolute bottom-2 left-0 right-0 z-20">{captionEl}</div>}
-        </div>
-      );
-    }
-
-    // ---- GLITCH WIPE ----
-    if (selectedTemplate.id === 'glitch-wipe') {
-      return (
-        <div className="relative overflow-hidden bg-black" style={{ width: w, height: h }}>
-          {bgGlow}
-          {/* Labels */}
-          <div className="absolute top-1 left-0 right-0 flex justify-between px-4 z-20">
-            <span className="text-[8px] text-gray-500 font-bold">LEGACY</span>
-            <span className="text-[8px] text-[#00D4FF] font-bold">{networkStatus.toUpperCase()}</span>
-          </div>
-          {/* Two halves with glitch band */}
-          <div className="absolute flex" style={{ top: '8%', bottom: captionEl ? '10%' : '4%', left: '3%', right: '3%' }}>
-            <div className="relative flex-1 overflow-hidden rounded-l-lg">
-              {beforeSrc ? (
-                <Image src={beforeSrc} alt="Before" fill unoptimized className="object-cover" />
-              ) : (
-                <div className="w-full h-full bg-[#0d0d0d]" />
-              )}
-            </div>
-            {/* Glitch band */}
-            <div className="w-3 bg-black relative overflow-hidden shrink-0">
-              <div className="absolute inset-y-0 left-0 w-px bg-[#00D4FF]/30" />
-              <div className="absolute inset-y-0 right-0 w-px bg-[#00D4FF]/30" />
-              {Array.from({ length: 12 }).map((_, i) => (
-                <div key={i} className="absolute w-full bg-[#00D4FF]/15" style={{ top: `${(i / 12) * 100}%`, height: `${100 / 12}%`, opacity: 0.1 + (i % 3) * 0.15 }} />
-              ))}
-            </div>
-            <div className="relative flex-1 overflow-hidden rounded-r-lg">
-              <Image src={afterSrc} alt="After" fill unoptimized className="object-cover" />
-            </div>
-          </div>
-          {captionEl && <div className="absolute bottom-1 left-0 right-0 z-20">{captionEl}</div>}
-        </div>
-      );
-    }
-
-    // ---- REVEAL CARD ----
-    if (selectedTemplate.id === 'reveal-card') {
-      return (
-        <div className="relative overflow-hidden bg-black" style={{ width: w, height: h }}>
-          {bgGlow}
-          <div className="absolute flex flex-col" style={{ top: '4%', bottom: captionEl ? '8%' : '4%', left: '5%', right: '5%' }}>
-            {/* Before - top half */}
-            <div className="relative flex-1 overflow-hidden rounded-t-lg">
-              {beforeSrc ? (
-                <Image src={beforeSrc} alt="Before" fill unoptimized className="object-cover" />
-              ) : (
-                <div className="w-full h-full bg-[#0d0d0d] flex items-center justify-center">
-                  <span className="text-gray-600 text-[8px]">No image</span>
-                </div>
-              )}
-              <div className="absolute bottom-0.5 left-1 text-[7px] text-gray-400 font-bold drop-shadow-lg">LEGACY</div>
-            </div>
-            {/* Glitch separator */}
-            <div className="h-[6px] bg-black relative overflow-hidden shrink-0">
-              <div className="absolute inset-0 bg-gradient-to-r from-[#4FFFDF]/20 via-[#00D4FF]/30 to-[#4FFFDF]/20" />
-              <div className="absolute inset-x-0 top-1/2 h-px bg-[#00D4FF] shadow-[0_0_6px_rgba(0,212,255,0.5)]" />
-            </div>
-            {/* After - bottom half */}
-            <div className="relative flex-1 overflow-hidden rounded-b-lg">
-              <Image src={afterSrc} alt="After" fill unoptimized className="object-cover" />
-              <div className="absolute top-0.5 right-1 text-[7px] text-[#00D4FF] font-bold drop-shadow-lg">{networkStatus.toUpperCase()}</div>
-            </div>
-          </div>
-          {captionEl && <div className="absolute bottom-0.5 left-0 right-0 z-20">{captionEl}</div>}
         </div>
       );
     }
@@ -688,7 +579,7 @@ export default function BeforeAfterPage() {
                 {/* Template Selector */}
                 <div>
                   <h4 className="font-semibold text-xs sm:text-sm uppercase tracking-wide mb-3">Template</h4>
-                  <div className="grid grid-cols-5 sm:grid-cols-10 gap-2">
+                  <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
                     {TEMPLATES.map((tmpl) => (
                       <button
                         key={tmpl.id}
