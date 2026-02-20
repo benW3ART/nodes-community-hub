@@ -1,17 +1,20 @@
 /**
  * Calculate global rarity for all NODES NFTs
- * Run: npx ts-node scripts/calculate-rarity.ts
+ * Run: npx tsx scripts/calculate-rarity.ts
  * Or: npm run calculate-rarity
- * 
- * This generates public/data/rarity.json with pre-calculated rarity scores
+ *
+ * This generates public/data/rarity.json with pre-calculated rarity scores.
+ * Uses the LIVE metadata API (same source as gallery/full-sets) to ensure
+ * counts reflect the current on-chain state after interferences.
  */
 
 import * as fs from 'fs';
 import * as path from 'path';
 
-const ALCHEMY_API_KEY = process.env.NEXT_PUBLIC_ALCHEMY_API_KEY;
-const NODES_CONTRACT = '0x95bc4c2e01c2e2d9e537e7a9fe58187e88dd8019';
-const ALCHEMY_BASE_URL = `https://base-mainnet.g.alchemy.com/nft/v3/${ALCHEMY_API_KEY}`;
+const TOTAL_SUPPLY = 3333;
+const METADATA_API_URL = 'https://nodes-metadata-api.10amstudios.xyz/metadata';
+const BATCH_SIZE = 20;
+const BATCH_DELAY_MS = 100;
 
 interface NFTAttribute {
   trait_type: string;
@@ -33,38 +36,43 @@ interface TraitCount {
 
 async function fetchAllNFTs(): Promise<{ tokenId: string; attributes: NFTAttribute[] }[]> {
   const nfts: { tokenId: string; attributes: NFTAttribute[] }[] = [];
-  let pageKey: string | undefined;
-  let page = 0;
-  
-  console.log('Fetching all NFTs from Alchemy...');
-  
-  do {
-    const url = `${ALCHEMY_BASE_URL}/getNFTsForContract?contractAddress=${NODES_CONTRACT}&withMetadata=true&limit=100${pageKey ? `&pageKey=${pageKey}` : ''}`;
-    
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch NFTs: ${response.statusText}`);
+  let failed = 0;
+
+  console.log(`Fetching all ${TOTAL_SUPPLY} NFTs from live metadata API...`);
+
+  for (let batchStart = 1; batchStart <= TOTAL_SUPPLY; batchStart += BATCH_SIZE) {
+    const batchEnd = Math.min(batchStart + BATCH_SIZE - 1, TOTAL_SUPPLY);
+    const promises: Promise<void>[] = [];
+
+    for (let tokenId = batchStart; tokenId <= batchEnd; tokenId++) {
+      promises.push(
+        fetch(`${METADATA_API_URL}/${tokenId}`, { headers: { Accept: 'application/json' } })
+          .then(async (res) => {
+            if (!res.ok) {
+              failed++;
+              return;
+            }
+            const data = await res.json();
+            const attributes: NFTAttribute[] = data.attributes || [];
+            nfts.push({ tokenId: String(tokenId), attributes });
+          })
+          .catch(() => { failed++; })
+      );
     }
-    
-    const data = await response.json();
-    
-    for (const nft of data.nfts || []) {
-      const tokenId = nft.tokenId || '';
-      const attributes: NFTAttribute[] = nft.raw?.metadata?.attributes || [];
-      
-      nfts.push({ tokenId, attributes });
+
+    await Promise.all(promises);
+
+    if (batchEnd % 200 === 0 || batchEnd === TOTAL_SUPPLY) {
+      console.log(`  ${nfts.length}/${TOTAL_SUPPLY} fetched (${failed} failed)...`);
     }
-    
-    pageKey = data.pageKey;
-    page++;
-    console.log(`  Page ${page}: ${nfts.length} NFTs fetched...`);
-    
-    // Rate limiting
-    await new Promise(resolve => setTimeout(resolve, 200));
-    
-  } while (pageKey);
-  
-  console.log(`Total NFTs fetched: ${nfts.length}`);
+
+    // Rate limiting between batches
+    if (batchEnd < TOTAL_SUPPLY) {
+      await new Promise(resolve => setTimeout(resolve, BATCH_DELAY_MS));
+    }
+  }
+
+  console.log(`Total NFTs fetched: ${nfts.length} (${failed} failed)`);
   return nfts;
 }
 
@@ -130,13 +138,8 @@ function calculateRarityScores(
 }
 
 async function main() {
-  if (!ALCHEMY_API_KEY) {
-    console.error('Error: NEXT_PUBLIC_ALCHEMY_API_KEY not set');
-    console.log('Run with: NEXT_PUBLIC_ALCHEMY_API_KEY=your_key npx ts-node scripts/calculate-rarity.ts');
-    process.exit(1);
-  }
-  
-  console.log('=== NODES Rarity Calculator ===\n');
+  console.log('=== NODES Rarity Calculator ===');
+  console.log('Source: Live metadata API (nodes-metadata-api.10amstudios.xyz)\n');
   
   // Fetch all NFTs
   const nfts = await fetchAllNFTs();
