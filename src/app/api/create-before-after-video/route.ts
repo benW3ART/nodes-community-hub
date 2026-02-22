@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createCanvas } from 'canvas';
 import { exec } from 'child_process';
+import { checkRateLimit, acquireConcurrentSlot, releaseConcurrentSlot, serverBusyResponse } from '@/lib/rate-limit';
 import { promisify } from 'util';
 import * as fs from 'fs/promises';
 import * as path from 'path';
@@ -46,6 +47,10 @@ interface BeforeAfterVideoRequest {
 }
 
 export async function POST(request: NextRequest) {
+  const limited = checkRateLimit(request, 'video');
+  if (limited) return limited;
+  if (!acquireConcurrentSlot()) return serverBusyResponse();
+
   const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'nodes-ba-video-'));
 
   try {
@@ -267,6 +272,7 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   } finally {
+    releaseConcurrentSlot();
     try {
       await fs.rm(tmpDir, { recursive: true, force: true });
     } catch (e) {

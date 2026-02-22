@@ -1,19 +1,20 @@
 import type { Metadata } from 'next';
-import { Inter, Space_Grotesk } from 'next/font/google';
+import { Inter, Space_Grotesk, Orbitron } from 'next/font/google';
 import { ClientProviders } from '@/components/ClientProviders';
 import './globals.css';
 
 const spaceGrotesk = Space_Grotesk({ subsets: ['latin'] });
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
+const orbitron = Orbitron({ subsets: ['latin'], variable: '--font-orbitron' });
 
 export const metadata: Metadata = {
   title: 'NODES Community Hub',
   description: '3,333 digital identities on Base - retro-inspired characters born from internet culture. Gallery, Grid Creator, Banner Creator, Leaderboard & Full Sets tracker.',
   metadataBase: new URL('https://nodes-community-hub-production.up.railway.app'),
   icons: {
-    icon: '/favicon.png',
-    shortcut: '/favicon.png',
-    apple: '/favicon.png',
+    icon: '/favicon.ico',
+    shortcut: '/favicon.ico',
+    apple: '/favicon.ico',
   },
   openGraph: {
     title: 'NODES Community Hub',
@@ -45,7 +46,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
-      <body className={`${spaceGrotesk.className} ${inter.variable} min-h-screen bg-black`}>
+      <body className={`${spaceGrotesk.className} ${inter.variable} ${orbitron.variable} min-h-screen bg-black`}>
         <ClientProviders>
           {children}
         </ClientProviders>

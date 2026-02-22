@@ -6,6 +6,7 @@ import {
   prerenderGifFrames,
   getFrameAtTime,
 } from '@/lib/canvas-utils';
+import { checkRateLimit, acquireConcurrentSlot, releaseConcurrentSlot, serverBusyResponse } from '@/lib/rate-limit';
 
 interface GridCell {
   image: string;
@@ -33,6 +34,10 @@ async function loadStaticImage(url: string): Promise<CanvasImage | null> {
 }
 
 export async function POST(request: NextRequest) {
+  const limited = checkRateLimit(request, 'gif');
+  if (limited) return limited;
+  if (!acquireConcurrentSlot()) return serverBusyResponse();
+
   try {
     const body = await request.json();
     const { gridConfig, cells, gridStyle: rawGridStyle }: { gridConfig: GridConfig; cells: GridCell[]; gridStyle?: { exportGap?: number; bgColor?: string; border?: boolean } } = body;
@@ -238,5 +243,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Create GIF error:', error);
     return NextResponse.json({ error: 'Failed to create GIF: ' + (error instanceof Error ? error.message : 'Unknown') }, { status: 500 });
+  } finally {
+    releaseConcurrentSlot();
   }
 }

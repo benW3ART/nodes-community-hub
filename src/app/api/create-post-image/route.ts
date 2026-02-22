@@ -12,6 +12,7 @@ import {
   drawWatermark,
   drawSubtleGlows,
 } from '@/lib/canvas-utils';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 interface PostRequest {
   template: string;
@@ -266,6 +267,9 @@ async function renderShowcase(ctx: CanvasRenderingContext2D, nfts: { image: stri
 }
 
 export async function POST(request: NextRequest) {
+  const limited = checkRateLimit(request, 'image');
+  if (limited) return limited;
+
   try {
     const body: PostRequest = await request.json();
     const { template, nfts, text, bgColor, showWatermark = true } = body;

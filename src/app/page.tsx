@@ -6,7 +6,7 @@ import { Header } from '@/components/Header';
 import { NetworkHelper } from '@/components/NetworkHelper';
 import { useWalletAddress } from '@/hooks/useWalletAddress';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
-import { ViewOnlyLink } from '@/components/ViewOnlyInput';
+import { ViewOnlyLink, ViewOnlyInput } from '@/components/ViewOnlyInput';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
@@ -18,7 +18,9 @@ import {
   Trophy,
   Sparkles,
   GitCompareArrows,
-  ArrowRight
+  ArrowRight,
+  Wallet,
+  ClipboardPaste
 } from 'lucide-react';
 import { TwitterFeed } from '@/components/TwitterFeed';
 
@@ -30,22 +32,10 @@ const features = [
     description: 'View all your NODES NFTs in one place',
   },
   {
-    href: '/post-creator',
-    icon: Layout,
-    title: 'Post Creator',
-    description: 'Create stunning posts for X with your NFTs',
-  },
-  {
     href: '/grid-creator',
     icon: Grid3X3,
     title: 'Grid Montage',
     description: 'Create grid montages and visual compositions',
-  },
-  {
-    href: '/banner-creator',
-    icon: Sparkles,
-    title: 'Banner Creator',
-    description: 'Design X banners featuring your NODES',
   },
   {
     href: '/before-after',
@@ -58,6 +48,18 @@ const features = [
     icon: Target,
     title: 'Full Set Tracker',
     description: 'Track your Inner State collections',
+  },
+  {
+    href: '/post-creator',
+    icon: Layout,
+    title: 'Post Creator',
+    description: 'Create stunning posts for X with your NFTs',
+  },
+  {
+    href: '/banner-creator',
+    icon: Sparkles,
+    title: 'Banner Creator',
+    description: 'Design X banners featuring your NODES',
   },
   {
     href: '/leaderboard',
@@ -77,6 +79,7 @@ export default function Home() {
   const { isConnected } = useWalletAddress();
   const [characterImages, setCharacterImages] = useState<Record<string, string>>({});
   const [typeCounts, setTypeCounts] = useState<Record<string, number>>({});
+  const [floorPrice, setFloorPrice] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchImages = async () => {
@@ -103,6 +106,15 @@ export default function Home() {
       .then(res => res.json())
       .then(data => {
         if (data?.traitCounts?.Type) setTypeCounts(data.traitCounts.Type);
+      })
+      .catch(() => { /* ignore */ });
+
+    fetch('/api/opensea/floor-price')
+      .then(res => res.json())
+      .then(data => {
+        if (data?.floorPrice != null) {
+          setFloorPrice(`~${Number(data.floorPrice).toFixed(3)} ETH`);
+        }
       })
       .catch(() => { /* ignore */ });
   }, []);
@@ -140,9 +152,18 @@ export default function Home() {
           </p>
 
           {!isConnected ? (
-            <div className="flex flex-col items-center gap-3">
-              <ConnectButton />
-              <ViewOnlyLink />
+            <div className="flex flex-col items-center gap-6 w-full max-w-lg mx-auto">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full px-4">
+                {/* Option 1: Connect Wallet */}
+                <div className="flex flex-col items-center gap-2">
+                  <ConnectButton />
+                </div>
+                {/* Option 2: Paste Address */}
+                <ViewOnlyLink variant="button" />
+              </div>
+              <p className="text-xs text-gray-500">
+                Both options give you full access to all features.
+              </p>
             </div>
           ) : (
             <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 px-4">
@@ -202,7 +223,7 @@ export default function Home() {
               <div className="text-gray-500 text-xs sm:text-sm uppercase tracking-wide">Blockchain</div>
             </div>
             <div className="p-2 sm:p-0">
-              <div className="text-xl sm:text-3xl font-bold text-[#4FFFDF]">~0.015 ETH</div>
+              <div className="text-xl sm:text-3xl font-bold text-[#4FFFDF]">{floorPrice ?? '—'}</div>
               <div className="text-gray-500 text-xs sm:text-sm uppercase tracking-wide">Floor Price</div>
             </div>
           </div>

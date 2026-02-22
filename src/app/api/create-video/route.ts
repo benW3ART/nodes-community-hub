@@ -6,6 +6,7 @@ import { promisify } from 'util';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
+import { checkRateLimit, acquireConcurrentSlot, releaseConcurrentSlot, serverBusyResponse } from '@/lib/rate-limit';
 
 const execAsync = promisify(exec);
 
@@ -139,8 +140,12 @@ function getFrameAtTime(timestamps: number[], totalDuration: number, timeMs: num
 }
 
 export async function POST(request: NextRequest) {
+  const limited = checkRateLimit(request, 'video');
+  if (limited) return limited;
+  if (!acquireConcurrentSlot()) return serverBusyResponse();
+
   const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'nodes-video-'));
-  
+
   try {
     const body = await request.json();
     const { gridConfig, cells, gridStyle: rawGridStyle }: { gridConfig: GridConfig; cells: GridCell[]; gridStyle?: { exportGap?: number; bgColor?: string; border?: boolean } } = body;
@@ -331,7 +336,7 @@ export async function POST(request: NextRequest) {
     console.error('Create video error:', error);
     return NextResponse.json({ error: 'Failed to create video: ' + (error instanceof Error ? error.message : 'Unknown') }, { status: 500 });
   } finally {
-    // Cleanup temp directory
+    releaseConcurrentSlot();
     try {
       await fs.rm(tmpDir, { recursive: true, force: true });
     } catch (e) {

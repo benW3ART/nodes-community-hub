@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createCanvas } from 'canvas';
 import GIFEncoder from 'gif-encoder-2';
+import { checkRateLimit, acquireConcurrentSlot, releaseConcurrentSlot, serverBusyResponse } from '@/lib/rate-limit';
 import {
   COLORS,
   BRAND_FONT,
@@ -42,6 +43,10 @@ interface BeforeAfterRequest {
 }
 
 export async function POST(request: NextRequest) {
+  const limited = checkRateLimit(request, 'gif');
+  if (limited) return limited;
+  if (!acquireConcurrentSlot()) return serverBusyResponse();
+
   try {
     const body: BeforeAfterRequest = await request.json();
     const { template, beforeImage, afterImage, tokenId, nftName, networkStatus, text, outputFormat, aspectRatio = 'square' } = body;
@@ -368,5 +373,7 @@ export async function POST(request: NextRequest) {
       { error: 'Failed to create before/after image', details: String(error) },
       { status: 500 }
     );
+  } finally {
+    releaseConcurrentSlot();
   }
 }

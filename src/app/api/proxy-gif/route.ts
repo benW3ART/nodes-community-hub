@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 export async function GET(request: NextRequest) {
+  const limited = checkRateLimit(request, 'proxy');
+  if (limited) return limited;
+
   const url = request.nextUrl.searchParams.get('url');
   
   if (!url) {

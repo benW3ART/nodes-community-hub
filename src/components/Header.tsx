@@ -24,11 +24,11 @@ import {
 const navItems = [
   { href: '/', label: 'Home', icon: Home },
   { href: '/gallery', label: 'Gallery', icon: ImageIcon },
-  { href: '/post-creator', label: 'Posts', icon: Layout },
   { href: '/grid-creator', label: 'Grids', icon: Grid3X3 },
-  { href: '/banner-creator', label: 'Banners', icon: Layout },
   { href: '/before-after', label: 'Before/After', icon: GitCompareArrows },
   { href: '/full-sets', label: 'Full Sets', icon: Target },
+  { href: '/post-creator', label: 'Posts', icon: Layout },
+  { href: '/banner-creator', label: 'Banners', icon: Layout },
   { href: '/leaderboard', label: 'Leaderboard', icon: Trophy },
 ];
 
