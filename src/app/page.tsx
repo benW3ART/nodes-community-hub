@@ -141,7 +141,7 @@ export default function Home() {
           
           <div className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-[#00D4FF]/10 border border-[#00D4FF]/30 mb-4 sm:mb-6">
             <span className="text-[#00D4FF] text-xs sm:text-sm font-medium tracking-wide">
-              Network
+              NODES Network
             </span>
           </div>
           
