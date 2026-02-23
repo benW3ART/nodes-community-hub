@@ -9,7 +9,7 @@ let leaderboardCache: {
   timestamp: number;
 } = { data: null, timestamp: 0 };
 
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
 
 interface LeaderboardResponse {
   topCollectors: {
@@ -135,20 +135,9 @@ export async function GET() {
     // Sort full set holders by sets count
     fullSetHolders.sort((a, b) => b.sets - a.sets);
     
-    // Get total supply (simple metadata call)
-    let totalSupply = 3333; // Default
-    try {
-      const statsResponse = await fetch(
-        `${ALCHEMY_BASE_URL}/getContractMetadata?contractAddress=${NODES_CONTRACT}`
-      );
-      if (statsResponse.ok) {
-        const statsData = await statsResponse.json();
-        totalSupply = parseInt(statsData.totalSupply) || 3333;
-      }
-    } catch {
-      // Use default
-    }
-    
+    // Total supply is fixed at 3333 — no need for an extra Alchemy call
+    const totalSupply = 3333;
+
     const response: LeaderboardResponse = {
       topCollectors,
       fullSetHolders: fullSetHolders.slice(0, 20).map((h, index) => ({

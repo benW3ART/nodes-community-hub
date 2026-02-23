@@ -1,10 +1,22 @@
 import { ALCHEMY_API_KEY, NODES_CONTRACT, INNER_STATES } from './constants';
+import { getCachedNFTs, setCachedNFTs } from './nft-cache';
 import type { NodeNFT, FullSetStatus } from '@/types/nft';
 
 const ALCHEMY_BASE_URL = `https://base-mainnet.g.alchemy.com/nft/v3/${ALCHEMY_API_KEY}`;
 
 // Use our proxy API to avoid CORS issues (browser → our server → metadata API)
 const METADATA_API_URL = '/api/metadata';
+
+// In-memory cache: avoids re-fetching when navigating between pages in the same session.
+// Holds { address, nfts, tokenIds, timestamp }.
+// TTL: 2 minutes — after that we re-check token IDs from Alchemy (lightweight).
+let memoryCache: {
+  address: string;
+  nfts: NodeNFT[];
+  tokenIds: string[];
+  timestamp: number;
+} | null = null;
+const MEMORY_CACHE_TTL = 2 * 60 * 1000;
 
 // Fresh metadata response from the contract's tokenURI
 interface FreshMetadata {
@@ -19,35 +31,27 @@ interface FreshMetadata {
   }>;
 }
 
-// Alchemy API response types (only used for getting token IDs)
-interface AlchemyNFT {
-  tokenId?: string;
-  id?: { tokenId?: string };
-}
-
 /**
  * Fetch fresh metadata directly from the contract's tokenURI API
- * This bypasses Alchemy's cache and always returns current data
  */
 async function fetchFreshMetadata(tokenId: string): Promise<FreshMetadata | null> {
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
-    
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
     const response = await fetch(`${METADATA_API_URL}/${tokenId}`, {
       signal: controller.signal,
-      cache: 'no-store', // Don't use Next.js cache for external API
+      cache: 'no-store',
     });
-    
+
     clearTimeout(timeoutId);
-    
+
     if (!response.ok) {
       console.warn(`[Metadata API] Token ${tokenId}: HTTP ${response.status}`);
       return null;
     }
-    
+
     const data = await response.json();
-    console.log(`[Metadata API] Token ${tokenId}: OK - ${data.name}`);
     return data;
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : 'Unknown error';
@@ -61,17 +65,17 @@ async function fetchFreshMetadata(tokenId: string): Promise<FreshMetadata | null
  */
 function parseMetadataToNFT(tokenId: string, metadata: FreshMetadata): NodeNFT {
   const getAttribute = (traitType: string): string => {
-    const attr = metadata.attributes?.find(a => 
+    const attr = metadata.attributes?.find(a =>
       a.trait_type?.toLowerCase() === traitType.toLowerCase()
     );
     return attr?.value || '';
   };
-  
+
   const interferenceValue = getAttribute('Interference');
-  const hasInterference = interferenceValue !== '' && 
-    interferenceValue.toLowerCase() !== 'none' && 
+  const hasInterference = interferenceValue !== '' &&
+    interferenceValue.toLowerCase() !== 'none' &&
     interferenceValue.toLowerCase() !== 'false';
-  
+
   return {
     tokenId,
     name: metadata.name || `NODES #${tokenId}`,
@@ -92,7 +96,7 @@ function parseMetadataToNFT(tokenId: string, metadata: FreshMetadata): NodeNFT {
 }
 
 /**
- * Process NFTs in batches to avoid rate limiting
+ * Process items in batches with a delay between batches
  */
 async function processBatch<T, R>(
   items: T[],
@@ -104,7 +108,6 @@ async function processBatch<T, R>(
     const batch = items.slice(i, i + batchSize);
     const batchResults = await Promise.all(batch.map(processor));
     results.push(...batchResults);
-    // Small delay between batches to avoid rate limiting
     if (i + batchSize < items.length) {
       await new Promise(resolve => setTimeout(resolve, 100));
     }
@@ -113,80 +116,122 @@ async function processBatch<T, R>(
 }
 
 /**
- * Get NFTs for an owner with FRESH metadata from the contract API
- * Falls back to Alchemy's cached data if the fresh API fails
+ * Fetch only the list of owned token IDs from Alchemy (lightweight, no metadata).
+ * This is the cheapest possible Alchemy call.
+ */
+async function fetchOwnedTokenIds(ownerAddress: string): Promise<string[]> {
+  const response = await fetch(
+    `${ALCHEMY_BASE_URL}/getNFTsForOwner?owner=${ownerAddress}&contractAddresses[]=${NODES_CONTRACT}&withMetadata=false`
+  );
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch NFTs from Alchemy');
+  }
+
+  const data = await response.json();
+  if (!data.ownedNfts || data.ownedNfts.length === 0) {
+    return [];
+  }
+
+  return data.ownedNfts
+    .map((nft: { tokenId?: string; id?: { tokenId?: string } }) =>
+      nft.tokenId || nft.id?.tokenId || ''
+    )
+    .filter(Boolean);
+}
+
+/**
+ * Fetch metadata for a list of token IDs and return NodeNFT objects.
+ */
+async function fetchMetadataForTokens(tokenIds: string[]): Promise<NodeNFT[]> {
+  const nfts = await processBatch(tokenIds, 5, async (tokenId) => {
+    const metadata = await fetchFreshMetadata(tokenId);
+    if (metadata) return parseMetadataToNFT(tokenId, metadata);
+    return null;
+  });
+  return nfts.filter((nft): nft is NodeNFT => nft !== null);
+}
+
+/**
+ * Get NFTs for an owner with smart caching.
+ *
+ * Cache strategy:
+ * 1. In-memory cache (2min TTL) — instant return during same-session navigation
+ * 2. localStorage cache (persistent, versioned) — survives page refreshes
+ * 3. On cache hit, only fetch token IDs (lightweight) to check for changes
+ * 4. Only fetch metadata for NEW tokens — existing tokens use cached metadata
+ * 5. Bump CACHE_VERSION in nft-cache.ts when a new interference drops
  */
 export async function getNFTsForOwner(ownerAddress: string): Promise<NodeNFT[]> {
+  const normalizedAddress = ownerAddress.toLowerCase();
+
   try {
-    // Fetch from Alchemy WITH metadata as fallback
-    const response = await fetch(
-      `${ALCHEMY_BASE_URL}/getNFTsForOwner?owner=${ownerAddress}&contractAddresses[]=${NODES_CONTRACT}&withMetadata=true`
-    );
-    
-    if (!response.ok) {
-      throw new Error('Failed to fetch NFTs from Alchemy');
+    // Layer 1: In-memory cache — return immediately if fresh
+    if (
+      memoryCache &&
+      memoryCache.address === normalizedAddress &&
+      Date.now() - memoryCache.timestamp < MEMORY_CACHE_TTL
+    ) {
+      console.log(`[NFTs] Memory cache hit for ${normalizedAddress.slice(0, 8)}...`);
+      return memoryCache.nfts;
     }
-    
-    const data = await response.json();
-    
-    if (!data.ownedNfts || data.ownedNfts.length === 0) {
+
+    // Layer 2: Fetch owned token IDs (1 lightweight Alchemy call, no metadata)
+    const currentTokenIds = await fetchOwnedTokenIds(ownerAddress);
+
+    if (currentTokenIds.length === 0) {
+      memoryCache = { address: normalizedAddress, nfts: [], tokenIds: [], timestamp: Date.now() };
       return [];
     }
-    
-    console.log(`[NFTs] Found ${data.ownedNfts.length} NFTs for ${ownerAddress.slice(0,8)}...`);
-    
-    // Process in batches of 5 to avoid rate limiting
-    const nfts = await processBatch(data.ownedNfts, 5, async (alchemyNft: any) => {
-      const tokenId = alchemyNft.tokenId || alchemyNft.id?.tokenId || '';
-      if (!tokenId) return null;
-      
-      // Try fresh metadata first
-      const freshMetadata = await fetchFreshMetadata(tokenId);
-      if (freshMetadata) {
-        return parseMetadataToNFT(tokenId, freshMetadata);
+
+    // Layer 3: Check localStorage cache
+    const cached = getCachedNFTs(ownerAddress);
+
+    if (cached) {
+      const cachedIdSet = new Set(cached.tokenIds);
+      const currentIdSet = new Set(currentTokenIds);
+
+      const newIds = currentTokenIds.filter(id => !cachedIdSet.has(id));
+      const removedIds = cached.tokenIds.filter(id => !currentIdSet.has(id));
+
+      if (newIds.length === 0 && removedIds.length === 0) {
+        // No changes — return cached data
+        console.log(`[NFTs] Cache hit for ${normalizedAddress.slice(0, 8)}... (${cached.nfts.length} NFTs, no changes)`);
+        memoryCache = { address: normalizedAddress, nfts: cached.nfts, tokenIds: currentTokenIds, timestamp: Date.now() };
+        return cached.nfts;
       }
-      
-      // Fallback to Alchemy's cached data
-      console.warn(`[Fallback] Token ${tokenId}: Using Alchemy cached data`);
-      const metadata = alchemyNft.raw?.metadata || alchemyNft.metadata || {};
-      const image = metadata.image || alchemyNft.image?.cachedUrl || alchemyNft.image?.originalUrl || '';
-      
-      const getAttribute = (traitType: string): string => {
-        const attrs = metadata.attributes || [];
-        const attr = attrs.find((a: any) => 
-          a.trait_type?.toLowerCase() === traitType.toLowerCase()
-        );
-        return attr?.value || '';
-      };
-      
-      const interferenceValue = getAttribute('Interference');
-      const hasInterference = interferenceValue !== '' && 
-        interferenceValue.toLowerCase() !== 'none' && 
-        interferenceValue.toLowerCase() !== 'false';
-      
-      return {
-        tokenId,
-        name: metadata.name || `NODES #${tokenId}`,
-        image,
-        innerState: getAttribute('Inner State'),
-        grid: getAttribute('Grid'),
-        gradient: getAttribute('Gradient'),
-        glow: getAttribute('Glow'),
-        interference: hasInterference,
-        networkStatus: getAttribute('Network Status') || undefined,
-        metadata: {
-          name: metadata.name || '',
-          description: metadata.description || '',
-          image,
-          attributes: metadata.attributes || [],
-        },
-      } as NodeNFT;
-    });
-    
-    return nfts.filter((nft): nft is NodeNFT => nft !== null);
-    
+
+      // Partial update: fetch metadata only for new tokens
+      console.log(`[NFTs] Partial update for ${normalizedAddress.slice(0, 8)}...: +${newIds.length} new, -${removedIds.length} removed`);
+
+      const newNfts = newIds.length > 0 ? await fetchMetadataForTokens(newIds) : [];
+      const keptNfts = cached.nfts.filter(nft => currentIdSet.has(nft.tokenId));
+      const allNfts = [...keptNfts, ...newNfts];
+
+      setCachedNFTs(ownerAddress, allNfts, currentTokenIds);
+      memoryCache = { address: normalizedAddress, nfts: allNfts, tokenIds: currentTokenIds, timestamp: Date.now() };
+      return allNfts;
+    }
+
+    // Layer 4: No cache at all — fetch everything (first visit or after cache version bump)
+    console.log(`[NFTs] Full fetch for ${normalizedAddress.slice(0, 8)}... (${currentTokenIds.length} tokens)`);
+
+    const allNfts = await fetchMetadataForTokens(currentTokenIds);
+
+    setCachedNFTs(ownerAddress, allNfts, currentTokenIds);
+    memoryCache = { address: normalizedAddress, nfts: allNfts, tokenIds: currentTokenIds, timestamp: Date.now() };
+    return allNfts;
+
   } catch (error) {
     console.error('Error fetching NFTs:', error);
+
+    // On error, try to return cached data if available
+    const cached = getCachedNFTs(ownerAddress);
+    if (cached) {
+      console.log(`[NFTs] Returning stale cache after error`);
+      return cached.nfts;
+    }
+
     return [];
   }
 }
@@ -211,13 +256,11 @@ export function analyzeFullSets(nfts: NodeNFT[]): {
   missingStates: string[];
 } {
   const stateMap = new Map<string, { count: number; tokenIds: string[] }>();
-  
-  // Initialize all states
+
   INNER_STATES.forEach(state => {
     stateMap.set(state, { count: 0, tokenIds: [] });
   });
-  
-  // Count NFTs per Inner State
+
   nfts.forEach(nft => {
     const state = nft.innerState;
     if (state && stateMap.has(state)) {
@@ -226,7 +269,7 @@ export function analyzeFullSets(nfts: NodeNFT[]): {
       current.tokenIds.push(nft.tokenId);
     }
   });
-  
+
   const status: FullSetStatus[] = INNER_STATES.map(state => {
     const data = stateMap.get(state)!;
     return {
@@ -236,33 +279,10 @@ export function analyzeFullSets(nfts: NodeNFT[]): {
       tokenIds: data.tokenIds,
     };
   });
-  
+
   const missingStates = status.filter(s => !s.owned).map(s => s.innerState);
-  
-  // Calculate complete sets (min across all owned states)
   const minCount = Math.min(...status.map(s => s.count));
   const completeSets = minCount > 0 && missingStates.length === 0 ? minCount : 0;
-  
-  return {
-    status,
-    completeSets,
-    missingStates,
-  };
-}
 
-export async function getCollectionStats() {
-  try {
-    const response = await fetch(
-      `${ALCHEMY_BASE_URL}/getContractMetadata?contractAddress=${NODES_CONTRACT}`
-    );
-    
-    if (!response.ok) {
-      throw new Error('Failed to fetch collection stats');
-    }
-    
-    return await response.json();
-  } catch (error) {
-    console.error('Error fetching collection stats:', error);
-    return null;
-  }
+  return { status, completeSets, missingStates };
 }
