@@ -63,6 +63,22 @@ async function fetchFreshMetadata(tokenId: string): Promise<FreshMetadata | null
 /**
  * Parse fresh metadata into NodeNFT format
  */
+/**
+ * Infer the character Type from Grid or Shade attributes.
+ * Digital Renaissance evolved NFTs lose the explicit "Type" attribute,
+ * but the Grid/Shade values contain patterns like "[Ghost]" or "[Skull]".
+ * Falls back to "Full Circle" (the most common type).
+ */
+function inferTypeFromAttributes(getAttribute: (t: string) => string): string {
+  const grid = getAttribute('Grid');
+  const shade = getAttribute('Shade');
+  const combined = `${grid} ${shade}`;
+
+  if (/\[Ghost\]/i.test(combined)) return 'Ghost';
+  if (/\[Skull\]/i.test(combined)) return 'Skull';
+  return 'Full Circle';
+}
+
 function parseMetadataToNFT(tokenId: string, metadata: FreshMetadata): NodeNFT {
   const getAttribute = (traitType: string): string => {
     const attr = metadata.attributes?.find(a =>
@@ -75,6 +91,14 @@ function parseMetadataToNFT(tokenId: string, metadata: FreshMetadata): NodeNFT {
   const hasInterference = interferenceValue !== '' &&
     interferenceValue.toLowerCase() !== 'none' &&
     interferenceValue.toLowerCase() !== 'false';
+
+  // Infer Type when missing (Digital Renaissance evolved NFTs)
+  let type = getAttribute('Type');
+  const attributes = [...(metadata.attributes || [])];
+  if (!type) {
+    type = inferTypeFromAttributes(getAttribute);
+    attributes.push({ trait_type: 'Type', value: type });
+  }
 
   return {
     tokenId,
@@ -90,7 +114,7 @@ function parseMetadataToNFT(tokenId: string, metadata: FreshMetadata): NodeNFT {
       name: metadata.name || '',
       description: metadata.description || '',
       image: metadata.image || '',
-      attributes: metadata.attributes || [],
+      attributes,
     },
   };
 }

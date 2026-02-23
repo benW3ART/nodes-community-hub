@@ -14,7 +14,7 @@ import type { NodeNFT } from '@/types/nft';
 // Bump this when a new interference drops
 // to force all users to re-fetch metadata.
 // =============================================
-export const CACHE_VERSION = 1;
+export const CACHE_VERSION = 2;
 
 interface CachedWalletData {
   version: number;
