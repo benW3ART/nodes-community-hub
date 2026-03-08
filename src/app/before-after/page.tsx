@@ -710,10 +710,10 @@ export default function BeforeAfterPage() {
             {/* Info */}
             <div className="bg-[#050505] border border-[#1a1a1a] rounded-lg p-3 text-xs text-gray-500 space-y-1">
               <div className="flex items-center gap-2">
-                <span className="text-[#00D4FF]">●</span> 3-image animation: Chapter III → your NODE → ???
+                <span className="text-[#00D4FF]">●</span> Chapter III → your NODE → ??? → Chapter III (loop)
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[#00D4FF]">●</span> 1080×1080 · 7s · 30fps
+                <span className="text-[#00D4FF]">●</span> 1080×1080 · 8.5s · 30fps · seamless loop
               </div>
             </div>
 

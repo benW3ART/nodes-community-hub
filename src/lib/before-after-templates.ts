@@ -487,12 +487,13 @@ export function renderSliderFrame(
 // ---------------------------------------------------------------------------
 
 /** Timeline constants (ms) */
-export const CH3_HOLD1  = 1000;
-export const CH3_SLIDE1 = 1500;
-export const CH3_HOLD2  = 2000;
-export const CH3_SLIDE2 = 1500;
-export const CH3_HOLD3  = 1000;
-export const CH3_TOTAL  = CH3_HOLD1 + CH3_SLIDE1 + CH3_HOLD2 + CH3_SLIDE2 + CH3_HOLD3; // 7000ms
+export const CH3_HOLD1  = 1000;  // hold logo
+export const CH3_SLIDE1 = 1500;  // logo → NFT
+export const CH3_HOLD2  = 2000;  // hold NFT
+export const CH3_SLIDE2 = 1500;  // NFT → ?
+export const CH3_HOLD3  = 1000;  // hold ?
+export const CH3_SLIDE3 = 1500;  // ? → logo  (loop transition)
+export const CH3_TOTAL  = CH3_HOLD1 + CH3_SLIDE1 + CH3_HOLD2 + CH3_SLIDE2 + CH3_HOLD3 + CH3_SLIDE3; // 8500ms
 
 /** Decompose a time into (fromSlot 0-2, toSlot 0-2, progress 0-1, isSliding) */
 export function ch3GetPhase(timeMs: number): {
@@ -510,7 +511,12 @@ export function ch3GetPhase(timeMs: number): {
   t -= CH3_HOLD2;
   if (t < CH3_SLIDE2)
     return { fromSlot: 1, toSlot: 2, progress: sliderEase(t / CH3_SLIDE2), isSliding: true };
-  return { fromSlot: 2, toSlot: 2, progress: 0, isSliding: false };
+  t -= CH3_SLIDE2;
+  if (t < CH3_HOLD3)
+    return { fromSlot: 2, toSlot: 2, progress: 0, isSliding: false };
+  t -= CH3_HOLD3;
+  // Loop transition: ? → logo (back to start)
+  return { fromSlot: 2, toSlot: 0, progress: sliderEase(t / CH3_SLIDE3), isSliding: true };
 }
 
 /**
