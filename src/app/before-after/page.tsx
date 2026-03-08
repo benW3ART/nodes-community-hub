@@ -582,7 +582,7 @@ export default function BeforeAfterPage() {
         {showCh3Section && (
           <>
             <p className="text-gray-500 text-xs sm:text-sm mb-4 italic">
-              what are you full circles going to transform into ???
+              what are your full circles going to transform into ???
             </p>
             <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-2">
               {fullCircleNfts.map((nft) => (
