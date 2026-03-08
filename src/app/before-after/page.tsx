@@ -629,9 +629,11 @@ export default function BeforeAfterPage() {
               <div className="rounded-xl overflow-hidden shadow-2xl border border-[#1a1a1a] bg-black relative" style={{ width: pw, height: ph }}>
                 {isSlider ? (
                   <>
-                    {/* Slider preview */}
+                    {/* Slider preview: slot[0]=chapter3 logo behind, slot[1]=NFT being revealed */}
                     <div className="absolute rounded-lg overflow-hidden" style={{ top: '3%', left: '3%', right: '3%', bottom: '3%' }}>
-                      <Image src={selectedCh3Nft.image} alt="NFT" fill unoptimized className="object-cover" />
+                      {/* From: chapter3 logo */}
+                      <Image src="/assets/chapter3/chapter3-logo.png" alt="Chapter III" fill unoptimized className="object-cover" />
+                      {/* To: NFT revealed by slider */}
                       <div
                         className="absolute inset-0 overflow-hidden"
                         style={
@@ -640,10 +642,7 @@ export default function BeforeAfterPage() {
                           { clipPath: `polygon(0 0, ${sliderPos * 100 + 15}% 0, ${sliderPos * 100 - 15}% 100%, 0 100%)` }
                         }
                       >
-                        {/* Placeholder for GIF */}
-                        <div className="w-full h-full bg-[#0d1a1a] flex items-center justify-center">
-                          <Film className="w-6 h-6 text-[#00D4FF]/50" />
-                        </div>
+                        <Image src={selectedCh3Nft.image} alt="NFT" fill unoptimized className="object-cover" />
                       </div>
                       {isHoriz && (
                         <div className="absolute top-0 bottom-0 w-[2px] bg-[#00D4FF] shadow-[0_0_8px_rgba(0,212,255,0.6)] z-10" style={{ left: `${sliderPos * 100}%` }}>
@@ -668,9 +667,9 @@ export default function BeforeAfterPage() {
                     </div>
                   </>
                 ) : (
-                  /* Transition preview */
+                  /* Transition preview: show chapter3 logo with film icon overlay */
                   <div className="absolute inset-[6%] rounded-lg overflow-hidden">
-                    <Image src={selectedCh3Nft.image} alt="NFT" fill unoptimized className="object-cover" />
+                    <Image src="/assets/chapter3/chapter3-logo.png" alt="Chapter III" fill unoptimized className="object-cover" />
                     <div className="absolute inset-0 flex items-center justify-center bg-black/30">
                       <Film className="w-8 h-8 text-[#00D4FF]/70" />
                     </div>
@@ -711,7 +710,7 @@ export default function BeforeAfterPage() {
             {/* Info */}
             <div className="bg-[#050505] border border-[#1a1a1a] rounded-lg p-3 text-xs text-gray-500 space-y-1">
               <div className="flex items-center gap-2">
-                <span className="text-[#00D4FF]">●</span> 3-image animation: your NODE → transition → ???
+                <span className="text-[#00D4FF]">●</span> 3-image animation: Chapter III → your NODE → ???
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-[#00D4FF]">●</span> 1080×1080 · 7s · 30fps

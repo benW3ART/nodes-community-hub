@@ -10,7 +10,7 @@ import {
   COLORS,
   loadImageSafe,
   drawSubtleGlows,
-  fetchGifFramesFromFile,
+  fetchGifFrames,
   prerenderGifFrames,
   getFrameAtTime,
 } from '@/lib/canvas-utils';
@@ -51,27 +51,32 @@ export async function POST(request: NextRequest) {
     const cH = 1200;
 
     // ── Load static Chapter III assets ───────────────────────────────────────
-    const gifPath = path.join(process.cwd(), 'public', 'assets', 'chapter3', 'transition.gif');
+    // Slot 0: CHAPTER III logo (static image)
+    // Slot 1: Selected NFT image (may be animated GIF)
+    // Slot 2: Unknown "?" (static image)
+    const logoPath    = path.join(process.cwd(), 'public', 'assets', 'chapter3', 'chapter3-logo.png');
     const unknownPath = path.join(process.cwd(), 'public', 'assets', 'chapter3', 'unknown.png');
 
-    const [nftImg, unknownImg, gifData] = await Promise.all([
-      loadImageSafe(nftImageUrl),
+    const [logoImg, unknownImg] = await Promise.all([
+      loadImageSafe(logoPath),
       loadImageSafe(unknownPath),
-      fetchGifFramesFromFile(gifPath),
     ]);
 
-    if (!nftImg) {
+    if (!logoImg)    return NextResponse.json({ error: 'Failed to load Chapter III logo'    }, { status: 500 });
+    if (!unknownImg) return NextResponse.json({ error: 'Failed to load Chapter III unknown' }, { status: 500 });
+
+    // NFT image — try GIF first, fall back to static
+    const nftGifData  = await fetchGifFrames(nftImageUrl);
+    const nftRendered = nftGifData ? prerenderGifFrames(nftGifData) : null;
+    const nftImgStatic = nftRendered ? null : await loadImageSafe(nftImageUrl);
+
+    if (!nftRendered && !nftImgStatic) {
       return NextResponse.json({ error: 'Failed to load NFT image' }, { status: 400 });
     }
-    if (!unknownImg) {
-      return NextResponse.json({ error: 'Failed to load Chapter III unknown image' }, { status: 500 });
-    }
-    if (!gifData) {
-      return NextResponse.json({ error: 'Failed to load Chapter III transition GIF' }, { status: 500 });
-    }
 
-    const gifRendered = prerenderGifFrames(gifData);
-    console.log(`GIF: ${gifRendered.canvases.length} frames, ${gifRendered.totalDuration}ms`);
+    if (nftRendered) {
+      console.log(`NFT is animated GIF: ${nftRendered.canvases.length} frames, ${nftRendered.totalDuration}ms`);
+    }
 
     // ── Frame generation ──────────────────────────────────────────────────────
     const fps = 30;
@@ -92,12 +97,13 @@ export async function POST(request: NextRequest) {
       ctx.fillRect(0, 0, cW, cH);
       drawSubtleGlows(ctx, cW);
 
-      // Get current GIF frame (animates throughout)
-      const gifFrameIdx = getFrameAtTime(gifRendered.timestamps, gifRendered.totalDuration, timeMs);
-      const gifCanvas = gifRendered.canvases[gifFrameIdx];
+      // Slot 1: NFT frame at current time (animates if GIF, static otherwise)
+      const nftFrame = nftRendered
+        ? nftRendered.canvases[getFrameAtTime(nftRendered.timestamps, nftRendered.totalDuration, timeMs)]
+        : nftImgStatic;
 
-      // Slots: [NFT, GIF frame, unknown "?"]
-      const slots: [any, any, any] = [nftImg, gifCanvas, unknownImg];
+      // Slots: [CHAPTER III logo, NFT (current frame), unknown "?"]
+      const slots: [any, any, any] = [logoImg, nftFrame, unknownImg];
 
       if (isSlider) {
         const direction = getSliderDirection(template);
