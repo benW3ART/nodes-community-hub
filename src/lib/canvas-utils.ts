@@ -281,6 +281,26 @@ export interface GifData {
   frameDelays: number[];
 }
 
+/** Load and parse a GIF directly from a local file path (server-side only). */
+export async function fetchGifFramesFromFile(filePath: string): Promise<GifData | null> {
+  try {
+    const buf = await fs.promises.readFile(filePath);
+    const gif = parseGIF(buf.buffer);
+    const frames = decompressFrames(gif, true);
+    if (!frames || frames.length === 0) throw new Error('No frames found');
+    const validFrames = frames.filter((f: any) => f && f.dims && f.patch);
+    if (validFrames.length === 0) throw new Error('No valid frames');
+    const frameDelays = validFrames.map((f: any) => {
+      const delay = f.delay || 0;
+      return delay >= 20 ? delay : (delay > 0 ? 20 : 50);
+    });
+    return { frames: validFrames, width: gif.lsd.width, height: gif.lsd.height, isAnimated: true, frameDelays };
+  } catch (err) {
+    console.error('GIF parsing failed for file', filePath, err);
+    return null;
+  }
+}
+
 export async function fetchGifFrames(url: string): Promise<GifData | null> {
   try {
     const response = await fetch(url, {

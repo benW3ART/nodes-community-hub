@@ -481,3 +481,242 @@ export function renderSliderFrame(
   // 6) NODES watermark top-right
   drawBrandedWatermark(ctx, assets, cW, cH);
 }
+
+// ---------------------------------------------------------------------------
+// Chapter III — 3-image animation (NFT → transition GIF → unknown "?")
+// ---------------------------------------------------------------------------
+
+/** Timeline constants (ms) */
+export const CH3_HOLD1  = 1000;  // hold logo
+export const CH3_SLIDE1 = 1500;  // logo → NFT
+export const CH3_HOLD2  = 2000;  // hold NFT
+export const CH3_SLIDE2 = 1500;  // NFT → ?
+export const CH3_HOLD3  = 1000;  // hold ?
+export const CH3_SLIDE3 = 1500;  // ? → logo  (loop transition)
+export const CH3_TOTAL  = CH3_HOLD1 + CH3_SLIDE1 + CH3_HOLD2 + CH3_SLIDE2 + CH3_HOLD3 + CH3_SLIDE3; // 8500ms
+
+/** Decompose a time into (fromSlot 0-2, toSlot 0-2, progress 0-1, isSliding) */
+export function ch3GetPhase(timeMs: number): {
+  fromSlot: number; toSlot: number; progress: number; isSliding: boolean;
+} {
+  let t = timeMs % CH3_TOTAL;
+  if (t < CH3_HOLD1)
+    return { fromSlot: 0, toSlot: 0, progress: 0, isSliding: false };
+  t -= CH3_HOLD1;
+  if (t < CH3_SLIDE1)
+    return { fromSlot: 0, toSlot: 1, progress: sliderEase(t / CH3_SLIDE1), isSliding: true };
+  t -= CH3_SLIDE1;
+  if (t < CH3_HOLD2)
+    return { fromSlot: 1, toSlot: 1, progress: 0, isSliding: false };
+  t -= CH3_HOLD2;
+  if (t < CH3_SLIDE2)
+    return { fromSlot: 1, toSlot: 2, progress: sliderEase(t / CH3_SLIDE2), isSliding: true };
+  t -= CH3_SLIDE2;
+  if (t < CH3_HOLD3)
+    return { fromSlot: 2, toSlot: 2, progress: 0, isSliding: false };
+  t -= CH3_HOLD3;
+  // Loop transition: ? → logo (back to start)
+  return { fromSlot: 2, toSlot: 0, progress: sliderEase(t / CH3_SLIDE3), isSliding: true };
+}
+
+/**
+ * Render a single frame of the Chapter III slider animation.
+ * slots[0] = NFT image, slots[1] = current GIF frame canvas, slots[2] = unknown "?" image
+ */
+export function renderChapter3SliderFrame(
+  ctx: CanvasRenderingContext2D,
+  direction: SliderDirection,
+  timeMs: number,
+  slots: [any, any, any],
+  cW: number = SIZE,
+  cH: number = SIZE,
+) {
+  const { fromSlot, toSlot, progress, isSliding } = ch3GetPhase(timeMs);
+
+  const padding = Math.min(cW, cH) * 0.03;
+  const imgX = padding;
+  const imgY = padding;
+  const imgW = cW - padding * 2;
+  const imgH = cH - padding * 2;
+  const borderRadius = Math.min(imgW, imgH) * 0.03;
+
+  const fromImg = slots[fromSlot];
+  const toImg   = slots[toSlot];
+
+  // 1) Draw fromImg full area
+  if (fromImg) {
+    ctx.save();
+    drawRoundedRect(ctx, imgX, imgY, imgW, imgH, borderRadius);
+    ctx.clip();
+    drawImageCover(ctx, fromImg, imgX, imgY, imgW, imgH);
+    ctx.restore();
+  }
+
+  // 2) Draw toImg clipped by slider (only when transitioning to a different slot)
+  if (toImg && isSliding && progress > 0) {
+    ctx.save();
+    drawRoundedRect(ctx, imgX, imgY, imgW, imgH, borderRadius);
+    ctx.clip();
+    ctx.beginPath();
+    if (direction === 'horizontal') {
+      ctx.rect(imgX, imgY, imgW * progress, imgH);
+    } else if (direction === 'vertical') {
+      ctx.rect(imgX, imgY, imgW, imgH * progress);
+    } else {
+      // Diagonal
+      const tilt = imgH * 0.35;
+      const travel = imgW + tilt;
+      const x = progress * travel;
+      ctx.moveTo(imgX, imgY);
+      ctx.lineTo(imgX + Math.min(x, imgW), imgY);
+      if (x > imgW) {
+        ctx.lineTo(imgX + imgW, imgY);
+        ctx.lineTo(imgX + imgW, imgY + imgH * Math.min(1, (x - imgW) / tilt));
+      }
+      ctx.lineTo(imgX + Math.max(0, x - tilt), imgY + imgH);
+      ctx.lineTo(imgX, imgY + imgH);
+      ctx.closePath();
+    }
+    ctx.clip();
+    drawImageCover(ctx, toImg, imgX, imgY, imgW, imgH);
+    ctx.restore();
+  }
+
+  // 3) Border
+  ctx.strokeStyle = `${COLORS.cyan}30`;
+  ctx.lineWidth = 2;
+  drawRoundedRect(ctx, imgX, imgY, imgW, imgH, borderRadius);
+  ctx.stroke();
+
+  // 4) Slider line + handle
+  if (isSliding && progress > 0.005 && progress < 0.995) {
+    ctx.save();
+    drawRoundedRect(ctx, imgX, imgY, imgW, imgH, borderRadius);
+    ctx.clip();
+
+    ctx.strokeStyle = COLORS.cyan;
+    ctx.lineWidth = 3;
+    ctx.shadowColor = COLORS.cyan;
+    ctx.shadowBlur = 20;
+
+    let handleX: number, handleY: number;
+    ctx.beginPath();
+    if (direction === 'horizontal') {
+      const x = imgX + imgW * progress;
+      ctx.moveTo(x, imgY); ctx.lineTo(x, imgY + imgH);
+      handleX = x; handleY = imgY + imgH / 2;
+    } else if (direction === 'vertical') {
+      const y = imgY + imgH * progress;
+      ctx.moveTo(imgX, y); ctx.lineTo(imgX + imgW, y);
+      handleX = imgX + imgW / 2; handleY = y;
+    } else {
+      const tilt = imgH * 0.35;
+      const travel = imgW + tilt;
+      const x = progress * travel;
+      const topX = imgX + Math.min(x, imgW);
+      const botX = imgX + Math.max(0, x - tilt);
+      ctx.moveTo(topX, imgY); ctx.lineTo(botX, imgY + imgH);
+      handleX = (topX + botX) / 2; handleY = imgY + imgH / 2;
+    }
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(handleX, handleY, 10, 0, Math.PI * 2);
+    ctx.fillStyle = COLORS.cyan;
+    ctx.shadowBlur = 25;
+    ctx.fill();
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.shadowBlur = 0;
+    ctx.stroke();
+
+    ctx.fillStyle = '#000000';
+    ctx.font = 'bold 10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(direction === 'vertical' ? '▴▾' : '◂▸', handleX, handleY);
+
+    ctx.restore();
+  }
+}
+
+/**
+ * Render a single frame of the Chapter III glitch-wipe transition (3 images).
+ * Same strip-wipe logic as the existing gif-transition, but applied twice.
+ */
+export function renderChapter3TransitionFrame(
+  ctx: CanvasRenderingContext2D,
+  timeMs: number,
+  slots: [any, any, any],
+  cW: number = SIZE,
+  cH: number = SIZE,
+) {
+  const { fromSlot, toSlot, progress, isSliding } = ch3GetPhase(timeMs);
+
+  const imgSize = Math.min(cW, cH) * 0.88;
+  const imgX = (cW - imgSize) / 2;
+  const imgY = (cH - imgSize) / 2;
+  const borderRadius = imgSize * 0.04;
+  const stripCount = 40;
+
+  const fromImg = slots[fromSlot];
+  const toImg   = slots[toSlot];
+
+  if (!isSliding || progress <= 0) {
+    // Hold: just draw current image
+    if (fromImg) {
+      ctx.save();
+      drawRoundedRect(ctx, imgX, imgY, imgSize, imgSize, borderRadius);
+      ctx.clip();
+      drawImageCover(ctx, fromImg, imgX, imgY, imgSize, imgSize);
+      ctx.restore();
+    }
+  } else {
+    // Wipe transition
+    const wipeLine = imgY + imgSize * progress;
+    const stripH = imgSize / stripCount;
+
+    ctx.save();
+    drawRoundedRect(ctx, imgX, imgY, imgSize, imgSize, borderRadius);
+    ctx.clip();
+
+    for (let i = 0; i < stripCount; i++) {
+      const stripY = imgY + i * stripH;
+      const stripMid = stripY + stripH / 2;
+      const revealed = stripMid < wipeLine;
+      const img = revealed ? toImg : fromImg;
+      const nearWipe = Math.abs(stripMid - wipeLine) < stripH * 3;
+      // deterministic noise offset
+      const seed = Math.sin(i * 127.1 + timeMs * 0.01) * 0.5 + 0.5;
+      const offset = nearWipe ? (seed - 0.5) * 28 * (1 - Math.abs(stripMid - wipeLine) / (stripH * 3)) : 0;
+
+      if (img) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(imgX, stripY, imgSize, stripH);
+        ctx.clip();
+        drawImageCover(ctx, img, imgX + offset, imgY, imgSize, imgSize);
+        ctx.restore();
+      }
+
+      if (nearWipe && Math.abs(stripMid - wipeLine) < stripH * 1.5) {
+        ctx.fillStyle = `${COLORS.cyan}28`;
+        ctx.fillRect(imgX, stripY, imgSize, 2);
+      }
+    }
+
+    // Center flash at midpoint
+    if (progress > 0.45 && progress < 0.55) {
+      ctx.fillStyle = `${COLORS.cyan}18`;
+      ctx.fillRect(imgX, imgY, imgSize, imgSize);
+    }
+
+    ctx.restore();
+  }
+
+  // Border
+  ctx.strokeStyle = `${COLORS.cyan}30`;
+  ctx.lineWidth = 2;
+  drawRoundedRect(ctx, imgX, imgY, imgSize, imgSize, borderRadius);
+  ctx.stroke();
+}
