@@ -106,9 +106,7 @@ export async function GET() {
     const ownerCounts = owners.map(owner => ({
       address: owner.ownerAddress,
       count: owner.tokenBalances?.length || 0,
-      tokenIds: (owner.tokenBalances || []).map(tb => 
-        parseInt(tb.tokenId, 16).toString()
-      ),
+      tokenIds: (owner.tokenBalances || []).map(tb => tb.tokenId),
     }));
     
     // Sort by NFT count (descending)
