@@ -39,6 +39,7 @@ interface LeaderboardData {
     totalSupply: number;
     uniqueHolders: number;
     fullSetCount: number;
+    totalFullSets?: number;
   };
 }
 
@@ -167,7 +168,7 @@ export default function LeaderboardPage() {
                   </div>
                   <div>
                     <p className="text-xs sm:text-sm text-gray-500 uppercase tracking-wide">Full Sets</p>
-                    <p className="text-lg sm:text-2xl font-bold">{data.stats.fullSetCount}</p>
+                    <p className="text-lg sm:text-2xl font-bold">{data.stats.totalFullSets ?? data.stats.fullSetCount}</p>
                   </div>
                 </div>
               </div>
