@@ -7,6 +7,57 @@ const ALCHEMY_BASE_URL = `https://base-mainnet.g.alchemy.com/nft/v3/${ALCHEMY_AP
 // Use our proxy API to avoid CORS issues (browser → our server → metadata API)
 const METADATA_API_URL = '/api/metadata';
 
+// ---------------------------------------------------------------------------
+// Rarity data enrichment (Network Status is often missing from Alchemy metadata
+// for evolved NFTs but is present in our precomputed rarity.json)
+// ---------------------------------------------------------------------------
+let rarityEnrichment: Map<string, { networkStatus?: string; type?: string }> | null = null;
+
+async function loadRarityEnrichment(): Promise<Map<string, { networkStatus?: string; type?: string }>> {
+  if (rarityEnrichment) return rarityEnrichment;
+  try {
+    const res = await fetch('/data/rarity.json');
+    if (!res.ok) throw new Error('Failed to fetch rarity.json');
+    const data = await res.json();
+    const map = new Map<string, { networkStatus?: string; type?: string }>();
+    for (const [tokenId, nftData] of Object.entries(data.nfts || {})) {
+      const traits = (nftData as any)?.traits || {};
+      map.set(tokenId, {
+        networkStatus: traits['Network Status']?.value || undefined,
+        type: traits['Type']?.value || undefined,
+      });
+    }
+    rarityEnrichment = map;
+    return map;
+  } catch (err) {
+    console.error('[NFTs] Failed to load rarity enrichment:', err);
+    return new Map();
+  }
+}
+
+function enrichNFTsWithRarity(nfts: NodeNFT[], rarityMap: Map<string, { networkStatus?: string; type?: string }>): NodeNFT[] {
+  return nfts.map(nft => {
+    const enrichment = rarityMap.get(nft.tokenId);
+    if (!enrichment) return nft;
+
+    let updated = false;
+    const result = { ...nft };
+
+    // Enrich Network Status if missing from on-chain metadata
+    if (!result.networkStatus && enrichment.networkStatus) {
+      result.networkStatus = enrichment.networkStatus;
+      // Also add to attributes array for consistency
+      result.metadata = {
+        ...result.metadata,
+        attributes: [...result.metadata.attributes, { trait_type: 'Network Status', value: enrichment.networkStatus }],
+      };
+      updated = true;
+    }
+
+    return result;
+  });
+}
+
 // In-memory cache: avoids re-fetching when navigating between pages in the same session.
 // Holds { address, nfts, tokenIds, timestamp }.
 // TTL: 2 minutes — after that we re-check token IDs from Alchemy (lightweight).
@@ -219,10 +270,12 @@ export async function getNFTsForOwner(ownerAddress: string): Promise<NodeNFT[]> 
       const removedIds = cached.tokenIds.filter(id => !currentIdSet.has(id));
 
       if (newIds.length === 0 && removedIds.length === 0) {
-        // No changes — return cached data
+        // No changes — enrich and return cached data
         console.log(`[NFTs] Cache hit for ${normalizedAddress.slice(0, 8)}... (${cached.nfts.length} NFTs, no changes)`);
-        memoryCache = { address: normalizedAddress, nfts: cached.nfts, tokenIds: currentTokenIds, timestamp: Date.now() };
-        return cached.nfts;
+        const rarityMap = await loadRarityEnrichment();
+        const enriched = enrichNFTsWithRarity(cached.nfts, rarityMap);
+        memoryCache = { address: normalizedAddress, nfts: enriched, tokenIds: currentTokenIds, timestamp: Date.now() };
+        return enriched;
       }
 
       // Partial update: fetch metadata only for new tokens
@@ -232,9 +285,12 @@ export async function getNFTsForOwner(ownerAddress: string): Promise<NodeNFT[]> 
       const keptNfts = cached.nfts.filter(nft => currentIdSet.has(nft.tokenId));
       const allNfts = [...keptNfts, ...newNfts];
 
-      setCachedNFTs(ownerAddress, allNfts, currentTokenIds);
-      memoryCache = { address: normalizedAddress, nfts: allNfts, tokenIds: currentTokenIds, timestamp: Date.now() };
-      return allNfts;
+      const rarityMap2 = await loadRarityEnrichment();
+      const enrichedAll = enrichNFTsWithRarity(allNfts, rarityMap2);
+
+      setCachedNFTs(ownerAddress, enrichedAll, currentTokenIds);
+      memoryCache = { address: normalizedAddress, nfts: enrichedAll, tokenIds: currentTokenIds, timestamp: Date.now() };
+      return enrichedAll;
     }
 
     // Layer 4: No cache at all — fetch everything (first visit or after cache version bump)
@@ -242,9 +298,13 @@ export async function getNFTsForOwner(ownerAddress: string): Promise<NodeNFT[]> 
 
     const allNfts = await fetchMetadataForTokens(currentTokenIds);
 
-    setCachedNFTs(ownerAddress, allNfts, currentTokenIds);
-    memoryCache = { address: normalizedAddress, nfts: allNfts, tokenIds: currentTokenIds, timestamp: Date.now() };
-    return allNfts;
+    // Enrich with rarity data (Network Status etc.)
+    const rarityMap = await loadRarityEnrichment();
+    const enrichedNfts = enrichNFTsWithRarity(allNfts, rarityMap);
+
+    setCachedNFTs(ownerAddress, enrichedNfts, currentTokenIds);
+    memoryCache = { address: normalizedAddress, nfts: enrichedNfts, tokenIds: currentTokenIds, timestamp: Date.now() };
+    return enrichedNfts;
 
   } catch (error) {
     console.error('Error fetching NFTs:', error);
