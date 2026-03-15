@@ -7,8 +7,6 @@ const ALCHEMY_BASE_URL = `https://base-mainnet.g.alchemy.com/nft/v3/${ALCHEMY_AP
 // Use our proxy API to avoid CORS issues (browser → our server → metadata API)
 const METADATA_API_URL = '/api/metadata';
 
-
-
 // In-memory cache: avoids re-fetching when navigating between pages in the same session.
 // Holds { address, nfts, tokenIds, timestamp }.
 // TTL: 2 minutes — after that we re-check token IDs from Alchemy (lightweight).
