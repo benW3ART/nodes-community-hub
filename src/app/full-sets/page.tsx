@@ -213,25 +213,21 @@ export default function FullSetsPage() {
 
                 {/* Robot Summary */}
                 {convergence.totalRobots.total > 0 ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-5">
+                  <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-5">
                     <div className="p-2 sm:p-3 bg-black/40 rounded-lg text-center">
-                      <p className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide">Total</p>
+                      <p className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide">Total Robots</p>
                       <p className="text-xl sm:text-2xl font-bold text-[#00D4FF]">{convergence.effectiveRobots.total}</p>
                       {convergence.fullCirclesShortage > 0 && (
                         <p className="text-[9px] text-amber-400">({convergence.totalRobots.total} eligible)</p>
                       )}
                     </div>
                     <div className="p-2 sm:p-3 bg-black/40 rounded-lg text-center">
-                      <p className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide">Regular</p>
-                      <p className="text-xl sm:text-2xl font-bold">{convergence.effectiveRobots.regular}</p>
-                    </div>
-                    <div className="p-2 sm:p-3 bg-black/40 rounded-lg text-center border border-purple-500/20">
-                      <p className="text-[10px] sm:text-xs text-purple-400 uppercase tracking-wide">Rare</p>
-                      <p className="text-xl sm:text-2xl font-bold text-purple-400">{convergence.effectiveRobots.rare}</p>
+                      <p className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide">New Robots</p>
+                      <p className="text-xl sm:text-2xl font-bold">{convergence.effectiveRobots.newRobots}</p>
                     </div>
                     <div className="p-2 sm:p-3 bg-black/40 rounded-lg text-center border border-amber-400/20">
-                      <p className="text-[10px] sm:text-xs text-amber-400 uppercase tracking-wide">Ultra Rare</p>
-                      <p className="text-xl sm:text-2xl font-bold text-amber-400">{convergence.effectiveRobots.ultraRare}</p>
+                      <p className="text-[10px] sm:text-xs text-amber-400 uppercase tracking-wide">Guaranteed Ultra Rare</p>
+                      <p className="text-xl sm:text-2xl font-bold text-amber-400">{convergence.effectiveRobots.guaranteedUltraRare}</p>
                     </div>
                   </div>
                 ) : (
@@ -261,8 +257,9 @@ export default function FullSetsPage() {
                             {active && crit.robots.total > 0 && (
                               <span className="text-[10px] sm:text-xs px-2 py-0.5 rounded-full bg-[#00D4FF]/15 text-[#00D4FF] whitespace-nowrap">
                                 +{crit.robots.total} robot{crit.robots.total > 1 ? 's' : ''}
-                                {crit.robots.rare > 0 && ` (${crit.robots.rare} rare)`}
-                                {crit.robots.ultraRare > 0 && ` (${crit.robots.ultraRare} ultra rare)`}
+                                {crit.robots.guaranteedUltraRare > 0 && (
+                                  <span className="text-amber-400"> ({crit.robots.guaranteedUltraRare} guaranteed ultra rare)</span>
+                                )}
                               </span>
                             )}
                           </div>
