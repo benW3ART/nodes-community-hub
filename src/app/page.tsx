@@ -237,9 +237,9 @@ export default function Home() {
                   ) : convergence && convergence.totalRobots.total > 0 ? (
                     <p className="text-xs sm:text-sm text-[#4FFFDF]">
                       You are eligible for <span className="font-bold text-white">{convergence.effectiveRobots.total} Robot{convergence.effectiveRobots.total > 1 ? 's' : ''}</span>
-                      {convergence.effectiveRobots.guaranteedUltraRare > 0 && <span className="text-amber-400"> · {convergence.effectiveRobots.guaranteedUltraRare} Guaranteed Ultra Rare</span>}
+                      {convergence.effectiveRobots.guaranteedUltraRare > 0 && <span className="text-amber-400"> · including {convergence.effectiveRobots.guaranteedUltraRare} Guaranteed Ultra Rare</span>}
                       {convergence.fullCirclesShortage > 0 && (
-                        <span className="text-amber-400"> · Need {convergence.fullCirclesShortage} more FC{convergence.fullCirclesShortage > 1 ? 's' : ''}</span>
+                        <span className="text-amber-400"> · You need {convergence.fullCirclesShortage} more FC{convergence.fullCirclesShortage > 1 ? 's' : ''} to get your maximum eligible allocation ({convergence.totalRobots.total})</span>
                       )}
                     </p>
                   ) : (
