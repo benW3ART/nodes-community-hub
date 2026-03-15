@@ -3,14 +3,15 @@
  *
  * Based on "The Convergence: The Emergence of Robot" by @gmhunterart
  *
- * Criteria (cumulative):
- * 1. All 3 Types (Full Circle + Skull + Ghost)       → 1 regular robot
- * 2. Inner State Full Set (7/7, 2+ Full Circles)     → 2 regular robots
- * 3. Genesis Interference IS Full Set (7/7 GI NFTs)  → 2 robots (1 rare + 1 regular)
- * 4. Digital Renaissance IS Full Set (7/7 DR NFTs)   → 3 robots (1 ultra rare + 2 regular)
+ * Criteria (cumulative, scale with count):
+ * 1. All 3 Types (FC + Skull + Ghost): min(FC, Skull, Ghost) → that many regular robots
+ * 2. Inner State Full Set (7/7, 2+ FCs): each set = 2 regular robots
+ *    GI and DR sets upgrade some of these:
+ *    - GI IS Full Set: each = 1 rare + 1 regular (instead of 2 regular)
+ *    - DR IS Full Set: each = 1 ultra rare + 2 regular (instead of 2 regular)
+ *    Normal sets = total IS sets - GI sets - DR sets
  *
  * Each evolution consumes 1 Full Circle (no Network Status).
- * Criteria are cumulative. Max: 8 robots (6 regular + 1 rare + 1 ultra rare).
  */
 
 import { INNER_STATES } from '@/lib/constants';
@@ -35,7 +36,7 @@ export interface ConvergenceCriterion {
   id: string;
   label: string;
   description: string;
-  met: boolean;
+  count: number;       // how many combos/sets qualify
   robots: RobotBreakdown;
   details: string;
 }
@@ -50,12 +51,11 @@ export interface ConvergenceResult {
   effectiveRobots: RobotBreakdown; // capped by available FCs
   // Detailed counts for UI
   typesOwned: { fullCircle: number; skull: number; ghost: number };
-  isFullSet: boolean;
-  isFullSetCount: number;
-  giFullSet: boolean;
-  giFullSetCount: number;
-  drFullSet: boolean;
-  drFullSetCount: number;
+  typeCombos: number;
+  totalISSets: number;
+  normalISSets: number;
+  giISSets: number;
+  drISSets: number;
 }
 
 function getType(nft: NFTInput): string {
@@ -63,7 +63,7 @@ function getType(nft: NFTInput): string {
   return attr?.value || '';
 }
 
-function countInnerStateSets(nfts: NFTInput[]): { hasFull: boolean; setCount: number; perState: Record<string, number> } {
+function countCompleteSets(nfts: NFTInput[]): { setCount: number; perState: Record<string, number> } {
   const perState: Record<string, number> = {};
   for (const state of INNER_STATES) {
     perState[state] = 0;
@@ -75,7 +75,7 @@ function countInnerStateSets(nfts: NFTInput[]): { hasFull: boolean; setCount: nu
   }
   const hasFull = INNER_STATES.every(s => perState[s] > 0);
   const setCount = hasFull ? Math.min(...INNER_STATES.map(s => perState[s])) : 0;
-  return { hasFull, setCount, perState };
+  return { setCount, perState };
 }
 
 export function calculateConvergence(nfts: NFTInput[]): ConvergenceResult {
@@ -87,23 +87,23 @@ export function calculateConvergence(nfts: NFTInput[]): ConvergenceResult {
   // Full Circles available for evolution = those without Network Status
   const fullCirclesAvailable = fullCircles.filter(n => !n.networkStatus).length;
 
-  // Type counts
   const typesOwned = {
     fullCircle: fullCircles.length,
     skull: skulls.length,
     ghost: ghosts.length,
   };
 
-  // ── Criterion 1: All 3 Types ───────────────────────────────────────────────
-  const has3Types = fullCircles.length > 0 && skulls.length > 0 && ghosts.length > 0;
+  // ── Criterion 1: Type Combinations ─────────────────────────────────────────
+  // Each combo of (1 FC + 1 Skull + 1 Ghost) = 1 regular robot
+  const typeCombos = Math.min(fullCircles.length, skulls.length, ghosts.length);
   const crit1: ConvergenceCriterion = {
-    id: 'three-types',
-    label: 'All 3 Types',
-    description: 'Hold at least 1 Full Circle, 1 Skull, and 1 Ghost',
-    met: has3Types,
-    robots: has3Types ? { regular: 1, rare: 0, ultraRare: 0, total: 1 } : { regular: 0, rare: 0, ultraRare: 0, total: 0 },
-    details: has3Types
-      ? `✅ FC: ${fullCircles.length} · Skull: ${skulls.length} · Ghost: ${ghosts.length}`
+    id: 'type-combos',
+    label: 'Type Combinations',
+    description: 'Each set of (Full Circle + Skull + Ghost) = 1 regular robot',
+    count: typeCombos,
+    robots: { regular: typeCombos, rare: 0, ultraRare: 0, total: typeCombos },
+    details: typeCombos > 0
+      ? `✅ ${typeCombos} combo${typeCombos > 1 ? 's' : ''} (FC: ${fullCircles.length} · Skull: ${skulls.length} · Ghost: ${ghosts.length})`
       : `Missing: ${[
           fullCircles.length === 0 ? 'Full Circle' : '',
           skulls.length === 0 ? 'Skull' : '',
@@ -111,60 +111,77 @@ export function calculateConvergence(nfts: NFTInput[]): ConvergenceResult {
         ].filter(Boolean).join(', ')}`,
   };
 
-  // ── Criterion 2: Inner State Full Set (2+ Full Circles) ────────────────────
-  const allNftsIS = countInnerStateSets(nfts);
-  const hasISFullSet = allNftsIS.hasFull && fullCircles.length >= 2;
+  // ── IS Full Sets ───────────────────────────────────────────────────────────
+  // Total IS sets across ALL NFTs
+  const allIS = countCompleteSets(nfts);
+  const totalISSets = allIS.setCount;
+
+  // GI IS sets (from Genesis Interference NFTs only)
+  const giNfts = nfts.filter(n => n.networkStatus === 'Genesis Interference');
+  const giIS = countCompleteSets(giNfts);
+  const giISSets = giIS.setCount;
+
+  // DR IS sets (from Digital Renaissance NFTs only)
+  const drNfts = nfts.filter(n => n.networkStatus === 'Digital Renaissance');
+  const drIS = countCompleteSets(drNfts);
+  const drISSets = drIS.setCount;
+
+  // Normal IS sets = total - GI - DR (the non-specialized ones)
+  const normalISSets = Math.max(0, totalISSets - giISSets - drISSets);
+
+  // ── Criterion 2: Normal IS Full Sets ───────────────────────────────────────
+  // Each normal set = 2 regular robots (requires 2+ FCs in collection)
+  const hasEnoughFCForNormal = fullCircles.length >= 2;
+  const effectiveNormalSets = hasEnoughFCForNormal ? normalISSets : 0;
   const crit2: ConvergenceCriterion = {
-    id: 'is-full-set',
-    label: 'Inner State Full Set',
-    description: 'All 7 Inner States + at least 2 Full Circles',
-    met: hasISFullSet,
-    robots: hasISFullSet ? { regular: 2, rare: 0, ultraRare: 0, total: 2 } : { regular: 0, rare: 0, ultraRare: 0, total: 0 },
+    id: 'normal-is-sets',
+    label: 'Inner State Full Sets',
+    description: 'Each IS set (7/7, 2+ Full Circles) = 2 regular robots',
+    count: effectiveNormalSets,
+    robots: { regular: effectiveNormalSets * 2, rare: 0, ultraRare: 0, total: effectiveNormalSets * 2 },
     details: (() => {
-      if (!allNftsIS.hasFull) {
-        const missing = INNER_STATES.filter(s => !allNftsIS.perState[s] || allNftsIS.perState[s] === 0);
+      if (totalISSets === 0) {
+        const missing = INNER_STATES.filter(s => !allIS.perState[s] || allIS.perState[s] === 0);
         return `Missing IS: ${missing.join(', ')}`;
       }
-      if (fullCircles.length < 2) {
+      if (!hasEnoughFCForNormal) {
         return `Need 2+ Full Circles (have ${fullCircles.length})`;
       }
-      return `✅ ${allNftsIS.setCount} complete set${allNftsIS.setCount > 1 ? 's' : ''} · ${fullCircles.length} FCs`;
+      return `✅ ${effectiveNormalSets} normal set${effectiveNormalSets !== 1 ? 's' : ''} (${totalISSets} total − ${giISSets} GI − ${drISSets} DR)`;
     })(),
   };
 
-  // ── Criterion 3: Genesis Interference IS Full Set ──────────────────────────
-  const giNfts = nfts.filter(n => n.networkStatus === 'Genesis Interference');
-  const giIS = countInnerStateSets(giNfts);
+  // ── Criterion 3: GI IS Full Sets → Rare Robots ────────────────────────────
   const crit3: ConvergenceCriterion = {
-    id: 'gi-full-set',
-    label: 'Genesis Interference Full Set',
-    description: 'All 7 Inner States among Genesis Interference NFTs → 1 Rare Robot',
-    met: giIS.hasFull,
-    robots: giIS.hasFull ? { regular: 1, rare: 1, ultraRare: 0, total: 2 } : { regular: 0, rare: 0, ultraRare: 0, total: 0 },
+    id: 'gi-is-sets',
+    label: 'Genesis Interference Full Sets',
+    description: 'Each GI IS set = 1 rare + 1 regular robot',
+    count: giISSets,
+    robots: { regular: giISSets, rare: giISSets, ultraRare: 0, total: giISSets * 2 },
     details: (() => {
-      if (!giIS.hasFull) {
+      if (giNfts.length === 0) return 'No Genesis Interference NFTs';
+      if (giISSets === 0) {
         const missing = INNER_STATES.filter(s => !giIS.perState[s] || giIS.perState[s] === 0);
-        return `Missing GI IS: ${missing.join(', ')} (have ${giNfts.length} GI NFTs)`;
+        return `Missing GI IS: ${missing.join(', ')} (${giNfts.length} GI NFTs)`;
       }
-      return `✅ ${giIS.setCount} GI set${giIS.setCount > 1 ? 's' : ''} (${giNfts.length} GI NFTs)`;
+      return `✅ ${giISSets} GI set${giISSets > 1 ? 's' : ''} (${giNfts.length} GI NFTs)`;
     })(),
   };
 
-  // ── Criterion 4: Digital Renaissance IS Full Set ───────────────────────────
-  const drNfts = nfts.filter(n => n.networkStatus === 'Digital Renaissance');
-  const drIS = countInnerStateSets(drNfts);
+  // ── Criterion 4: DR IS Full Sets → Ultra Rare Robots ──────────────────────
   const crit4: ConvergenceCriterion = {
-    id: 'dr-full-set',
-    label: 'Digital Renaissance Full Set',
-    description: 'All 7 Inner States among DR NFTs → 1 Ultra Rare Robot',
-    met: drIS.hasFull,
-    robots: drIS.hasFull ? { regular: 2, rare: 0, ultraRare: 1, total: 3 } : { regular: 0, rare: 0, ultraRare: 0, total: 0 },
+    id: 'dr-is-sets',
+    label: 'Digital Renaissance Full Sets',
+    description: 'Each DR IS set = 1 ultra rare + 2 regular robots',
+    count: drISSets,
+    robots: { regular: drISSets * 2, rare: 0, ultraRare: drISSets, total: drISSets * 3 },
     details: (() => {
-      if (!drIS.hasFull) {
+      if (drNfts.length === 0) return 'No Digital Renaissance NFTs';
+      if (drISSets === 0) {
         const missing = INNER_STATES.filter(s => !drIS.perState[s] || drIS.perState[s] === 0);
-        return `Missing DR IS: ${missing.join(', ')} (have ${drNfts.length} DR NFTs)`;
+        return `Missing DR IS: ${missing.join(', ')} (${drNfts.length} DR NFTs)`;
       }
-      return `✅ ${drIS.setCount} DR set${drIS.setCount > 1 ? 's' : ''} (${drNfts.length} DR NFTs)`;
+      return `✅ ${drISSets} DR set${drISSets > 1 ? 's' : ''} (${drNfts.length} DR NFTs)`;
     })(),
   };
 
@@ -181,25 +198,22 @@ export function calculateConvergence(nfts: NFTInput[]): ConvergenceResult {
   const fullCirclesShortage = Math.max(0, fullCirclesNeeded - fullCirclesAvailable);
   const canFullyEvolve = fullCirclesShortage === 0;
 
-  // Effective robots (capped by available FCs)
-  // Prioritize: ultra rare > rare > regular
+  // Effective robots capped by available FCs
+  // Priority: ultra rare > rare > regular
   let fcsLeft = fullCirclesAvailable;
   let effUltra = 0, effRare = 0, effRegular = 0;
 
   if (fcsLeft > 0 && totalRobots.ultraRare > 0) {
     const take = Math.min(totalRobots.ultraRare, fcsLeft);
-    effUltra = take;
-    fcsLeft -= take;
+    effUltra = take; fcsLeft -= take;
   }
   if (fcsLeft > 0 && totalRobots.rare > 0) {
     const take = Math.min(totalRobots.rare, fcsLeft);
-    effRare = take;
-    fcsLeft -= take;
+    effRare = take; fcsLeft -= take;
   }
   if (fcsLeft > 0 && totalRobots.regular > 0) {
     const take = Math.min(totalRobots.regular, fcsLeft);
-    effRegular = take;
-    fcsLeft -= take;
+    effRegular = take; fcsLeft -= take;
   }
 
   const effectiveRobots: RobotBreakdown = {
@@ -218,11 +232,10 @@ export function calculateConvergence(nfts: NFTInput[]): ConvergenceResult {
     canFullyEvolve,
     effectiveRobots,
     typesOwned,
-    isFullSet: allNftsIS.hasFull,
-    isFullSetCount: allNftsIS.setCount,
-    giFullSet: giIS.hasFull,
-    giFullSetCount: giIS.setCount,
-    drFullSet: drIS.hasFull,
-    drFullSetCount: drIS.setCount,
+    typeCombos,
+    totalISSets,
+    normalISSets,
+    giISSets,
+    drISSets,
   };
 }

@@ -243,35 +243,38 @@ export default function FullSetsPage() {
 
                 {/* Criteria Checklist */}
                 <div className="space-y-2 mb-5">
-                  {convergence.criteria.map((crit) => (
-                    <div key={crit.id} className={`p-3 rounded-lg border ${crit.met ? 'bg-[#4FFFDF]/5 border-[#4FFFDF]/20' : 'bg-black/30 border-[#1a1a1a]'}`}>
+                  {convergence.criteria.map((crit) => {
+                    const active = crit.count > 0;
+                    return (
+                    <div key={crit.id} className={`p-3 rounded-lg border ${active ? 'bg-[#4FFFDF]/5 border-[#4FFFDF]/20' : 'bg-black/30 border-[#1a1a1a]'}`}>
                       <div className="flex items-start gap-2">
-                        {crit.met ? (
+                        {active ? (
                           <CheckCircle2 className="w-4 h-4 text-[#4FFFDF] mt-0.5 flex-shrink-0" />
                         ) : (
                           <CircleDot className="w-4 h-4 text-gray-600 mt-0.5 flex-shrink-0" />
                         )}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-2">
-                            <span className={`text-xs sm:text-sm font-semibold ${crit.met ? 'text-white' : 'text-gray-400'}`}>
+                            <span className={`text-xs sm:text-sm font-semibold ${active ? 'text-white' : 'text-gray-400'}`}>
                               {crit.label}
                             </span>
-                            {crit.met && crit.robots.total > 0 && (
+                            {active && crit.robots.total > 0 && (
                               <span className="text-[10px] sm:text-xs px-2 py-0.5 rounded-full bg-[#00D4FF]/15 text-[#00D4FF] whitespace-nowrap">
                                 +{crit.robots.total} robot{crit.robots.total > 1 ? 's' : ''}
-                                {crit.robots.rare > 0 && ' (1 rare)'}
-                                {crit.robots.ultraRare > 0 && ' (1 ultra rare)'}
+                                {crit.robots.rare > 0 && ` (${crit.robots.rare} rare)`}
+                                {crit.robots.ultraRare > 0 && ` (${crit.robots.ultraRare} ultra rare)`}
                               </span>
                             )}
                           </div>
                           <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5">{crit.description}</p>
-                          <p className={`text-[10px] sm:text-xs mt-1 ${crit.met ? 'text-[#4FFFDF]/70' : 'text-amber-400/70'}`}>
+                          <p className={`text-[10px] sm:text-xs mt-1 ${active ? 'text-[#4FFFDF]/70' : 'text-amber-400/70'}`}>
                             {crit.details}
                           </p>
                         </div>
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 {/* Full Circle Status */}
