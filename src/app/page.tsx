@@ -20,9 +20,13 @@ import {
   GitCompareArrows,
   ArrowRight,
   Wallet,
-  ClipboardPaste
+  ClipboardPaste,
+  Bot,
+  Loader2,
 } from 'lucide-react';
 import { TwitterFeed } from '@/components/TwitterFeed';
+import { getNFTsForOwner } from '@/lib/alchemy';
+import { calculateConvergence, type ConvergenceResult } from '@/lib/robot-convergence';
 
 const features = [
   {
@@ -76,10 +80,12 @@ const CHARACTER_FORMS = [
 ];
 
 export default function Home() {
-  const { isConnected } = useWalletAddress();
+  const { isConnected, address } = useWalletAddress();
   const [characterImages, setCharacterImages] = useState<Record<string, string>>({});
   const [typeCounts, setTypeCounts] = useState<Record<string, number>>({});
   const [floorPrice, setFloorPrice] = useState<string | null>(null);
+  const [convergence, setConvergence] = useState<ConvergenceResult | null>(null);
+  const [convergenceLoading, setConvergenceLoading] = useState(false);
 
   useEffect(() => {
     const fetchImages = async () => {
@@ -118,6 +124,25 @@ export default function Home() {
       })
       .catch(() => { /* ignore */ });
   }, []);
+
+  // Fetch convergence eligibility when wallet connected
+  useEffect(() => {
+    if (!isConnected || !address) {
+      setConvergence(null);
+      return;
+    }
+    let cancelled = false;
+    setConvergenceLoading(true);
+    getNFTsForOwner(address)
+      .then(nfts => {
+        if (!cancelled) {
+          setConvergence(calculateConvergence(nfts));
+        }
+      })
+      .catch(() => { /* ignore */ })
+      .finally(() => { if (!cancelled) setConvergenceLoading(false); });
+    return () => { cancelled = true; };
+  }, [isConnected, address]);
 
   return (
     <div className="min-h-screen bg-black">
@@ -178,6 +203,55 @@ export default function Home() {
             </div>
           )}
         </section>
+
+        {/* Robot Convergence Widget */}
+        {isConnected && (convergenceLoading || convergence) && (
+          <section className="mb-8 sm:mb-12">
+            <Link
+              href="/full-sets"
+              className={`block card-hover p-4 sm:p-6 border ${
+                convergence && convergence.totalRobots.total > 0
+                  ? 'border-[#00D4FF]/30 bg-[#00D4FF]/5'
+                  : 'border-[#1a1a1a]'
+              }`}
+            >
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center ${
+                  convergence && convergence.totalRobots.total > 0
+                    ? 'bg-[#00D4FF]/15 border border-[#00D4FF]/30'
+                    : 'bg-white/5 border border-[#1a1a1a]'
+                }`}>
+                  {convergenceLoading ? (
+                    <Loader2 className="w-6 h-6 animate-spin text-[#00D4FF]" />
+                  ) : (
+                    <Bot className="w-6 h-6 sm:w-7 sm:h-7 text-[#00D4FF]" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-sm sm:text-base font-bold uppercase tracking-wide flex items-center gap-2">
+                    Robot Convergence
+                    <ArrowRight className="w-4 h-4 text-gray-600" />
+                  </h3>
+                  {convergenceLoading ? (
+                    <p className="text-xs sm:text-sm text-gray-500">Checking eligibility...</p>
+                  ) : convergence && convergence.totalRobots.total > 0 ? (
+                    <p className="text-xs sm:text-sm text-[#4FFFDF]">
+                      You are eligible for <span className="font-bold text-white">{convergence.effectiveRobots.total} Robot{convergence.effectiveRobots.total > 1 ? 's' : ''}</span>
+                      {convergence.effectiveRobots.guaranteedUltraRare > 0 && <span className="text-amber-400"> · including {convergence.effectiveRobots.guaranteedUltraRare} Guaranteed Ultra Rare</span>}
+                      {convergence.fullCirclesShortage > 0 && (
+                        <span className="text-amber-400"> · You need {convergence.fullCirclesShortage} more FC{convergence.fullCirclesShortage > 1 ? 's' : ''} to get your maximum eligible allocation ({convergence.totalRobots.total})</span>
+                      )}
+                    </p>
+                  ) : (
+                    <p className="text-xs sm:text-sm text-gray-500">
+                      Not yet eligible — check Full Set Tracker for details
+                    </p>
+                  )}
+                </div>
+              </div>
+            </Link>
+          </section>
+        )}
 
         {/* Features Grid */}
         <section className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
