@@ -1,295 +1,207 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
-  calculateTraitDistribution,
-  calculateNFTRarity,
   calculateCollectionRarity,
   getRarityTier,
   calculatePortfolioRarity,
 } from '../rarity'
 import type { NodeNFT } from '@/types/nft'
 
-// Test fixtures
-const createMockNFT = (
-  tokenId: string,
-  innerState: string,
-  grid: string = '3x3',
-  gradient: string = 'Sunset'
-): NodeNFT => ({
+// ─── Mock fetch (browser path) ───────────────────────────────────────────────
+
+const MOCK_RARITY_DATA = {
+  generatedAt: '2026-01-01T00:00:00.000Z',
+  totalNFTs: 10,
+  traitCounts: {
+    'Inner State': { Calm: 3, Awakened: 2, Ethereal: 1, Curious: 1, Determined: 1, Hopeful: 1, Radiant: 1 },
+    Grid: { '3x3': 8, '4x4': 1, '5x5': 1 },
+  },
+  nfts: {
+    '1': { rank: 5, score: 120, traits: { 'Inner State': { value: 'Calm', rarity: 0.3 } } },
+    '2': { rank: 6, score: 115, traits: { 'Inner State': { value: 'Calm', rarity: 0.3 } } },
+    '3': { rank: 7, score: 110, traits: { 'Inner State': { value: 'Calm', rarity: 0.3 } } },
+    '4': { rank: 4, score: 130, traits: { 'Inner State': { value: 'Awakened', rarity: 0.2 } } },
+    '5': { rank: 3, score: 140, traits: { 'Inner State': { value: 'Awakened', rarity: 0.2 } } },
+    '6': { rank: 2, score: 160, traits: { 'Inner State': { value: 'Ethereal', rarity: 0.1 } } },
+    '7': { rank: 8, score: 105, traits: { 'Inner State': { value: 'Curious', rarity: 0.1 } } },
+    '8': { rank: 9, score: 100, traits: { 'Inner State': { value: 'Determined', rarity: 0.1 } } },
+    '9': { rank: 10, score: 90, traits: { 'Inner State': { value: 'Hopeful', rarity: 0.1 } } },
+    '10': { rank: 1, score: 200, traits: { 'Inner State': { value: 'Radiant', rarity: 0.1 } } },
+  },
+}
+
+const createMockNFT = (tokenId: string, innerState: string): NodeNFT => ({
   tokenId,
   name: `NODES #${tokenId}`,
   image: `https://example.com/${tokenId}.png`,
   innerState,
-  grid,
-  gradient,
+  grid: '3x3',
+  gradient: 'Sunset',
   glow: 'Blue',
   interference: false,
   metadata: {
     name: `NODES #${tokenId}`,
     image: `https://example.com/${tokenId}.png`,
-    attributes: [
-      { trait_type: 'Inner State', value: innerState },
-      { trait_type: 'Grid', value: grid },
-      { trait_type: 'Gradient', value: gradient },
-      { trait_type: 'Glow', value: 'Blue' },
-    ],
+    attributes: [{ trait_type: 'Inner State', value: innerState }],
   },
 })
 
 const mockCollection: NodeNFT[] = [
-  createMockNFT('1', 'Calm', '3x3', 'Sunset'),
-  createMockNFT('2', 'Calm', '3x3', 'Ocean'),
-  createMockNFT('3', 'Calm', '4x4', 'Sunset'),
-  createMockNFT('4', 'Awakened', '3x3', 'Sunset'),
-  createMockNFT('5', 'Awakened', '5x5', 'Forest'),
-  createMockNFT('6', 'Ethereal', '3x3', 'Sunset'),
-  createMockNFT('7', 'Curious', '3x3', 'Sunset'),
-  createMockNFT('8', 'Determined', '3x3', 'Sunset'),
-  createMockNFT('9', 'Hopeful', '3x3', 'Sunset'),
-  createMockNFT('10', 'Radiant', '3x3', 'Unique'), // Rare trait
+  createMockNFT('1', 'Calm'),
+  createMockNFT('2', 'Calm'),
+  createMockNFT('3', 'Calm'),
+  createMockNFT('4', 'Awakened'),
+  createMockNFT('5', 'Awakened'),
+  createMockNFT('6', 'Ethereal'),
+  createMockNFT('7', 'Curious'),
+  createMockNFT('8', 'Determined'),
+  createMockNFT('9', 'Hopeful'),
+  createMockNFT('10', 'Radiant'),
 ]
 
-describe('calculateTraitDistribution', () => {
-  it('should calculate correct distribution for Inner State', () => {
-    const distribution = calculateTraitDistribution(mockCollection)
-    
-    expect(distribution['Inner State']['Calm']).toBe(3)
-    expect(distribution['Inner State']['Awakened']).toBe(2)
-    expect(distribution['Inner State']['Ethereal']).toBe(1)
-    expect(distribution['Inner State']['Radiant']).toBe(1)
+// Mock global fetch for the loadRarityData function
+beforeEach(() => {
+  global.fetch = vi.fn().mockResolvedValue({
+    ok: true,
+    json: async () => MOCK_RARITY_DATA,
   })
-
-  it('should calculate correct distribution for Grid', () => {
-    const distribution = calculateTraitDistribution(mockCollection)
-    
-    expect(distribution['Grid']['3x3']).toBe(8)
-    expect(distribution['Grid']['4x4']).toBe(1)
-    expect(distribution['Grid']['5x5']).toBe(1)
-  })
-
-  it('should calculate correct distribution for Gradient', () => {
-    const distribution = calculateTraitDistribution(mockCollection)
-    
-    expect(distribution['Gradient']['Sunset']).toBe(7)
-    expect(distribution['Gradient']['Ocean']).toBe(1)
-    expect(distribution['Gradient']['Forest']).toBe(1)
-    expect(distribution['Gradient']['Unique']).toBe(1)
-  })
-
-  it('should handle empty collection', () => {
-    const distribution = calculateTraitDistribution([])
-    expect(Object.keys(distribution)).toHaveLength(0)
-  })
-
-  it('should skip NFTs with missing attributes', () => {
-    const nftsWithMissing: NodeNFT[] = [
-      {
-        ...createMockNFT('1', 'Calm'),
-        metadata: { name: 'Test', image: '', attributes: [] },
-      },
-    ]
-    const distribution = calculateTraitDistribution(nftsWithMissing)
-    expect(Object.keys(distribution)).toHaveLength(0)
-  })
+  // Reset module cache between tests
+  vi.resetModules()
 })
 
-describe('calculateNFTRarity', () => {
-  it('should calculate higher rarity for rarer traits', () => {
-    const distribution = calculateTraitDistribution(mockCollection)
-    
-    // NFT #10 has unique Gradient trait
-    const rareNFT = calculateNFTRarity(mockCollection[9], distribution, mockCollection.length)
-    // NFT #1 has common traits
-    const commonNFT = calculateNFTRarity(mockCollection[0], distribution, mockCollection.length)
-    
-    expect(rareNFT.totalScore).toBeGreaterThan(commonNFT.totalScore)
-  })
-
-  it('should sort trait scores by rarity (descending)', () => {
-    const distribution = calculateTraitDistribution(mockCollection)
-    const rarity = calculateNFTRarity(mockCollection[9], distribution, mockCollection.length)
-    
-    // Traits should be sorted by rarityScore descending
-    for (let i = 0; i < rarity.traitScores.length - 1; i++) {
-      expect(rarity.traitScores[i].rarityScore)
-        .toBeGreaterThanOrEqual(rarity.traitScores[i + 1].rarityScore)
-    }
-  })
-
-  it('should calculate correct percentage', () => {
-    const distribution = calculateTraitDistribution(mockCollection)
-    const rarity = calculateNFTRarity(mockCollection[0], distribution, mockCollection.length)
-    
-    const calmTrait = rarity.traitScores.find(t => t.value === 'Calm')
-    expect(calmTrait?.percentage).toBe(30) // 3/10 = 30%
-    expect(calmTrait?.count).toBe(3)
-  })
-
-  it('should handle NFT with no attributes', () => {
-    const distribution = calculateTraitDistribution(mockCollection)
-    const emptyNFT: NodeNFT = {
-      ...createMockNFT('99', ''),
-      metadata: { name: 'Empty', image: '', attributes: [] },
-    }
-    
-    const rarity = calculateNFTRarity(emptyNFT, distribution, mockCollection.length)
-    expect(rarity.totalScore).toBe(0)
-    expect(rarity.traitScores).toHaveLength(0)
-  })
-})
-
-describe('calculateCollectionRarity', () => {
-  it('should assign ranks to all NFTs', () => {
-    const rarityMap = calculateCollectionRarity(mockCollection)
-    
-    expect(rarityMap.size).toBe(mockCollection.length)
-    
-    // Check that rank 1 exists
-    const ranks = Array.from(rarityMap.values()).map(r => r.rank)
-    expect(ranks).toContain(1)
-    expect(ranks).toContain(mockCollection.length)
-  })
-
-  it('should assign rank 1 to the rarest NFT', () => {
-    const rarityMap = calculateCollectionRarity(mockCollection)
-    
-    // Find NFT with rank 1
-    let topNFT: string | null = null
-    let topScore = 0
-    
-    rarityMap.forEach((rarity, tokenId) => {
-      if (rarity.rank === 1) topNFT = tokenId
-      if (rarity.totalScore > topScore) topScore = rarity.totalScore
-    })
-    
-    expect(topNFT).not.toBeNull()
-    expect(rarityMap.get(topNFT!)?.totalScore).toBe(topScore)
-  })
-
-  it('should calculate percentile correctly', () => {
-    const rarityMap = calculateCollectionRarity(mockCollection)
-    
-    // Rank 1 should have highest percentile (90 for 10 items)
-    const rank1 = Array.from(rarityMap.values()).find(r => r.rank === 1)
-    expect(rank1?.percentile).toBe(90)
-    
-    // Last rank should have lowest percentile (0)
-    const lastRank = Array.from(rarityMap.values()).find(r => r.rank === 10)
-    expect(lastRank?.percentile).toBe(0)
-  })
-
-  it('should handle empty collection', () => {
-    const rarityMap = calculateCollectionRarity([])
-    expect(rarityMap.size).toBe(0)
-  })
-})
+// ─── getRarityTier ────────────────────────────────────────────────────────────
 
 describe('getRarityTier', () => {
-  it('should return Legendary for percentile >= 95', () => {
-    expect(getRarityTier(95).tier).toBe('Legendary')
-    expect(getRarityTier(100).tier).toBe('Legendary')
+  it('should return Legendary for percentile >= 99', () => {
+    expect(getRarityTier(99).name).toBe('Legendary')
+    expect(getRarityTier(100).name).toBe('Legendary')
   })
 
-  it('should return Epic for percentile >= 85 and < 95', () => {
-    expect(getRarityTier(85).tier).toBe('Epic')
-    expect(getRarityTier(94).tier).toBe('Epic')
+  it('should return Epic for percentile >= 95 and < 99', () => {
+    expect(getRarityTier(95).name).toBe('Epic')
+    expect(getRarityTier(98).name).toBe('Epic')
   })
 
-  it('should return Rare for percentile >= 70 and < 85', () => {
-    expect(getRarityTier(70).tier).toBe('Rare')
-    expect(getRarityTier(84).tier).toBe('Rare')
+  it('should return Rare for percentile >= 85 and < 95', () => {
+    expect(getRarityTier(85).name).toBe('Rare')
+    expect(getRarityTier(94).name).toBe('Rare')
   })
 
-  it('should return Uncommon for percentile >= 40 and < 70', () => {
-    expect(getRarityTier(40).tier).toBe('Uncommon')
-    expect(getRarityTier(69).tier).toBe('Uncommon')
+  it('should return Uncommon for percentile >= 70 and < 85', () => {
+    expect(getRarityTier(70).name).toBe('Uncommon')
+    expect(getRarityTier(84).name).toBe('Uncommon')
   })
 
-  it('should return Common for percentile < 40', () => {
-    expect(getRarityTier(0).tier).toBe('Common')
-    expect(getRarityTier(39).tier).toBe('Common')
+  it('should return Common for percentile < 70', () => {
+    expect(getRarityTier(0).name).toBe('Common')
+    expect(getRarityTier(69).name).toBe('Common')
   })
 
-  it('should return correct colors', () => {
-    expect(getRarityTier(95).color).toBe('text-yellow-400')
-    expect(getRarityTier(85).color).toBe('text-purple-400')
-    expect(getRarityTier(70).color).toBe('text-blue-400')
-    expect(getRarityTier(40).color).toBe('text-green-400')
+  it('should return correct color classes', () => {
+    expect(getRarityTier(99).color).toBe('text-yellow-400')
+    expect(getRarityTier(95).color).toBe('text-purple-400')
+    expect(getRarityTier(85).color).toBe('text-blue-400')
+    expect(getRarityTier(70).color).toBe('text-green-400')
     expect(getRarityTier(0).color).toBe('text-gray-400')
   })
 })
 
+// ─── calculateCollectionRarity ────────────────────────────────────────────────
+
+describe('calculateCollectionRarity', () => {
+  it('should return a map with all NFTs that have rarity data', async () => {
+    const rarityMap = await calculateCollectionRarity(mockCollection)
+    expect(rarityMap.size).toBe(10)
+  })
+
+  it('should assign correct rank from rarity data', async () => {
+    const rarityMap = await calculateCollectionRarity(mockCollection)
+    expect(rarityMap.get('10')?.rank).toBe(1) // Rarest
+    expect(rarityMap.get('9')?.rank).toBe(10) // Most common
+  })
+
+  it('should assign correct score from rarity data', async () => {
+    const rarityMap = await calculateCollectionRarity(mockCollection)
+    expect(rarityMap.get('10')?.score).toBe(200)
+    expect(rarityMap.get('1')?.score).toBe(120)
+  })
+
+  it('should calculate percentile based on rank and total NFTs', async () => {
+    const rarityMap = await calculateCollectionRarity(mockCollection)
+    // Rank 1 out of 10 → percentile = (1 - 1/10) * 100 = 90
+    expect(rarityMap.get('10')?.percentile).toBe(90)
+    // Rank 10 out of 10 → percentile = (1 - 10/10) * 100 = 0
+    expect(rarityMap.get('9')?.percentile).toBe(0)
+  })
+
+  it('should assign tier based on percentile', async () => {
+    const rarityMap = await calculateCollectionRarity(mockCollection)
+    const rarest = rarityMap.get('10')
+    // percentile 90 → Rare
+    expect(rarest?.tier).toBe('Rare')
+  })
+
+  it('should return empty map when no rarity data available', async () => {
+    global.fetch = vi.fn().mockResolvedValue({ ok: false })
+    const rarityMap = await calculateCollectionRarity(mockCollection)
+    expect(rarityMap.size).toBe(0)
+  })
+
+  it('should return empty map for empty collection', async () => {
+    const rarityMap = await calculateCollectionRarity([])
+    expect(rarityMap.size).toBe(0)
+  })
+
+  it('should skip NFTs not found in rarity data', async () => {
+    const unknownNFT = createMockNFT('9999', 'Unknown')
+    const rarityMap = await calculateCollectionRarity([unknownNFT])
+    expect(rarityMap.size).toBe(0)
+  })
+})
+
+// ─── calculatePortfolioRarity ─────────────────────────────────────────────────
+
 describe('calculatePortfolioRarity', () => {
-  it('should calculate average score correctly', () => {
-    const rarityMap = calculateCollectionRarity(mockCollection)
-    const owned = mockCollection.slice(0, 3) // First 3 NFTs
-    
-    const portfolio = calculatePortfolioRarity(owned, rarityMap)
-    
-    // Calculate expected average
-    let totalScore = 0
-    owned.forEach(nft => {
-      totalScore += rarityMap.get(nft.tokenId)?.totalScore || 0
-    })
-    const expectedAvg = Math.round((totalScore / owned.length) * 100) / 100
-    
-    expect(portfolio.averageScore).toBe(expectedAvg)
+  it('should return null for empty portfolio', async () => {
+    const rarityMap = await calculateCollectionRarity(mockCollection)
+    const result = calculatePortfolioRarity([], rarityMap)
+    expect(result).toBeNull()
   })
 
-  it('should find the best NFT', () => {
-    const rarityMap = calculateCollectionRarity(mockCollection)
+  it('should return null for empty rarityMap', async () => {
+    const result = calculatePortfolioRarity(mockCollection, new Map())
+    expect(result).toBeNull()
+  })
+
+  it('should calculate correct average rank', async () => {
+    const rarityMap = await calculateCollectionRarity(mockCollection)
+    const owned = [mockCollection[0], mockCollection[3]] // tokenId 1 (rank 5) + tokenId 4 (rank 4)
+    const result = calculatePortfolioRarity(owned, rarityMap)
+    expect(result?.avgRank).toBe(Math.round((5 + 4) / 2)) // 4 or 5
+  })
+
+  it('should find the rarest NFT in portfolio', async () => {
+    const rarityMap = await calculateCollectionRarity(mockCollection)
     const owned = mockCollection.slice(0, 5)
-    
-    const portfolio = calculatePortfolioRarity(owned, rarityMap)
-    
-    expect(portfolio.bestNft).not.toBeNull()
-    
-    // Best NFT should have the highest score among owned
-    let maxScore = 0
-    owned.forEach(nft => {
-      const score = rarityMap.get(nft.tokenId)?.totalScore || 0
-      if (score > maxScore) maxScore = score
-    })
-    
-    expect(portfolio.bestNft?.score).toBe(maxScore)
+    const result = calculatePortfolioRarity(owned, rarityMap)
+    // Among first 5, tokenId 5 has rank 3 (best rank)
+    expect(result?.rarestNFT?.tokenId).toBe('5')
+    expect(result?.rarestNFT?.rank).toBe(3)
   })
 
-  it('should return top 5 rarest traits', () => {
-    const rarityMap = calculateCollectionRarity(mockCollection)
-    
-    const portfolio = calculatePortfolioRarity(mockCollection, rarityMap)
-    
-    expect(portfolio.rarestTraits.length).toBeLessThanOrEqual(5)
-    
-    // Should be sorted by rarityScore descending
-    for (let i = 0; i < portfolio.rarestTraits.length - 1; i++) {
-      expect(portfolio.rarestTraits[i].rarityScore)
-        .toBeGreaterThanOrEqual(portfolio.rarestTraits[i + 1].rarityScore)
-    }
+  it('should calculate best and worst rank', async () => {
+    const rarityMap = await calculateCollectionRarity(mockCollection)
+    const owned = mockCollection // All 10 NFTs
+    const result = calculatePortfolioRarity(owned, rarityMap)
+    expect(result?.bestRank).toBe(1)  // Rarest
+    expect(result?.worstRank).toBe(10) // Most common
   })
 
-  it('should handle empty portfolio', () => {
-    const rarityMap = calculateCollectionRarity(mockCollection)
-    
-    const portfolio = calculatePortfolioRarity([], rarityMap)
-    
-    expect(portfolio.averageScore).toBe(0)
-    expect(portfolio.averageRank).toBe(0)
-    expect(portfolio.totalRarityScore).toBe(0)
-    expect(portfolio.bestNft).toBeNull()
-    expect(portfolio.rarestTraits).toHaveLength(0)
-  })
-
-  it('should calculate total rarity score', () => {
-    const rarityMap = calculateCollectionRarity(mockCollection)
-    const owned = mockCollection.slice(0, 3)
-    
-    const portfolio = calculatePortfolioRarity(owned, rarityMap)
-    
-    let expectedTotal = 0
-    owned.forEach(nft => {
-      expectedTotal += rarityMap.get(nft.tokenId)?.totalScore || 0
-    })
-    
-    expect(portfolio.totalRarityScore).toBe(Math.round(expectedTotal * 100) / 100)
+  it('should skip NFTs not in rarityMap', async () => {
+    const rarityMap = await calculateCollectionRarity(mockCollection)
+    const owned = [createMockNFT('9999', 'Unknown'), mockCollection[9]] // 1 unknown + NFT 10 (rank 1)
+    const result = calculatePortfolioRarity(owned, rarityMap)
+    // Should only count NFT 10
+    expect(result?.avgRank).toBe(1)
+    expect(result?.rarestNFT?.tokenId).toBe('10')
   })
 })

@@ -276,39 +276,5 @@ describe('getNFTMetadata', () => {
   })
 })
 
-describe('getCollectionStats', () => {
-  beforeEach(() => {
-    mockFetch.mockReset()
-  })
-
-  it('should return null on error', async () => {
-    mockFetch.mockRejectedValue(new Error('Network error'))
-    
-    const { getCollectionStats } = await import('../alchemy')
-    
-    const result = await getCollectionStats()
-    
-    expect(result).toBeNull()
-  })
-
-  it('should return stats on success', async () => {
-    const mockStats = {
-      totalSupply: 1000,
-      contractMetadata: {
-        name: 'NODES',
-        symbol: 'NODES',
-      },
-    }
-    
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve(mockStats),
-    })
-    
-    const { getCollectionStats } = await import('../alchemy')
-    
-    const result = await getCollectionStats()
-    
-    expect(result).toEqual(mockStats)
-  })
-})
+// NOTE: getCollectionStats was removed from alchemy.ts (deprecated — use rarity.json data instead)
+// Tests removed to keep test suite in sync with actual exports.
