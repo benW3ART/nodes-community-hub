@@ -3,10 +3,11 @@ import {
   calculateCollectionRarity,
   getRarityTier,
   calculatePortfolioRarity,
+  clearRarityCache,
 } from '../rarity'
 import type { NodeNFT } from '@/types/nft'
 
-// ─── Mock fetch (browser path) ───────────────────────────────────────────────
+// ─── Mock fetch (browser path — jsdom env) ───────────────────────────────────
 
 const MOCK_RARITY_DATA = {
   generatedAt: '2026-01-01T00:00:00.000Z',
@@ -58,14 +59,15 @@ const mockCollection: NodeNFT[] = [
   createMockNFT('10', 'Radiant'),
 ]
 
-// Mock global fetch for the loadRarityData function
+// Mock global fetch for the loadRarityData function (jsdom uses browser path)
 beforeEach(() => {
+  // Clear the module-level cache so each test starts fresh
+  clearRarityCache()
+
   global.fetch = vi.fn().mockResolvedValue({
     ok: true,
     json: async () => MOCK_RARITY_DATA,
   })
-  // Reset module cache between tests
-  vi.resetModules()
 })
 
 // ─── getRarityTier ────────────────────────────────────────────────────────────
@@ -141,6 +143,9 @@ describe('calculateCollectionRarity', () => {
   })
 
   it('should return empty map when no rarity data available', async () => {
+    // In jsdom env, loadRarityData uses fetch (browser path).
+    // Simulate failed fetch to make loadRarityData return null.
+    clearRarityCache() // ensure no stale data
     global.fetch = vi.fn().mockResolvedValue({ ok: false })
     const rarityMap = await calculateCollectionRarity(mockCollection)
     expect(rarityMap.size).toBe(0)

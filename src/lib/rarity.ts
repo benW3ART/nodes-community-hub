@@ -22,6 +22,11 @@ interface RarityData {
 
 let cachedRarityData: RarityData | null = null;
 
+/** Clear the rarity data cache (for testing purposes) */
+export function clearRarityCache(): void {
+  cachedRarityData = null;
+}
+
 /**
  * Load pre-calculated rarity data from public/data/rarity.json
  */
