@@ -14,6 +14,7 @@ export interface NodeNFT {
   tokenId: string;
   name: string;
   image: string;
+  cleanImage?: string;
   innerState: string;
   grid: string;
   gradient: string;

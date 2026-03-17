@@ -14,7 +14,7 @@ import { useNodesStore } from '@/stores/useNodesStore';
 import { NFTCard } from '@/components/NFTCard';
 import { getRarityTier } from '@/lib/rarity';
 import type { NodeNFT } from '@/types/nft';
-import { INNER_STATES } from '@/lib/wagmi';
+// INNER_STATES no longer needed — filters auto-detect from NFT attributes
 import { 
   Loader2, 
   Wallet, 
@@ -25,12 +25,15 @@ import {
   BarChart3,
   ChevronDown,
   X,
-  Zap
+  Zap,
+  Download,
 } from 'lucide-react';
 import Image from 'next/image';
 
-type SortOption = 'tokenId' | 'innerState' | 'rarity';
+type SortOption = 'tokenId' | 'innerState' | 'rarity' | 'type' | 'networkStatus';
 type SortDirection = 'asc' | 'desc';
+
+const FILTER_ATTRIBUTES = ['Inner State', 'Type', 'Network Status', 'Glow', 'Gradient', 'Grid', 'Shade'] as const;
 
 export default function GalleryPage() {
   const { address, isConnected, isViewOnly } = useWalletAddress();
@@ -46,7 +49,7 @@ export default function GalleryPage() {
 
   const [showRarity, setShowRarity] = useState(false);
   const [rarityMap, setRarityMap] = useState<Map<string, RarityScore>>(new Map());
-  const [filterState, setFilterState] = useState<string | null>(null);
+  const [filters, setFilters] = useState<Record<string, string>>({});
   const [sortBy, setSortBy] = useState<SortOption>('tokenId');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [showFilters, setShowFilters] = useState(false);
@@ -96,13 +99,37 @@ export default function GalleryPage() {
     return calculatePortfolioRarity(nfts, rarityMap);
   }, [nfts, rarityMap]);
 
+  // Extract unique values for each filterable attribute
+  const filterOptions = useMemo(() => {
+    const options: Record<string, string[]> = {};
+    for (const attr of FILTER_ATTRIBUTES) {
+      const values = new Set<string>();
+      for (const nft of nfts) {
+        const found = nft.metadata?.attributes?.find(a => a.trait_type === attr);
+        if (found?.value) values.add(found.value);
+        // Also catch Network Status from top-level field
+        if (attr === 'Network Status' && nft.networkStatus) values.add(nft.networkStatus);
+      }
+      if (values.size > 0) options[attr] = Array.from(values).sort();
+    }
+    return options;
+  }, [nfts]);
+
+  const hasActiveFilters = Object.values(filters).some(v => v);
+
   // Filter and sort NFTs
   const displayedNfts = useMemo(() => {
     let filtered = [...nfts];
     
-    // Apply filter
-    if (filterState) {
-      filtered = filtered.filter(nft => nft.innerState === filterState);
+    // Apply filters
+    for (const [attr, value] of Object.entries(filters)) {
+      if (!value) continue;
+      filtered = filtered.filter(nft => {
+        // Special case for Network Status (top-level field)
+        if (attr === 'Network Status') return nft.networkStatus === value;
+        const found = nft.metadata?.attributes?.find(a => a.trait_type === attr);
+        return found?.value === value;
+      });
     }
     
     // Apply sort
@@ -121,13 +148,22 @@ export default function GalleryPage() {
           const rarityB = rarityMap.get(b.tokenId)?.score || 0;
           comparison = rarityB - rarityA; // Higher is rarer
           break;
+        case 'type': {
+          const typeA = a.metadata.attributes.find(at => at.trait_type === 'Type')?.value || '';
+          const typeB = b.metadata.attributes.find(at => at.trait_type === 'Type')?.value || '';
+          comparison = typeA.localeCompare(typeB);
+          break;
+        }
+        case 'networkStatus':
+          comparison = (a.networkStatus || '').localeCompare(b.networkStatus || '');
+          break;
       }
       
       return sortDirection === 'asc' ? comparison : -comparison;
     });
     
     return filtered;
-  }, [nfts, filterState, sortBy, sortDirection, rarityMap]);
+  }, [nfts, filters, sortBy, sortDirection, rarityMap]);
 
   const toggleSortDirection = () => {
     setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
@@ -250,27 +286,36 @@ export default function GalleryPage() {
                   <span className="flex items-center gap-2 text-sm">
                     <Filter className="w-4 h-4 text-gray-500" />
                     Filters & Sort
-                    {filterState && <span className="text-[#00D4FF]">• {filterState}</span>}
+                    {hasActiveFilters && <span className="text-[#00D4FF]">•</span>}
                   </span>
                   <ChevronDown className={`w-4 h-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
                 </button>
                 
                 {showFilters && (
                   <div className="space-y-3 p-3 bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg">
-                    {/* Filter by Inner State */}
-                    <div>
-                      <label className="text-xs text-gray-500 mb-1.5 block uppercase tracking-wide">Inner State</label>
-                      <select
-                        value={filterState || ''}
-                        onChange={(e) => setFilterState(e.target.value || null)}
-                        className="w-full bg-black border border-[#1a1a1a] rounded-lg px-3 py-2.5 text-sm"
-                      >
-                        <option value="">All States</option>
-                        {INNER_STATES.map((state) => (
-                          <option key={state} value={state}>{state}</option>
-                        ))}
-                      </select>
+                    {/* Attribute Filters */}
+                    <div className="grid grid-cols-2 gap-2">
+                      {FILTER_ATTRIBUTES.map(attr => {
+                        const options = filterOptions[attr];
+                        if (!options || options.length === 0) return null;
+                        return (
+                          <div key={attr}>
+                            <label className="text-[10px] text-gray-500 mb-1 block uppercase tracking-wide">{attr}</label>
+                            <select
+                              value={filters[attr] || ''}
+                              onChange={(e) => setFilters(prev => ({ ...prev, [attr]: e.target.value }))}
+                              className="w-full bg-black border border-[#1a1a1a] rounded-lg px-2 py-2 text-xs"
+                            >
+                              <option value="">All</option>
+                              {options.map(v => <option key={v} value={v}>{v}</option>)}
+                            </select>
+                          </div>
+                        );
+                      })}
                     </div>
+                    {hasActiveFilters && (
+                      <button onClick={() => setFilters({})} className="text-xs text-[#00D4FF]">Clear all filters</button>
+                    )}
 
                     {/* Sort Options */}
                     <div className="flex gap-2">
@@ -283,6 +328,8 @@ export default function GalleryPage() {
                         >
                           <option value="tokenId">Token ID</option>
                           <option value="innerState">Inner State</option>
+                          <option value="type">Type</option>
+                          <option value="networkStatus">Network Status</option>
                           <option value="rarity">Rarity</option>
                         </select>
                       </div>
@@ -292,11 +339,7 @@ export default function GalleryPage() {
                           onClick={toggleSortDirection}
                           className="p-2.5 bg-black border border-[#1a1a1a] rounded-lg"
                         >
-                          {sortDirection === 'asc' ? (
-                            <SortAsc className="w-5 h-5" />
-                          ) : (
-                            <SortDesc className="w-5 h-5" />
-                          )}
+                          {sortDirection === 'asc' ? <SortAsc className="w-5 h-5" /> : <SortDesc className="w-5 h-5" />}
                         </button>
                       </div>
                     </div>
@@ -318,61 +361,67 @@ export default function GalleryPage() {
               </div>
 
               {/* Desktop: Inline filters */}
-              <div className="hidden sm:flex flex-wrap gap-4">
-                {/* Filter by Inner State */}
-                <div className="flex items-center gap-2">
+              <div className="hidden sm:block space-y-3">
+                <div className="flex flex-wrap gap-2 items-center">
                   <Filter className="w-4 h-4 text-gray-500" />
-                  <select
-                    value={filterState || ''}
-                    onChange={(e) => setFilterState(e.target.value || null)}
-                    className="bg-black border border-[#1a1a1a] rounded-lg px-3 py-2 text-sm"
-                  >
-                    <option value="">All Inner States</option>
-                    {INNER_STATES.map((state) => (
-                      <option key={state} value={state}>{state}</option>
-                    ))}
-                  </select>
+                  {FILTER_ATTRIBUTES.map(attr => {
+                    const options = filterOptions[attr];
+                    if (!options || options.length === 0) return null;
+                    return (
+                      <select
+                        key={attr}
+                        value={filters[attr] || ''}
+                        onChange={(e) => setFilters(prev => ({ ...prev, [attr]: e.target.value }))}
+                        className="bg-black border border-[#1a1a1a] rounded-lg px-2 py-1.5 text-xs focus:border-[#00D4FF]/50 focus:outline-none transition-colors cursor-pointer"
+                      >
+                        <option value="">{attr} (All)</option>
+                        {options.map(v => <option key={v} value={v}>{v}</option>)}
+                      </select>
+                    );
+                  })}
+                  {hasActiveFilters && (
+                    <button onClick={() => setFilters({})} className="text-xs text-[#00D4FF] hover:text-[#4FFFDF]">Clear</button>
+                  )}
                 </div>
+                <div className="flex flex-wrap gap-4 items-center">
+                  {/* Sort Options */}
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value as SortOption)}
+                      className="bg-black border border-[#1a1a1a] rounded-lg px-3 py-2 text-sm"
+                    >
+                      <option value="tokenId">Token ID</option>
+                      <option value="innerState">Inner State</option>
+                      <option value="type">Type</option>
+                      <option value="networkStatus">Network Status</option>
+                      <option value="rarity">Rarity Score</option>
+                    </select>
+                    <button
+                      onClick={toggleSortDirection}
+                      className="p-2 bg-black border border-[#1a1a1a] rounded-lg hover:border-[#00D4FF]/50"
+                    >
+                      {sortDirection === 'asc' ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />}
+                    </button>
+                  </div>
 
-                {/* Sort Options */}
-                <div className="flex items-center gap-2">
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value as SortOption)}
-                    className="bg-black border border-[#1a1a1a] rounded-lg px-3 py-2 text-sm"
-                  >
-                    <option value="tokenId">Token ID</option>
-                    <option value="innerState">Inner State</option>
-                    <option value="rarity">Rarity Score</option>
-                  </select>
+                  {/* Rarity Toggle */}
                   <button
-                    onClick={toggleSortDirection}
-                    className="p-2 bg-black border border-[#1a1a1a] rounded-lg hover:border-[#00D4FF]/50"
+                    onClick={() => setShowRarity(!showRarity)}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all ${
+                      showRarity
+                        ? 'bg-[#00D4FF] text-black'
+                        : 'bg-black border border-[#1a1a1a] text-gray-400 hover:border-[#00D4FF]/50'
+                    }`}
                   >
-                    {sortDirection === 'asc' ? (
-                      <SortAsc className="w-4 h-4" />
-                    ) : (
-                      <SortDesc className="w-4 h-4" />
-                    )}
+                    <Sparkles className="w-4 h-4" />
+                    {showRarity ? 'Hide Rarity' : 'Show Rarity'}
                   </button>
-                </div>
 
-                {/* Rarity Toggle */}
-                <button
-                  onClick={() => setShowRarity(!showRarity)}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all ${
-                    showRarity
-                      ? 'bg-[#00D4FF] text-black'
-                      : 'bg-black border border-[#1a1a1a] text-gray-400 hover:border-[#00D4FF]/50'
-                  }`}
-                >
-                  <Sparkles className="w-4 h-4" />
-                  {showRarity ? 'Hide Rarity' : 'Show Rarity'}
-                </button>
-
-                {/* Count Display */}
-                <div className="ml-auto text-sm text-gray-500 flex items-center">
-                  Showing {displayedNfts.length} of {nfts.length}
+                  {/* Count Display */}
+                  <div className="ml-auto text-sm text-gray-500 flex items-center">
+                    Showing {displayedNfts.length} of {nfts.length}
+                  </div>
                 </div>
               </div>
 
@@ -396,16 +445,16 @@ export default function GalleryPage() {
               ))}
             </div>
 
-            {displayedNfts.length === 0 && filterState && (
+            {displayedNfts.length === 0 && hasActiveFilters && (
               <div className="text-center py-12">
                 <p className="text-gray-500 text-sm sm:text-base">
-                  No NFTs with Inner State &quot;{filterState}&quot; found.
+                  No NFTs match the selected filters.
                 </p>
                 <button
-                  onClick={() => setFilterState(null)}
+                  onClick={() => setFilters({})}
                   className="mt-4 text-[#00D4FF] hover:text-[#4FFFDF] text-sm sm:text-base"
                 >
-                  Clear filter
+                  Clear all filters
                 </button>
               </div>
             )}
@@ -472,6 +521,34 @@ export default function GalleryPage() {
                       </p>
                     </div>
                   )}
+
+                  {/* Download Buttons */}
+                  <div className="grid grid-cols-2 gap-2 mb-4">
+                    {selectedNft.image && (
+                      <a
+                        href={selectedNft.image}
+                        download={`NODES-${selectedNft.tokenId}.${selectedNft.image.toLowerCase().endsWith('.gif') ? 'gif' : 'png'}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn-secondary flex items-center justify-center gap-2 text-xs py-2.5"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        Download Image
+                      </a>
+                    )}
+                    {selectedNft.cleanImage && (
+                      <a
+                        href={selectedNft.cleanImage}
+                        download={`NODES-${selectedNft.tokenId}-clean.${selectedNft.cleanImage.toLowerCase().endsWith('.gif') ? 'gif' : 'png'}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn-secondary flex items-center justify-center gap-2 text-xs py-2.5"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        Download Clean Image
+                      </a>
+                    )}
+                  </div>
 
                   {nftRarity && (
                     <div className="border-t border-[#1a1a1a] pt-4">

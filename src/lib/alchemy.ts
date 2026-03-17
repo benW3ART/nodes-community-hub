@@ -104,6 +104,7 @@ function parseMetadataToNFT(tokenId: string, metadata: FreshMetadata): NodeNFT {
     tokenId,
     name: metadata.name || `NODES #${tokenId}`,
     image: metadata.image || '',
+    cleanImage: metadata.cleanimage || undefined,
     innerState: getAttribute('Inner State'),
     grid: getAttribute('Grid'),
     gradient: getAttribute('Gradient'),
