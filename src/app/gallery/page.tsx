@@ -549,6 +549,9 @@ export default function GalleryPage() {
                       </a>
                     )}
                   </div>
+                  {selectedNft.cleanImage && (
+                    <p className="text-[10px] text-gray-600 mb-4 -mt-2 text-center">Clean image = without the Inner State icon</p>
+                  )}
 
                   {nftRarity && (
                     <div className="border-t border-[#1a1a1a] pt-4">
