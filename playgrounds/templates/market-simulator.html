@@ -1,0 +1,1121 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Market Simulator | Genius Playground</title>
+    <link rel="stylesheet" href="./design-tokens.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary-alt);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 32px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        header h1 {
+            font-size: 2rem;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        header p {
+            color: var(--text-secondary);
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 24px;
+        }
+
+        .panel {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .panel-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .panel-title::before {
+            content: '';
+            width: 4px;
+            height: 20px;
+            background: var(--accent-blue);
+            border-radius: 2px;
+        }
+
+        /* Presets */
+        .presets {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .preset-btn {
+            flex: 1;
+            padding: 10px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-tertiary);
+            color: var(--text-primary-alt);
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .preset-btn:hover {
+            border-color: var(--accent-blue);
+            background: var(--tone-blue-10);
+        }
+
+        .preset-btn.active {
+            border-color: var(--accent-blue);
+            background: var(--tone-blue-20);
+        }
+
+        .preset-btn.pessimistic { border-left: 3px solid var(--accent-red); }
+        .preset-btn.realistic { border-left: 3px solid var(--accent-orange); }
+        .preset-btn.optimistic { border-left: 3px solid var(--accent-green); }
+
+        /* Sliders */
+        .slider-group {
+            margin-bottom: 20px;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+
+        .slider-label span:first-child {
+            color: var(--text-secondary);
+        }
+
+        .slider-value {
+            color: var(--accent-blue);
+            font-weight: 600;
+            font-family: 'SF Mono', Monaco, monospace;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--bg-tertiary);
+            appearance: none;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--accent-blue);
+            cursor: pointer;
+            border: 2px solid var(--bg-primary);
+            box-shadow: 0 2px 6px var(--overlay-black-30);
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+        }
+
+        /* Competitors Section */
+        .competitors-section {
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .competitor-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .competitor-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .competitor-name {
+            flex: 1;
+            font-weight: 500;
+        }
+
+        .competitor-score {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        /* Visualizations Grid */
+        .viz-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            grid-template-rows: auto auto auto;
+            gap: 20px;
+        }
+
+        .viz-panel {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .viz-panel.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .viz-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* TAM/SAM/SOM Bullseye */
+        .bullseye-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 40px;
+        }
+
+        .bullseye {
+            position: relative;
+            width: 250px;
+            height: 250px;
+        }
+
+        .bullseye-ring {
+            position: absolute;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .ring-tam {
+            width: 100%;
+            height: 100%;
+            background: var(--tone-blue-15);
+            border: 2px solid var(--accent-blue);
+            top: 0;
+            left: 0;
+        }
+
+        .ring-sam {
+            width: 66%;
+            height: 66%;
+            background: var(--tone-purple-20);
+            border: 2px solid var(--accent-purple);
+            top: 17%;
+            left: 17%;
+        }
+
+        .ring-som {
+            width: 33%;
+            height: 33%;
+            background: var(--tone-green-25);
+            border: 2px solid var(--accent-green);
+            top: 33.5%;
+            left: 33.5%;
+        }
+
+        .bullseye-legend {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+        }
+
+        .legend-color.tam { background: var(--accent-blue); }
+        .legend-color.sam { background: var(--accent-purple); }
+        .legend-color.som { background: var(--accent-green); }
+
+        .legend-text {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .legend-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .legend-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+            font-family: 'SF Mono', Monaco, monospace;
+        }
+
+        /* Revenue Chart */
+        .chart-container {
+            height: 280px;
+            position: relative;
+        }
+
+        .chart-canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        .chart-legend {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            margin-top: 16px;
+        }
+
+        .chart-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+        }
+
+        .chart-legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        /* Radar Chart */
+        .radar-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 280px;
+        }
+
+        .radar-canvas {
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        /* Prompt Output */
+        .prompt-section {
+            margin-top: 24px;
+        }
+
+        .prompt-output {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+            font-size: 0.85rem;
+            line-height: 1.7;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            color: var(--text-secondary);
+        }
+
+        .copy-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            margin-top: 12px;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .copy-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px var(--tone-blue-30);
+        }
+
+        .copy-btn.copied {
+            background: var(--accent-green);
+        }
+
+        /* KPI Cards */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .kpi-card {
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .kpi-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            font-family: 'SF Mono', Monaco, monospace;
+            color: var(--accent-blue);
+        }
+
+        .kpi-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 4px;
+        }
+
+        .kpi-card.positive .kpi-value { color: var(--accent-green); }
+        .kpi-card.warning .kpi-value { color: var(--accent-orange); }
+        .kpi-card.negative .kpi-value { color: var(--accent-red); }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-secondary);
+        }
+
+        @media (max-width: 1200px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+            .viz-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    
+/* ===== MOBILE RESPONSIVE (v13) ===== */
+@media (max-width: 768px) {
+  body { padding: 1rem !important; }
+
+  /* Single-column grids */
+  [style*="grid-template-columns"],
+  .grid, .cards-grid, .two-col, .three-col,
+  [class*="grid-"] { grid-template-columns: 1fr !important; }
+
+  /* Stack flex rows */
+  .flex-row, .row, [class*="-row"] { flex-direction: column !important; }
+
+  /* Full-width elements */
+  .card, .panel, .box, .section,
+  [class*="card"], [class*="panel"] { width: 100% !important; max-width: 100% !important; }
+
+  /* Touch-friendly inputs and buttons */
+  input, select, textarea, button, .btn,
+  [class*="btn"], [class*="button"] {
+    min-height: 44px !important;
+    font-size: 16px !important;
+  }
+
+  /* Prevent horizontal scroll */
+  .container, .wrapper, main, section { overflow-x: hidden; }
+
+  /* Readable font sizes */
+  h1 { font-size: 1.6rem !important; }
+  h2 { font-size: 1.3rem !important; }
+  h3 { font-size: 1.1rem !important; }
+
+  /* Reduce whitespace */
+  .container, .wrapper, main {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+
+  /* Table responsiveness */
+  table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* Navigation */
+  nav, .nav, .navbar { flex-wrap: wrap; gap: .5rem; }
+}
+
+@media (max-width: 480px) {
+  body { padding: .75rem !important; }
+  h1 { font-size: 1.3rem !important; }
+  .header, header { padding: .75rem 1rem !important; }
+}
+
+</style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📊 Market Simulator</h1>
+            <p>Simulate your market strategy and analyze your competitive positioning</p>
+        </header>
+
+        <div class="main-grid">
+            <!-- Control Panel -->
+            <aside class="panel">
+                <div class="panel-title">Simulation Parameters</div>
+
+                <!-- Presets -->
+                <div class="presets">
+                    <button class="preset-btn pessimistic" onclick="applyPreset('pessimistic')">😟 Pessimistic</button>
+                    <button class="preset-btn realistic active" onclick="applyPreset('realistic')">😐 Realistic</button>
+                    <button class="preset-btn optimistic" onclick="applyPreset('optimistic')">🚀 Optimistic</button>
+                </div>
+
+                <!-- Sliders -->
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>💰 Prix unitaire</span>
+                        <span class="slider-value" id="price-value">49€</span>
+                    </div>
+                    <input type="range" id="price" min="9" max="299" value="49" oninput="updateAll()">
+                </div>
+
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>🎯 Target Market Size (TAM)</span>
+                        <span class="slider-value" id="tam-value">500K</span>
+                    </div>
+                    <input type="range" id="tam" min="10000" max="10000000" value="500000" step="10000" oninput="updateAll()">
+                </div>
+
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>📈 Conversion Rate</span>
+                        <span class="slider-value" id="conversion-value">2.5%</span>
+                    </div>
+                    <input type="range" id="conversion" min="0.1" max="15" value="2.5" step="0.1" oninput="updateAll()">
+                </div>
+
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>📉 Monthly Churn</span>
+                        <span class="slider-value" id="churn-value">5%</span>
+                    </div>
+                    <input type="range" id="churn" min="0.5" max="25" value="5" step="0.5" oninput="updateAll()">
+                </div>
+
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>💸 Acquisition Cost (CAC)</span>
+                        <span class="slider-value" id="cac-value">25€</span>
+                    </div>
+                    <input type="range" id="cac" min="1" max="200" value="25" oninput="updateAll()">
+                </div>
+
+                <!-- Competitors -->
+                <div class="competitors-section">
+                    <div class="panel-title">🏆 Concurrents</div>
+                    <div id="competitors-list">
+                        <!-- Generated dynamically -->
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Visualizations -->
+            <main class="viz-grid">
+                <!-- KPIs -->
+                <div class="viz-panel full-width">
+                    <div class="viz-title">📊 Key Metrics</div>
+                    <div class="kpi-grid">
+                        <div class="kpi-card" id="kpi-ltv">
+                            <div class="kpi-value">980€</div>
+                            <div class="kpi-label">LTV</div>
+                        </div>
+                        <div class="kpi-card" id="kpi-ratio">
+                            <div class="kpi-value">3.9x</div>
+                            <div class="kpi-label">LTV/CAC</div>
+                        </div>
+                        <div class="kpi-card" id="kpi-payback">
+                            <div class="kpi-value">2.1 mois</div>
+                            <div class="kpi-label">Payback</div>
+                        </div>
+                        <div class="kpi-card" id="kpi-mrr">
+                            <div class="kpi-value">612K€</div>
+                            <div class="kpi-label">MRR M12</div>
+                        </div>
+                        <div class="kpi-card" id="kpi-arr">
+                            <div class="kpi-value">7.3M€</div>
+                            <div class="kpi-label">ARR M12</div>
+                        </div>
+                        <div class="kpi-card" id="kpi-customers">
+                            <div class="kpi-value">12.5K</div>
+                            <div class="kpi-label">Clients M12</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAM/SAM/SOM -->
+                <div class="viz-panel">
+                    <div class="viz-title">🎯 TAM / SAM / SOM</div>
+                    <div class="bullseye-container">
+                        <div class="bullseye">
+                            <div class="bullseye-ring ring-tam"></div>
+                            <div class="bullseye-ring ring-sam"></div>
+                            <div class="bullseye-ring ring-som"></div>
+                        </div>
+                        <div class="bullseye-legend">
+                            <div class="legend-item">
+                                <div class="legend-color tam"></div>
+                                <div class="legend-text">
+                                    <span class="legend-label">TAM (Total)</span>
+                                    <span class="legend-value" id="tam-legend">24.5M€</span>
+                                </div>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color sam"></div>
+                                <div class="legend-text">
+                                    <span class="legend-label">SAM (Serviceable)</span>
+                                    <span class="legend-value" id="sam-legend">8.2M€</span>
+                                </div>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color som"></div>
+                                <div class="legend-text">
+                                    <span class="legend-label">SOM (Obtainable)</span>
+                                    <span class="legend-value" id="som-legend">2.7M€</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Radar Chart -->
+                <div class="viz-panel">
+                    <div class="viz-title">🕸️ Analyse concurrentielle</div>
+                    <div class="radar-container">
+                        <canvas id="radar-chart" class="radar-canvas"></canvas>
+                    </div>
+                </div>
+
+                <!-- Revenue Projection -->
+                <div class="viz-panel full-width">
+                    <div class="viz-title">📈 12-Month Revenue Projection</div>
+                    <div class="chart-container">
+                        <canvas id="revenue-chart" class="chart-canvas"></canvas>
+                    </div>
+                    <div class="chart-legend">
+                        <div class="chart-legend-item">
+                            <div class="chart-legend-dot" style="background: var(--accent-red)"></div>
+                            <span>Pessimistic</span>
+                        </div>
+                        <div class="chart-legend-item">
+                            <div class="chart-legend-dot" style="background: var(--accent-orange)"></div>
+                            <span>Realistic</span>
+                        </div>
+                        <div class="chart-legend-item">
+                            <div class="chart-legend-dot" style="background: var(--accent-green)"></div>
+                            <span>Optimistic</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Prompt Output -->
+                <div class="viz-panel full-width prompt-section">
+                    <div class="viz-title">📝 Strategic Analysis</div>
+                    <div class="prompt-output" id="prompt-output"></div>
+                    <button class="copy-btn" id="copy-btn" onclick="copyPrompt()">
+                        📋 Copy Analysis
+                    </button>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // ========================================
+        // STATE
+        // ========================================
+        const state = {
+            price: 49,
+            tam: 500000,
+            conversion: 2.5,
+            churn: 5,
+            cac: 25,
+            preset: 'realistic',
+            competitors: [
+                { name: 'Your Product', color: '#58a6ff', scores: { prix: 7, features: 8, ux: 8, brand: 5, support: 7 } },
+                { name: 'Competitor A', color: '#f85149', scores: { prix: 6, features: 9, ux: 7, brand: 9, support: 6 } },
+                { name: 'Competitor B', color: '#3fb950', scores: { prix: 8, features: 6, ux: 6, brand: 7, support: 8 } },
+                { name: 'Competitor C', color: '#d29922', scores: { prix: 5, features: 7, ux: 9, brand: 6, support: 5 } }
+            ]
+        };
+
+        const presets = {
+            pessimistic: { price: 29, tam: 200000, conversion: 1.0, churn: 12, cac: 50 },
+            realistic: { price: 49, tam: 500000, conversion: 2.5, churn: 5, cac: 25 },
+            optimistic: { price: 79, tam: 1000000, conversion: 5.0, churn: 2, cac: 15 }
+        };
+
+        // ========================================
+        // FORMATTERS
+        // ========================================
+        function formatNumber(n) {
+            if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+            if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+            return n.toFixed(0);
+        }
+
+        function formatCurrency(n) {
+            if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M€';
+            if (n >= 1000) return (n / 1000).toFixed(1) + 'K€';
+            return n.toFixed(0) + '€';
+        }
+
+        // ========================================
+        // CALCULATIONS
+        // ========================================
+        function calculateMetrics() {
+            const { price, tam, conversion, churn, cac } = state;
+            
+            // TAM/SAM/SOM
+            const tamValue = tam * price;
+            const samValue = tamValue * 0.33; // Serviceable = 33% of TAM
+            const somValue = samValue * 0.33; // Obtainable = 33% of SAM
+            
+            // Unit economics
+            const monthlyRevenue = price;
+            const avgLifetime = 1 / (churn / 100); // months
+            const ltv = monthlyRevenue * avgLifetime;
+            const ltvCacRatio = ltv / cac;
+            const paybackMonths = cac / monthlyRevenue;
+            
+            // 12-month projections
+            const monthlyAcquisition = tam * (conversion / 100) / 12;
+            let customers = 0;
+            const revenue = [];
+            
+            for (let m = 1; m <= 12; m++) {
+                customers = customers * (1 - churn / 100) + monthlyAcquisition;
+                revenue.push(customers * price);
+            }
+            
+            const mrrM12 = revenue[11];
+            const arrM12 = mrrM12 * 12;
+            const customersM12 = customers;
+            
+            // Scenarios
+            const pessimisticFactor = 0.6;
+            const optimisticFactor = 1.5;
+            
+            const revenuePessimistic = revenue.map(r => r * pessimisticFactor);
+            const revenueOptimistic = revenue.map(r => r * optimisticFactor);
+            
+            return {
+                tam: tamValue,
+                sam: samValue,
+                som: somValue,
+                ltv,
+                ltvCacRatio,
+                paybackMonths,
+                mrrM12,
+                arrM12,
+                customersM12,
+                revenueRealistic: revenue,
+                revenuePessimistic,
+                revenueOptimistic
+            };
+        }
+
+        // ========================================
+        // RENDER FUNCTIONS
+        // ========================================
+        function renderSliderValues() {
+            document.getElementById('price-value').textContent = state.price + '€';
+            document.getElementById('tam-value').textContent = formatNumber(state.tam);
+            document.getElementById('conversion-value').textContent = state.conversion.toFixed(1) + '%';
+            document.getElementById('churn-value').textContent = state.churn.toFixed(1) + '%';
+            document.getElementById('cac-value').textContent = state.cac + '€';
+        }
+
+        function renderKPIs(metrics) {
+            const { ltv, ltvCacRatio, paybackMonths, mrrM12, arrM12, customersM12 } = metrics;
+            
+            // LTV
+            const kpiLtv = document.getElementById('kpi-ltv');
+            kpiLtv.querySelector('.kpi-value').textContent = formatCurrency(ltv);
+            
+            // LTV/CAC Ratio
+            const kpiRatio = document.getElementById('kpi-ratio');
+            kpiRatio.querySelector('.kpi-value').textContent = ltvCacRatio.toFixed(1) + 'x';
+            kpiRatio.className = 'kpi-card ' + (ltvCacRatio >= 3 ? 'positive' : ltvCacRatio >= 2 ? 'warning' : 'negative');
+            
+            // Payback
+            const kpiPayback = document.getElementById('kpi-payback');
+            kpiPayback.querySelector('.kpi-value').textContent = paybackMonths.toFixed(1) + ' mois';
+            kpiPayback.className = 'kpi-card ' + (paybackMonths <= 3 ? 'positive' : paybackMonths <= 6 ? 'warning' : 'negative');
+            
+            // MRR
+            document.getElementById('kpi-mrr').querySelector('.kpi-value').textContent = formatCurrency(mrrM12);
+            
+            // ARR
+            document.getElementById('kpi-arr').querySelector('.kpi-value').textContent = formatCurrency(arrM12);
+            
+            // Customers
+            document.getElementById('kpi-customers').querySelector('.kpi-value').textContent = formatNumber(customersM12);
+        }
+
+        function renderTamSamSom(metrics) {
+            document.getElementById('tam-legend').textContent = formatCurrency(metrics.tam);
+            document.getElementById('sam-legend').textContent = formatCurrency(metrics.sam);
+            document.getElementById('som-legend').textContent = formatCurrency(metrics.som);
+        }
+
+        function renderCompetitors() {
+            const list = document.getElementById('competitors-list');
+            list.innerHTML = state.competitors.map(c => {
+                const avgScore = Object.values(c.scores).reduce((a, b) => a + b, 0) / 5;
+                return `
+                    <div class="competitor-item">
+                        <div class="competitor-color" style="background: ${c.color}"></div>
+                        <span class="competitor-name">${c.name}</span>
+                        <span class="competitor-score">${avgScore.toFixed(1)}/10</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ========================================
+        // CHARTS
+        // ========================================
+        let revenueChart = null;
+        let radarChart = null;
+
+        function renderRevenueChart(metrics) {
+            const ctx = document.getElementById('revenue-chart').getContext('2d');
+            const labels = ['M1', 'M2', 'M3', 'M4', 'M5', 'M6', 'M7', 'M8', 'M9', 'M10', 'M11', 'M12'];
+            
+            if (revenueChart) {
+                revenueChart.data.datasets[0].data = metrics.revenuePessimistic;
+                revenueChart.data.datasets[1].data = metrics.revenueRealistic;
+                revenueChart.data.datasets[2].data = metrics.revenueOptimistic;
+                revenueChart.update('none');
+                return;
+            }
+
+            revenueChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [
+                        {
+                            label: 'Pessimistic',
+                            data: metrics.revenuePessimistic,
+                            borderColor: '#f85149',
+                            backgroundColor: 'rgba(248, 81, 73, 0.1)',
+                            tension: 0.3,
+                            fill: true
+                        },
+                        {
+                            label: 'Realistic',
+                            data: metrics.revenueRealistic,
+                            borderColor: '#d29922',
+                            backgroundColor: 'rgba(210, 153, 34, 0.1)',
+                            tension: 0.3,
+                            fill: true
+                        },
+                        {
+                            label: 'Optimistic',
+                            data: metrics.revenueOptimistic,
+                            borderColor: '#3fb950',
+                            backgroundColor: 'rgba(63, 185, 80, 0.1)',
+                            tension: 0.3,
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: ctx => ctx.dataset.label + ': ' + formatCurrency(ctx.raw)
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: '#30363d' },
+                            ticks: { color: '#8b949e' }
+                        },
+                        y: {
+                            grid: { color: '#30363d' },
+                            ticks: {
+                                color: '#8b949e',
+                                callback: v => formatCurrency(v)
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderRadarChart() {
+            const ctx = document.getElementById('radar-chart').getContext('2d');
+            const labels = ['Price', 'Features', 'UX', 'Brand', 'Support'];
+            
+            const datasets = state.competitors.map(c => ({
+                label: c.name,
+                data: [c.scores.prix, c.scores.features, c.scores.ux, c.scores.brand, c.scores.support],
+                borderColor: c.color,
+                backgroundColor: c.color + '33',
+                pointBackgroundColor: c.color,
+                pointBorderColor: '#0d1117',
+                pointHoverRadius: 6
+            }));
+
+            if (radarChart) {
+                radarChart.data.datasets = datasets;
+                radarChart.update('none');
+                return;
+            }
+
+            radarChart = new Chart(ctx, {
+                type: 'radar',
+                data: { labels, datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        r: {
+                            min: 0,
+                            max: 10,
+                            ticks: {
+                                stepSize: 2,
+                                color: '#8b949e',
+                                backdropColor: 'transparent'
+                            },
+                            grid: { color: '#30363d' },
+                            angleLines: { color: '#30363d' },
+                            pointLabels: {
+                                color: 'var(--text-primary-alt)',
+                                font: { size: 12 }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // ========================================
+        // PROMPT
+        // ========================================
+        function updatePrompt() {
+            const metrics = calculateMetrics();
+            const { price, tam, conversion, churn, cac } = state;
+            const { ltv, ltvCacRatio, paybackMonths, mrrM12, arrM12, customersM12 } = metrics;
+
+            // Recommendation logic
+            let recommendation = '';
+            let health = '🟢 HEALTHY';
+            
+            if (ltvCacRatio < 2) {
+                health = '🔴 CRITICAL';
+                recommendation = `⚠️ ALERT: LTV/CAC ratio of ${ltvCacRatio.toFixed(1)}x is insufficient (< 2x).
+Recommended action: Reduce CAC from ${cac}€ to ${Math.floor(ltv/3)}€ minimum, or increase price/reduce churn.`;
+            } else if (ltvCacRatio < 3) {
+                health = '🟡 WATCH';
+                recommendation = `⚠️ CAUTION: LTV/CAC ratio of ${ltvCacRatio.toFixed(1)}x is viable but fragile.
+Goal: Reach 3x minimum for healthy growth.`;
+            } else if (paybackMonths > 12) {
+                health = '🟡 WATCH';
+                recommendation = `💡 Payback period of ${paybackMonths.toFixed(1)} months is long.
+Suggestion: Consider annual plans with discounts to accelerate cash-flow.`;
+            } else {
+                recommendation = `✅ Solid unit economics! LTV/CAC ratio of ${ltvCacRatio.toFixed(1)}x with ${paybackMonths.toFixed(1)} months payback.
+Strategy: Accelerate acquisition while maintaining product quality.`;
+            }
+
+            // Competitive analysis
+            const yourProduct = state.competitors[0];
+            const yourAvg = Object.values(yourProduct.scores).reduce((a, b) => a + b, 0) / 5;
+            const competitorAvgs = state.competitors.slice(1).map(c => 
+                Object.values(c.scores).reduce((a, b) => a + b, 0) / 5
+            );
+            const marketAvg = competitorAvgs.reduce((a, b) => a + b, 0) / competitorAvgs.length;
+
+            const prompt = `
+╔══════════════════════════════════════════════════════════════╗
+║                    📊 MARKET ANALYSIS                         ║
+╚══════════════════════════════════════════════════════════════╝
+
+═══ PARAMETERS ═══
+• Unit price: ${price}€/month
+• Target market (TAM): ${formatNumber(tam)} users
+• Conversion rate: ${conversion}%
+• Monthly churn: ${churn}%
+• Acquisition cost: ${cac}€
+
+═══ MARKET SIZE ═══
+• TAM (Total Addressable Market): ${formatCurrency(metrics.tam)}
+• SAM (Serviceable Available Market): ${formatCurrency(metrics.sam)}
+• SOM (Serviceable Obtainable Market): ${formatCurrency(metrics.som)}
+
+═══ UNIT ECONOMICS ═══ ${health}
+• LTV (Lifetime Value): ${formatCurrency(ltv)}
+• CAC (Customer Acquisition Cost): ${cac}€
+• LTV/CAC Ratio: ${ltvCacRatio.toFixed(1)}x ${ltvCacRatio >= 3 ? '✓' : ltvCacRatio >= 2 ? '○' : '✗'}
+• Payback Period: ${paybackMonths.toFixed(1)} months
+
+═══ 12-MONTH PROJECTION ═══
+• MRR end of M12: ${formatCurrency(mrrM12)}
+• ARR end of M12: ${formatCurrency(arrM12)}
+• Customers end of M12: ${formatNumber(customersM12)}
+
+═══ COMPETITIVE ANALYSIS ═══
+• Average score (you): ${yourAvg.toFixed(1)}/10
+• Average score (market): ${marketAvg.toFixed(1)}/10
+• Position: ${yourAvg > marketAvg ? 'ABOVE' : yourAvg < marketAvg ? 'BELOW' : 'ALIGNED WITH'} market
+
+═══ STRATEGIC RECOMMENDATION ═══
+${recommendation}
+
+═══ NEXT ACTIONS ═══
+1. ${ltvCacRatio < 3 ? 'Optimize unit economics before scaling' : 'Increase acquisition budget'}
+2. ${churn > 5 ? 'Implement a retention program' : 'Maintain service quality'}
+3. ${yourAvg < marketAvg ? 'Invest in features/UX to catch up' : 'Capitalize on competitive advantages'}
+`.trim();
+
+            document.getElementById('prompt-output').textContent = prompt;
+        }
+
+        function copyPrompt() {
+            const text = document.getElementById('prompt-output').textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.getElementById('copy-btn');
+                btn.classList.add('copied');
+                btn.innerHTML = '✅ Copied!';
+                setTimeout(() => {
+                    btn.classList.remove('copied');
+                    btn.innerHTML = '📋 Copy Analysis';
+                }, 2000);
+            });
+        }
+
+        // ========================================
+        // MAIN UPDATE
+        // ========================================
+        function updateAll() {
+            // Read slider values
+            state.price = parseInt(document.getElementById('price').value);
+            state.tam = parseInt(document.getElementById('tam').value);
+            state.conversion = parseFloat(document.getElementById('conversion').value);
+            state.churn = parseFloat(document.getElementById('churn').value);
+            state.cac = parseInt(document.getElementById('cac').value);
+
+            const metrics = calculateMetrics();
+
+            renderSliderValues();
+            renderKPIs(metrics);
+            renderTamSamSom(metrics);
+            renderRevenueChart(metrics);
+            renderRadarChart();
+            updatePrompt();
+        }
+
+        function applyPreset(preset) {
+            const values = presets[preset];
+            state.preset = preset;
+            
+            document.getElementById('price').value = values.price;
+            document.getElementById('tam').value = values.tam;
+            document.getElementById('conversion').value = values.conversion;
+            document.getElementById('churn').value = values.churn;
+            document.getElementById('cac').value = values.cac;
+
+            // Update active button
+            document.querySelectorAll('.preset-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`.preset-btn.${preset === 'pessimistic' ? 'pessimistic' : preset === 'optimistic' ? 'optimistic' : 'realistic'}`).classList.add('active');
+
+            updateAll();
+        }
+
+        // ========================================
+        // INIT
+        // ========================================
+        function init() {
+            // Load Chart.js
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+            script.onload = () => {
+                renderCompetitors();
+                updateAll();
+            };
+            document.head.appendChild(script);
+        }
+
+        init();
+    </script>
+</body>
+</html>

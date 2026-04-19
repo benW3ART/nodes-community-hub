@@ -1,6 +1,11 @@
 ---
 name: genius-integration-guide
-description: Guides user step-by-step through external service setup based on project phase (MVP/Beta/Production). Collects environment variables, validates configurations, creates .env files. Use for "setup integrations", "configure services", "env setup", "environment variables", "connect to", "add API".
+description: >-
+  Service integration guide. Provides setup instructions for third-party services
+  (Stripe, Supabase, SendGrid, etc.). Use when user says "how to integrate X", "setup [service]",
+  "connect to [API]", "third-party setup guide".
+  Do NOT use for coding the integration (use genius-dev-api).
+  Do NOT use for architecture decisions (use genius-architect).
 ---
 
 ## ⚠️ MANDATORY ARTIFACT
@@ -19,7 +24,7 @@ description: Guides user step-by-step through external service setup based on pr
 
 ---
 
-# Genius Integration Guide v9.0 — Service Setup Wizard
+# Genius Integration Guide v17.0 — Service Setup Wizard
 
 **Making external service integration painless.**
 
@@ -175,6 +180,16 @@ Use this output to proceed with service configuration and `.env` file generation
 
 ---
 
+## 🗂️ Post-Output: Refresh Dashboard (MANDATORY)
+
+After generating any `.genius/*.html` playground file:
+1. Follow `.claude/commands/genius-dashboard.md` instructions to regenerate `.genius/DASHBOARD.html`
+2. Open it immediately:
+   ```bash
+   open .genius/DASHBOARD.html 2>/dev/null || echo "📂 Open: $(pwd)/.genius/DASHBOARD.html"
+   ```
+   (On macOS/Linux this opens in the default browser. If it fails, the full path is printed as a clickable link.)
+
 ## Handoffs
 
 ### From: genius-marketer + genius-copywriter
@@ -182,3 +197,21 @@ Receives: TRACKING-PLAN.xml, project requirements
 
 ### To: genius-architect
 Provides: INTEGRATIONS.md, .env.example, configured services list, STACK-CONFIG.html playground
+
+
+---
+
+## Next Step (Auto-Chain)
+
+When this skill completes its work:
+→ **Automatically suggest**: "Integrations mapped! Ready to design the technical architecture? I'll hand off to **genius-architect**."
+→ If user approves: route to genius-architect
+→ Update state.json: `currentSkill = "genius-architect"`
+
+## Definition of Done
+
+- [ ] Required services, credentials, and setup steps are documented
+- [ ] `.env.example` or equivalent config guidance is complete
+- [ ] Integration constraints and prerequisites are called out clearly
+- [ ] Downstream architecture handoff includes the configured service list
+- [ ] Dashboard or playground refresh instructions are included when applicable

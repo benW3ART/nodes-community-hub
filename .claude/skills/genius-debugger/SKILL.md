@@ -1,6 +1,9 @@
 ---
 name: genius-debugger
-description: Error fixing and debugging skill. Analyzes errors, finds root cause, implements fixes. Use for "debug", "fix error", "why is this broken", "troubleshoot".
+description: >-
+  Error diagnosis and fixing skill. Analyzes errors, traces root causes, and implements fixes.
+  Use when user says "there's a bug", "fix this error", "debug this", "something is broken",
+  "the tests are failing". Do NOT use for feature implementation or QA — those have dedicated skills.
 context: fork
 agent: genius-debugger
 user-invocable: false
@@ -27,7 +30,7 @@ hooks:
       once: true
 ---
 
-# Genius Debugger v9.0 — Error Terminator
+# Genius Debugger v17.0 — Error Terminator
 
 **Every bug has a story. I find it and end it.**
 
@@ -105,3 +108,11 @@ Provides: If fix requires significant refactoring
 
 ### To genius-qa
 Provides: If fix needs comprehensive testing
+
+## Definition of Done
+
+- [ ] Root cause identified and documented
+- [ ] Fix applied and verified (bug no longer reproduces)
+- [ ] Error logged in `.genius/memory/errors.json`
+- [ ] Regression test added to prevent recurrence
+- [ ] PROGRESS.md updated

@@ -31,6 +31,18 @@ cat CLAUDE.md 2>/dev/null | head -50
 ls -la src/ 2>/dev/null
 ```
 
+### 2.5. Check Path-Scoped Rules
+
+Before writing to ANY file, check if path-scoped rules apply:
+
+1. Read `.claude/rules/` — check which rules match the file path you're about to edit
+2. If touching `src/api/`, `src/services/`, `src/auth/`, or `src/middleware/` → read `.claude/rules/security.md`
+3. If touching any `src/` file → read `.claude/rules/performance.md`
+4. If touching test files (`*.test.*`, `*.spec.*`) → read `.claude/rules/testing.md`
+5. Read `.genius/memory/learned-rules.md` if it exists — check for relevant learned patterns
+
+**Apply all matching rules to your implementation.** If a rule conflicts with the task, note the conflict in your report.
+
 ### 3. Implement
 
 Follow project conventions:

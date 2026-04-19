@@ -1,0 +1,24 @@
+{
+  "_comment": "Shared state between Claude Code and Codex CLI. Auto-updated after each dev action.",
+  "schema": "genius-dual-bridge/v1",
+  "claude": {
+    "engine": "claude",
+    "last_task": null,
+    "last_files_modified": [],
+    "last_diff": null,
+    "last_summary": null,
+    "timestamp": null,
+    "session_id": null
+  },
+  "codex": {
+    "engine": "codex",
+    "last_task": null,
+    "last_files_modified": [],
+    "last_diff": null,
+    "last_summary": null,
+    "timestamp": null,
+    "session_id": null
+  },
+  "challenge_log": [],
+  "last_updated": null
+}

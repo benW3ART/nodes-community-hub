@@ -1,6 +1,11 @@
 ---
 name: genius-specs
-description: Transforms discovery findings into formal specifications with user stories, use cases, business rules, and acceptance criteria. REQUIRES USER APPROVAL before continuing to design phase. Use for "specs", "specifications", "requirements", "user stories", "acceptance criteria", "write specs".
+description: >-
+  Writes formal product specifications from interview findings. Also suggests genius-skill-creator
+  when recurring project-specific workflows are identified. Use when user says "write specs",
+  "create specifications", "formalize requirements", "document features", "based on what we discussed".
+  Do NOT use for market/competitor analysis (genius-product-market-analyst) or design (genius-designer).
+  Do NOT use before the interview phase is complete unless user explicitly requests specs.
 ---
 
 ## ⚠️ MANDATORY ARTIFACT
@@ -45,7 +50,7 @@ Update state.json with:
 
 ---
 
-# Genius Specs v9.0 — Requirements Architect
+# Genius Specs v17.0 — Requirements Architect
 
 **Transforming discoveries into crystal-clear specifications.**
 
@@ -210,6 +215,14 @@ When user approves, update state.json:
 
 ---
 
+## Suggest genius-skill-creator
+
+After writing specs, scan for recurring project-specific workflows (e.g., "this project will process payments repeatedly", "this app needs regular data sync"). If found, suggest:
+
+> 💡 **Tip**: Your project has a recurring [X] workflow. Run `genius-skill-creator` to create a dedicated project skill that will make genius-dev more efficient for this pattern.
+
+---
+
 ## Handoffs
 
 ### From: genius-interviewer / genius-product-market-analyst
@@ -220,3 +233,34 @@ Provides: SPECIFICATIONS.xml, screen definitions, component list
 
 ### To: genius-architect
 Provides: SPECIFICATIONS.xml, data model, API endpoints, NFRs
+
+
+---
+
+## Next Step (Auto-Chain)
+
+When this skill completes its work:
+→ **Automatically suggest**: "Specifications complete! Ready for the design phase? (CHECKPOINT: approve specs first) I'll hand off to **genius-designer**."
+→ If user approves: route to genius-designer
+→ Update state.json: `currentSkill = "genius-designer"`
+## MCP Elicitation in Specs Phase (Claude Code ≥ 2.1.76)
+
+When generating specifications, if an MCP server needs to collect structured requirements from the user (e.g., confirmation of priorities, final scope gate), it can use the **Elicitation pattern**:
+
+- MCP server shows a form mid-task with fields like `confirm_scope`, `priority_stories[]`, `target_launch_date`
+- User fills it in without leaving the workflow
+- genius-specs receives the result and adjusts the SPECIFICATIONS.xml accordingly
+
+**Practical use:** Connect a `genius-specs-validator` MCP tool that shows a review dialog before finalizing specs — user can approve/reject each user story without back-and-forth.
+
+See `genius-dev/SKILL.md → MCP Elicitation Pattern` for the full technical reference.
+
+---
+
+## Definition of Done
+
+- [ ] SPECIFICATIONS.xml generated with all stories
+- [ ] Every story has ≥2 testable acceptance criteria
+- [ ] NFRs have measurable targets
+- [ ] Data model covers all entities
+- [ ] User approved specs at checkpoint

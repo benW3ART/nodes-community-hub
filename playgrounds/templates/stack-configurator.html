@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stack Configurator - Genius Playground</title>
+    <link rel="stylesheet" href="./design-tokens.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 24px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1rem;
+        }
+
+        /* Presets */
+        .presets {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .preset-btn {
+            padding: 10px 20px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+
+        .preset-btn:hover {
+            border-color: var(--accent-blue);
+            background: var(--bg-tertiary);
+        }
+
+        .preset-btn.active {
+            border-color: var(--accent-blue);
+            background: var(--tone-blue-10);
+        }
+
+        .preset-btn .emoji {
+            margin-right: 6px;
+        }
+
+        /* Tier selector */
+        .tier-selector {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 24px;
+        }
+
+        .tier-btn {
+            padding: 8px 24px;
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.85rem;
+        }
+
+        .tier-btn:hover {
+            color: var(--text-primary);
+        }
+
+        .tier-btn.active {
+            background: var(--accent-blue);
+            border-color: var(--accent-blue);
+            color: white;
+        }
+
+        /* Main grid */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 24px;
+        }
+
+        @media (max-width: 1200px) {
+            .main-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 800px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Category cards */
+        .categories-panel {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .category-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 16px;
+            transition: all 0.2s;
+        }
+
+        .category-card:hover {
+            border-color: var(--accent-blue);
+        }
+
+        .category-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .category-icon {
+            font-size: 1.2rem;
+        }
+
+        .category-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .category-select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238b949e' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+        }
+
+        .category-select:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+        }
+
+        .category-cost {
+            margin-top: 8px;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .category-cost .price {
+            color: var(--accent-green);
+            font-weight: 600;
+        }
+
+        /* Stack visualization */
+        .stack-panel {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .panel-title {
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stack-tree {
+            position: relative;
+        }
+
+        .stack-node {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border-left: 3px solid var(--accent-blue);
+            transition: all 0.2s;
+        }
+
+        .stack-node.none {
+            opacity: 0.5;
+            border-left-color: var(--text-muted);
+        }
+
+        .stack-node .node-icon {
+            font-size: 1.1rem;
+        }
+
+        .stack-node .node-info {
+            flex: 1;
+        }
+
+        .stack-node .node-category {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stack-node .node-name {
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .stack-node .node-cost {
+            font-size: 0.8rem;
+            color: var(--accent-green);
+        }
+
+        /* Cost summary */
+        .cost-summary {
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .cost-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+
+        .cost-row.total {
+            font-weight: 600;
+            font-size: 1.1rem;
+            padding-top: 8px;
+            border-top: 1px solid var(--border-color);
+            margin-top: 8px;
+        }
+
+        .cost-row .label {
+            color: var(--text-secondary);
+        }
+
+        .cost-row .value {
+            color: var(--accent-green);
+        }
+
+        .cost-row.total .value {
+            color: var(--text-primary);
+        }
+
+        /* Warnings */
+        .warnings {
+            margin-top: 16px;
+        }
+
+        .warning {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            padding: 10px 12px;
+            background: var(--tone-orange-10);
+            border: 1px solid var(--tone-orange-30);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            font-size: 0.85rem;
+            color: var(--accent-orange);
+        }
+
+        .warning.info {
+            background: var(--tone-blue-10);
+            border-color: var(--tone-blue-30);
+            color: var(--accent-blue);
+        }
+
+        /* Output panel */
+        .output-panel {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .env-vars {
+            margin-bottom: 16px;
+        }
+
+        .env-var {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 10px;
+            background: var(--bg-tertiary);
+            border-radius: 6px;
+            margin-bottom: 4px;
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 0.8rem;
+        }
+
+        .env-var .var-name {
+            color: var(--accent-purple);
+        }
+
+        .env-var .var-hint {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            margin-left: auto;
+        }
+
+        .prompt-output {
+            flex: 1;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 0.8rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            color: var(--text-secondary);
+            min-height: 200px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .copy-btn {
+            margin-top: 12px;
+            padding: 12px 24px;
+            background: var(--accent-blue);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .copy-btn:hover {
+            background: var(--accent-blue-strong);
+        }
+
+        .copy-btn.copied {
+            background: var(--accent-green);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+    
+/* ===== MOBILE RESPONSIVE (v13) ===== */
+@media (max-width: 768px) {
+  body { padding: 1rem !important; }
+
+  /* Single-column grids */
+  [style*="grid-template-columns"],
+  .grid, .cards-grid, .two-col, .three-col,
+  [class*="grid-"] { grid-template-columns: 1fr !important; }
+
+  /* Stack flex rows */
+  .flex-row, .row, [class*="-row"] { flex-direction: column !important; }
+
+  /* Full-width elements */
+  .card, .panel, .box, .section,
+  [class*="card"], [class*="panel"] { width: 100% !important; max-width: 100% !important; }
+
+  /* Touch-friendly inputs and buttons */
+  input, select, textarea, button, .btn,
+  [class*="btn"], [class*="button"] {
+    min-height: 44px !important;
+    font-size: 16px !important;
+  }
+
+  /* Prevent horizontal scroll */
+  .container, .wrapper, main, section { overflow-x: hidden; }
+
+  /* Readable font sizes */
+  h1 { font-size: 1.6rem !important; }
+  h2 { font-size: 1.3rem !important; }
+  h3 { font-size: 1.1rem !important; }
+
+  /* Reduce whitespace */
+  .container, .wrapper, main {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+
+  /* Table responsiveness */
+  table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* Navigation */
+  nav, .nav, .navbar { flex-wrap: wrap; gap: .5rem; }
+}
+
+@media (max-width: 480px) {
+  body { padding: .75rem !important; }
+  h1 { font-size: 1.3rem !important; }
+  .header, header { padding: .75rem 1rem !important; }
+}
+
+</style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏗️ Stack Configurator</h1>
+            <p class="subtitle">Configure your tech stack visually with cost estimation</p>
+        </header>
+
+        <!-- Presets -->
+        <div class="presets">
+            <button class="preset-btn" data-preset="zero-cost">
+                <span class="emoji">🆓</span>Zero Cost
+            </button>
+            <button class="preset-btn" data-preset="indie-hacker">
+                <span class="emoji">🚀</span>Indie Hacker
+            </button>
+            <button class="preset-btn" data-preset="startup">
+                <span class="emoji">💼</span>Startup
+            </button>
+            <button class="preset-btn" data-preset="scale">
+                <span class="emoji">🏢</span>Scale
+            </button>
+        </div>
+
+        <!-- Tier selector -->
+        <div class="tier-selector">
+            <button class="tier-btn active" data-tier="free">Free</button>
+            <button class="tier-btn" data-tier="starter">Starter</button>
+            <button class="tier-btn" data-tier="pro">Pro</button>
+        </div>
+
+        <div class="main-grid">
+            <!-- Categories -->
+            <div class="categories-panel" id="categories"></div>
+
+            <!-- Stack visualization -->
+            <div class="stack-panel">
+                <div class="panel-title">📊 Stack Overview</div>
+                <div class="stack-tree" id="stack-tree"></div>
+                <div class="cost-summary" id="cost-summary"></div>
+                <div class="warnings" id="warnings"></div>
+            </div>
+
+            <!-- Output -->
+            <div class="output-panel">
+                <div class="panel-title">🔐 Required Env Vars</div>
+                <div class="env-vars" id="env-vars"></div>
+                <div class="panel-title">📋 Stack Prompt</div>
+                <div class="prompt-output" id="prompt-output"></div>
+                <button class="copy-btn" id="copy-btn">
+                    <span>📋</span> Copy Prompt
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===================
+        // SERVICE DEFINITIONS
+        // ===================
+        const services = {
+            hosting: {
+                name: 'Hosting',
+                icon: '🌐',
+                options: {
+                    none: { name: 'None', costs: { free: 0, starter: 0, pro: 0 }, envVars: [] },
+                    vercel: { 
+                        name: 'Vercel', 
+                        costs: { free: 0, starter: 20, pro: 50 },
+                        envVars: ['VERCEL_TOKEN', 'VERCEL_ORG_ID', 'VERCEL_PROJECT_ID']
+                    },
+                    railway: { 
+                        name: 'Railway', 
+                        costs: { free: 0, starter: 5, pro: 20 },
+                        envVars: ['RAILWAY_TOKEN']
+                    },
+                    aws: { 
+                        name: 'AWS', 
+                        costs: { free: 0, starter: 15, pro: 100 },
+                        envVars: ['AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'AWS_REGION']
+                    },
+                    netlify: { 
+                        name: 'Netlify', 
+                        costs: { free: 0, starter: 19, pro: 99 },
+                        envVars: ['NETLIFY_AUTH_TOKEN', 'NETLIFY_SITE_ID']
+                    },
+                    fly: { 
+                        name: 'Fly.io', 
+                        costs: { free: 0, starter: 5, pro: 30 },
+                        envVars: ['FLY_API_TOKEN']
+                    },
+                    render: { 
+                        name: 'Render', 
+                        costs: { free: 0, starter: 7, pro: 25 },
+                        envVars: ['RENDER_API_KEY']
+                    }
+                }
+            },
+            database: {
+                name: 'Database',
+                icon: '🗄️',
+                options: {
+                    none: { name: 'None', costs: { free: 0, starter: 0, pro: 0 }, envVars: [] },
+                    supabase: { 
+                        name: 'Supabase', 
+                        costs: { free: 0, starter: 25, pro: 100 },
+                        envVars: ['SUPABASE_URL', 'SUPABASE_ANON_KEY', 'SUPABASE_SERVICE_KEY'],
+                        includes: ['postgres', 'auth', 'storage']
+                    },
+                    postgres: { 
+                        name: 'PostgreSQL', 
+                        costs: { free: 0, starter: 10, pro: 50 },
+                        envVars: ['DATABASE_URL', 'POSTGRES_HOST', 'POSTGRES_PASSWORD']
+                    },
+                    mongodb: { 
+                        name: 'MongoDB Atlas', 
+                        costs: { free: 0, starter: 9, pro: 57 },
+                        envVars: ['MONGODB_URI']
+                    },
+                    planetscale: { 
+                        name: 'PlanetScale', 
+                        costs: { free: 0, starter: 29, pro: 99 },
+                        envVars: ['DATABASE_URL']
+                    },
+                    neon: { 
+                        name: 'Neon', 
+                        costs: { free: 0, starter: 19, pro: 69 },
+                        envVars: ['DATABASE_URL', 'NEON_API_KEY']
+                    },
+                    turso: { 
+                        name: 'Turso', 
+                        costs: { free: 0, starter: 8, pro: 50 },
+                        envVars: ['TURSO_DATABASE_URL', 'TURSO_AUTH_TOKEN']
+                    }
+                }
+            },
+            auth: {
+                name: 'Auth',
+                icon: '🔐',
+                options: {
+                    none: { name: 'None', costs: { free: 0, starter: 0, pro: 0 }, envVars: [] },
+                    clerk: { 
+                        name: 'Clerk', 
+                        costs: { free: 0, starter: 25, pro: 99 },
+                        envVars: ['CLERK_SECRET_KEY', 'NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY']
+                    },
+                    auth0: { 
+                        name: 'Auth0', 
+                        costs: { free: 0, starter: 23, pro: 130 },
+                        envVars: ['AUTH0_SECRET', 'AUTH0_CLIENT_ID', 'AUTH0_CLIENT_SECRET', 'AUTH0_DOMAIN']
+                    },
+                    nextauth: { 
+                        name: 'NextAuth', 
+                        costs: { free: 0, starter: 0, pro: 0 },
+                        envVars: ['NEXTAUTH_SECRET', 'NEXTAUTH_URL']
+                    },
+                    supabase_auth: { 
+                        name: 'Supabase Auth', 
+                        costs: { free: 0, starter: 0, pro: 0 },
+                        envVars: [],
+                        requires: ['supabase']
+                    },
+                    firebase_auth: { 
+                        name: 'Firebase Auth', 
+                        costs: { free: 0, starter: 0, pro: 0 },
+                        envVars: ['FIREBASE_API_KEY', 'FIREBASE_AUTH_DOMAIN']
+                    }
+                }
+            },
+            payments: {
+                name: 'Payments',
+                icon: '💳',
+                options: {
+                    none: { name: 'None', costs: { free: 0, starter: 0, pro: 0 }, envVars: [] },
+                    stripe: { 
+                        name: 'Stripe', 
+                        costs: { free: 0, starter: 0, pro: 0 },
+                        envVars: ['STRIPE_SECRET_KEY', 'STRIPE_PUBLISHABLE_KEY', 'STRIPE_WEBHOOK_SECRET']
+                    },
+                    lemonsqueezy: { 
+                        name: 'Lemon Squeezy', 
+                        costs: { free: 0, starter: 0, pro: 0 },
+                        envVars: ['LEMONSQUEEZY_API_KEY', 'LEMONSQUEEZY_STORE_ID', 'LEMONSQUEEZY_WEBHOOK_SECRET']
+                    },
+                    paddle: { 
+                        name: 'Paddle', 
+                        costs: { free: 0, starter: 0, pro: 0 },
+                        envVars: ['PADDLE_VENDOR_ID', 'PADDLE_API_KEY', 'PADDLE_PUBLIC_KEY']
+                    },
+                    paypal: { 
+                        name: 'PayPal', 
+                        costs: { free: 0, starter: 0, pro: 0 },
+                        envVars: ['PAYPAL_CLIENT_ID', 'PAYPAL_CLIENT_SECRET']
+                    }
+                }
+            },
+            email: {
+                name: 'Email',
+                icon: '📧',
+                options: {
+                    none: { name: 'None', costs: { free: 0, starter: 0, pro: 0 }, envVars: [] },
+                    resend: { 
+                        name: 'Resend', 
+                        costs: { free: 0, starter: 20, pro: 80 },
+                        envVars: ['RESEND_API_KEY']
+                    },
+                    sendgrid: { 
+                        name: 'SendGrid', 
+                        costs: { free: 0, starter: 20, pro: 90 },
+                        envVars: ['SENDGRID_API_KEY']
+                    },
+                    postmark: { 
+                        name: 'Postmark', 
+                        costs: { free: 0, starter: 15, pro: 85 },
+                        envVars: ['POSTMARK_API_TOKEN']
+                    },
+                    mailgun: { 
+                        name: 'Mailgun', 
+                        costs: { free: 0, starter: 15, pro: 80 },
+                        envVars: ['MAILGUN_API_KEY', 'MAILGUN_DOMAIN']
+                    },
+                    ses: { 
+                        name: 'AWS SES', 
+                        costs: { free: 0, starter: 1, pro: 10 },
+                        envVars: ['AWS_SES_ACCESS_KEY', 'AWS_SES_SECRET_KEY', 'AWS_SES_REGION']
+                    }
+                }
+            },
+            storage: {
+                name: 'Storage',
+                icon: '📦',
+                options: {
+                    none: { name: 'None', costs: { free: 0, starter: 0, pro: 0 }, envVars: [] },
+                    s3: { 
+                        name: 'AWS S3', 
+                        costs: { free: 0, starter: 5, pro: 50 },
+                        envVars: ['AWS_S3_BUCKET', 'AWS_S3_ACCESS_KEY', 'AWS_S3_SECRET_KEY', 'AWS_S3_REGION']
+                    },
+                    cloudflare_r2: { 
+                        name: 'Cloudflare R2', 
+                        costs: { free: 0, starter: 0, pro: 15 },
+                        envVars: ['R2_ACCOUNT_ID', 'R2_ACCESS_KEY_ID', 'R2_SECRET_ACCESS_KEY', 'R2_BUCKET']
+                    },
+                    uploadthing: { 
+                        name: 'UploadThing', 
+                        costs: { free: 0, starter: 10, pro: 50 },
+                        envVars: ['UPLOADTHING_SECRET', 'UPLOADTHING_APP_ID']
+                    },
+                    supabase_storage: { 
+                        name: 'Supabase Storage', 
+                        costs: { free: 0, starter: 0, pro: 0 },
+                        envVars: [],
+                        requires: ['supabase']
+                    },
+                    cloudinary: { 
+                        name: 'Cloudinary', 
+                        costs: { free: 0, starter: 0, pro: 89 },
+                        envVars: ['CLOUDINARY_URL', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET']
+                    }
+                }
+            },
+            analytics: {
+                name: 'Analytics',
+                icon: '📊',
+                options: {
+                    none: { name: 'None', costs: { free: 0, starter: 0, pro: 0 }, envVars: [] },
+                    posthog: { 
+                        name: 'PostHog', 
+                        costs: { free: 0, starter: 0, pro: 50 },
+                        envVars: ['POSTHOG_KEY', 'POSTHOG_HOST']
+                    },
+                    plausible: { 
+                        name: 'Plausible', 
+                        costs: { free: 0, starter: 9, pro: 29 },
+                        envVars: ['PLAUSIBLE_DOMAIN']
+                    },
+                    mixpanel: { 
+                        name: 'Mixpanel', 
+                        costs: { free: 0, starter: 28, pro: 89 },
+                        envVars: ['MIXPANEL_TOKEN']
+                    },
+                    amplitude: { 
+                        name: 'Amplitude', 
+                        costs: { free: 0, starter: 0, pro: 61 },
+                        envVars: ['AMPLITUDE_API_KEY']
+                    },
+                    vercel_analytics: { 
+                        name: 'Vercel Analytics', 
+                        costs: { free: 0, starter: 0, pro: 0 },
+                        envVars: [],
+                        requires: ['vercel']
+                    }
+                }
+            },
+            monitoring: {
+                name: 'Monitoring',
+                icon: '🔍',
+                options: {
+                    none: { name: 'None', costs: { free: 0, starter: 0, pro: 0 }, envVars: [] },
+                    sentry: { 
+                        name: 'Sentry', 
+                        costs: { free: 0, starter: 26, pro: 80 },
+                        envVars: ['SENTRY_DSN', 'SENTRY_AUTH_TOKEN']
+                    },
+                    logtail: { 
+                        name: 'Logtail', 
+                        costs: { free: 0, starter: 15, pro: 50 },
+                        envVars: ['LOGTAIL_SOURCE_TOKEN']
+                    },
+                    axiom: { 
+                        name: 'Axiom', 
+                        costs: { free: 0, starter: 25, pro: 95 },
+                        envVars: ['AXIOM_TOKEN', 'AXIOM_DATASET']
+                    },
+                    datadog: { 
+                        name: 'Datadog', 
+                        costs: { free: 0, starter: 15, pro: 75 },
+                        envVars: ['DD_API_KEY', 'DD_APP_KEY']
+                    },
+                    betterstack: { 
+                        name: 'Better Stack', 
+                        costs: { free: 0, starter: 24, pro: 85 },
+                        envVars: ['BETTERSTACK_API_KEY']
+                    }
+                }
+            }
+        };
+
+        // ===================
+        // PRESETS
+        // ===================
+        const presets = {
+            'zero-cost': {
+                hosting: 'vercel',
+                database: 'supabase',
+                auth: 'supabase_auth',
+                payments: 'none',
+                email: 'none',
+                storage: 'supabase_storage',
+                analytics: 'posthog',
+                monitoring: 'none',
+                tier: 'free'
+            },
+            'indie-hacker': {
+                hosting: 'vercel',
+                database: 'supabase',
+                auth: 'clerk',
+                payments: 'stripe',
+                email: 'resend',
+                storage: 'cloudflare_r2',
+                analytics: 'posthog',
+                monitoring: 'sentry',
+                tier: 'starter'
+            },
+            'startup': {
+                hosting: 'vercel',
+                database: 'planetscale',
+                auth: 'clerk',
+                payments: 'stripe',
+                email: 'resend',
+                storage: 's3',
+                analytics: 'mixpanel',
+                monitoring: 'sentry',
+                tier: 'starter'
+            },
+            'scale': {
+                hosting: 'aws',
+                database: 'postgres',
+                auth: 'auth0',
+                payments: 'stripe',
+                email: 'sendgrid',
+                storage: 's3',
+                analytics: 'amplitude',
+                monitoring: 'datadog',
+                tier: 'pro'
+            }
+        };
+
+        // ===================
+        // STATE
+        // ===================
+        const state = {
+            tier: 'free',
+            selections: {
+                hosting: 'none',
+                database: 'none',
+                auth: 'none',
+                payments: 'none',
+                email: 'none',
+                storage: 'none',
+                analytics: 'none',
+                monitoring: 'none'
+            },
+            activePreset: null
+        };
+
+        // ===================
+        // RENDER FUNCTIONS
+        // ===================
+        function renderCategories() {
+            const container = document.getElementById('categories');
+            container.innerHTML = '';
+
+            Object.entries(services).forEach(([key, category]) => {
+                const card = document.createElement('div');
+                card.className = 'category-card';
+                
+                const selected = state.selections[key];
+                const service = category.options[selected];
+                const cost = service ? service.costs[state.tier] : 0;
+
+                card.innerHTML = `
+                    <div class="category-header">
+                        <span class="category-icon">${category.icon}</span>
+                        <span class="category-name">${category.name}</span>
+                    </div>
+                    <select class="category-select" data-category="${key}">
+                        ${Object.entries(category.options).map(([optKey, opt]) => `
+                            <option value="${optKey}" ${optKey === selected ? 'selected' : ''}>
+                                ${opt.name}${opt.costs[state.tier] > 0 ? ` ($${opt.costs[state.tier]}/mo)` : ''}
+                            </option>
+                        `).join('')}
+                    </select>
+                    <div class="category-cost">
+                        ${cost > 0 ? `<span class="price">$${cost}/mo</span>` : '<span style="color: var(--accent-green)">Free</span>'}
+                    </div>
+                `;
+
+                container.appendChild(card);
+            });
+
+            // Add event listeners
+            document.querySelectorAll('.category-select').forEach(select => {
+                select.addEventListener('change', (e) => {
+                    state.selections[e.target.dataset.category] = e.target.value;
+                    state.activePreset = null;
+                    updatePresetButtons();
+                    updateAll();
+                });
+            });
+        }
+
+        function renderStackTree() {
+            const container = document.getElementById('stack-tree');
+            container.innerHTML = '';
+
+            Object.entries(services).forEach(([key, category]) => {
+                const selected = state.selections[key];
+                const service = category.options[selected];
+                const cost = service ? service.costs[state.tier] : 0;
+
+                const node = document.createElement('div');
+                node.className = `stack-node ${selected === 'none' ? 'none' : ''}`;
+                node.innerHTML = `
+                    <span class="node-icon">${category.icon}</span>
+                    <div class="node-info">
+                        <div class="node-category">${category.name}</div>
+                        <div class="node-name">${service ? service.name : 'Not configured'}</div>
+                    </div>
+                    <div class="node-cost">${cost > 0 ? `$${cost}` : 'Free'}</div>
+                `;
+                container.appendChild(node);
+            });
+        }
+
+        function renderCostSummary() {
+            const container = document.getElementById('cost-summary');
+            let total = 0;
+            let breakdown = [];
+
+            Object.entries(services).forEach(([key, category]) => {
+                const selected = state.selections[key];
+                const service = category.options[selected];
+                if (service && service.costs[state.tier] > 0) {
+                    const cost = service.costs[state.tier];
+                    total += cost;
+                    breakdown.push({ name: service.name, cost });
+                }
+            });
+
+            container.innerHTML = `
+                ${breakdown.map(item => `
+                    <div class="cost-row">
+                        <span class="label">${item.name}</span>
+                        <span class="value">$${item.cost}/mo</span>
+                    </div>
+                `).join('')}
+                <div class="cost-row total">
+                    <span class="label">Total Monthly</span>
+                    <span class="value">$${total}/mo</span>
+                </div>
+            `;
+        }
+
+        function renderWarnings() {
+            const container = document.getElementById('warnings');
+            const warnings = [];
+
+            // Check for Supabase redundancies
+            if (state.selections.database === 'supabase') {
+                if (state.selections.auth !== 'supabase_auth' && state.selections.auth !== 'none') {
+                    warnings.push({
+                        type: 'info',
+                        message: '💡 Supabase includes Auth — you could use supabase_auth instead of ' + services.auth.options[state.selections.auth]?.name
+                    });
+                }
+                if (state.selections.storage !== 'supabase_storage' && state.selections.storage !== 'none') {
+                    warnings.push({
+                        type: 'info',
+                        message: '💡 Supabase includes Storage — you could use supabase_storage instead of ' + services.storage.options[state.selections.storage]?.name
+                    });
+                }
+            }
+
+            // Check for service requirements
+            if (state.selections.auth === 'supabase_auth' && state.selections.database !== 'supabase') {
+                warnings.push({
+                    type: 'warning',
+                    message: '⚠️ Supabase Auth requires Supabase as your database'
+                });
+            }
+
+            if (state.selections.storage === 'supabase_storage' && state.selections.database !== 'supabase') {
+                warnings.push({
+                    type: 'warning',
+                    message: '⚠️ Supabase Storage requires Supabase as your database'
+                });
+            }
+
+            if (state.selections.analytics === 'vercel_analytics' && state.selections.hosting !== 'vercel') {
+                warnings.push({
+                    type: 'warning',
+                    message: '⚠️ Vercel Analytics requires Vercel hosting'
+                });
+            }
+
+            // Duplicate AWS credentials
+            const awsServices = [];
+            if (state.selections.hosting === 'aws') awsServices.push('Hosting');
+            if (state.selections.storage === 's3') awsServices.push('S3');
+            if (state.selections.email === 'ses') awsServices.push('SES');
+            if (awsServices.length > 1) {
+                warnings.push({
+                    type: 'info',
+                    message: `💡 ${awsServices.join(', ')} can share AWS credentials`
+                });
+            }
+
+            container.innerHTML = warnings.map(w => `
+                <div class="warning ${w.type}">
+                    ${w.message}
+                </div>
+            `).join('');
+        }
+
+        function renderEnvVars() {
+            const container = document.getElementById('env-vars');
+            const envVars = new Map();
+
+            Object.entries(services).forEach(([key, category]) => {
+                const selected = state.selections[key];
+                const service = category.options[selected];
+                if (service && service.envVars) {
+                    service.envVars.forEach(v => {
+                        envVars.set(v, service.name);
+                    });
+                }
+            });
+
+            if (envVars.size === 0) {
+                container.innerHTML = '<div style="color: var(--text-muted); font-size: 0.85rem;">No env vars needed yet</div>';
+                return;
+            }
+
+            container.innerHTML = Array.from(envVars.entries()).map(([varName, serviceName]) => `
+                <div class="env-var">
+                    <span class="var-name">${varName}</span>
+                    <span class="var-hint">${serviceName}</span>
+                </div>
+            `).join('');
+        }
+
+        function renderPreview() {
+            renderStackTree();
+            renderCostSummary();
+            renderWarnings();
+            renderEnvVars();
+        }
+
+        function updatePrompt() {
+            const output = document.getElementById('prompt-output');
+            
+            let total = 0;
+            const stackLines = [];
+            const envVars = [];
+
+            Object.entries(services).forEach(([key, category]) => {
+                const selected = state.selections[key];
+                const service = category.options[selected];
+                if (selected !== 'none' && service) {
+                    const cost = service.costs[state.tier];
+                    total += cost;
+                    stackLines.push(`- ${category.name}: ${service.name}${cost > 0 ? ` ($${cost}/mo)` : ' (Free)'}`);
+                    if (service.envVars) {
+                        envVars.push(...service.envVars);
+                    }
+                }
+            });
+
+            const tierLabel = state.tier.charAt(0).toUpperCase() + state.tier.slice(1);
+
+            const prompt = `## Tech Stack Configuration
+
+**Tier:** ${tierLabel}
+**Estimated Monthly Cost:** $${total}/mo
+
+### Services
+${stackLines.length > 0 ? stackLines.join('\n') : 'No services configured'}
+
+### Required Environment Variables
+${envVars.length > 0 ? envVars.map(v => `- ${v}`).join('\n') : 'None'}
+
+### Setup Instructions
+${stackLines.length > 0 ? `Configure the following services and add the environment variables to your .env file.` : 'Select services to get started.'}`;
+
+            output.textContent = prompt;
+        }
+
+        function updateAll() {
+            renderCategories();
+            renderPreview();
+            updatePrompt();
+        }
+
+        function updatePresetButtons() {
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.preset === state.activePreset);
+            });
+        }
+
+        // ===================
+        // EVENT HANDLERS
+        // ===================
+        function init() {
+            // Tier buttons
+            document.querySelectorAll('.tier-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    state.tier = btn.dataset.tier;
+                    document.querySelectorAll('.tier-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    updateAll();
+                });
+            });
+
+            // Preset buttons
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const preset = presets[btn.dataset.preset];
+                    if (preset) {
+                        state.selections = { ...preset };
+                        state.tier = preset.tier;
+                        state.activePreset = btn.dataset.preset;
+                        
+                        // Update tier button
+                        document.querySelectorAll('.tier-btn').forEach(b => {
+                            b.classList.toggle('active', b.dataset.tier === preset.tier);
+                        });
+                        
+                        updatePresetButtons();
+                        updateAll();
+                    }
+                });
+            });
+
+            // Copy button
+            document.getElementById('copy-btn').addEventListener('click', async () => {
+                const output = document.getElementById('prompt-output').textContent;
+                await navigator.clipboard.writeText(output);
+                
+                const btn = document.getElementById('copy-btn');
+                btn.innerHTML = '<span>✅</span> Copied!';
+                btn.classList.add('copied');
+                
+                setTimeout(() => {
+                    btn.innerHTML = '<span>📋</span> Copy Prompt';
+                    btn.classList.remove('copied');
+                }, 2000);
+            });
+
+            // Initial render
+            updateAll();
+        }
+
+        // Start
+        init();
+    </script>
+</body>
+</html>

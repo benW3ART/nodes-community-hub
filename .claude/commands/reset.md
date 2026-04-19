@@ -40,7 +40,7 @@ cp .claude/plan.md "$BACKUP_DIR/" 2>/dev/null
 NOW=$(date -Iseconds 2>/dev/null || date)
 cat > .genius/state.json << EOF
 {
-  "version": "9.0.0",
+  "version": "14.0.0",
   "phase": "NOT_STARTED",
   "currentSkill": null,
   "skillHistory": [],

@@ -1,6 +1,11 @@
 ---
 name: genius-dual-engine
-description: Dual-model build-review engine. Coordinates a Builder (implements) and Challenger (reviews) in iterative cycles. Use for "dual review", "challenge this", "build-review cycle", "dual audit".
+description: >-
+  Builder + Challenger adversarial workflow. One engine builds, another challenges with a critical review.
+  Use when user says "dual review", "challenge mode", "builder challenger", "adversarial review",
+  or when task is marked with 🔄. Requires --engine=dual or --engine=codex.
+  Do NOT use for single-engine code review (use genius-reviewer or genius-code-review).
+  Do NOT use for standard QA (use genius-qa or genius-qa-micro).
 context: fork
 user-invocable: true
 allowed-tools:
@@ -20,9 +25,15 @@ hooks:
       once: true
 ---
 
-# Genius Dual Engine v9.0 — Builder + Challenger
+# Genius Dual Engine v17.0 — Builder + Challenger
 
 **Two minds are better than one. Especially when one is trying to break your code.**
+
+## True Simultaneous Dual — Bridge Architecture
+
+Run Claude and Codex in separate terminals, both writing to `.genius/dual-bridge.json`. Use `/challenge` in either terminal to review the other engine's latest diff via `genius-code-review`. The shared bridge is refreshed by the `Stop` hook after each action.
+
+---
 
 ## Overview
 
@@ -36,105 +47,23 @@ The engine is **opt-in per task**. Not every task needs adversarial review — u
 
 ## State Management
 
-### Initialize Dual State
-On first use, create `.genius/dual-state.json`:
-```json
-{
-  "active": false,
-  "mode": null,
-  "cycle": 0,
-  "max_rounds": 3,
-  "builder_model": "opus",
-  "challenger_model": "codex",
-  "challenger_profile": "balanced",
-  "current_task": null,
-  "last_verdict": null,
-  "history": [],
-  "updated_at": "ISO-date"
-}
-```
-
-### Update State
-After every cycle iteration, update `.genius/dual-state.json` with:
-- Incremented `cycle` count
-- `last_verdict`: `"APPROVE"`, `"REQUEST_CHANGES"`, or `"REJECT"`
-- Append to `history[]` with cycle details
+Initialize `.genius/dual-state.json` with mode, cycle, model, profile, current task, verdict, and history fields. After each round, increment `cycle`, update `last_verdict`, and append the result to `history[]`.
 
 ---
 
 ## Mode 1: Build-Review Cycle
 
-The primary workflow. Builder implements, Challenger reviews.
+Builder implements → Challenger reviews → APPROVE / REQUEST_CHANGES / REJECT.
 
-### Protocol
+**Flow:**
+1. Set `dual-state.json` → `active: true, mode: "build-review", cycle: 0`
+2. Builder implements using genius-dev patterns
+3. Builder writes summary to `.genius/dual-review-request.md` (task, files changed, approach, test status)
+4. Spawn Challenger (`genius-challenger`) with read-only access + review request + profile config
+5. Challenger writes `.genius/dual-verdict.md` (verdict, score /100, findings by severity, rationale)
+6. **APPROVE** → done, log history. **REQUEST_CHANGES** → builder fixes, cycle++, escalate if `>= DUAL_MAX_ROUNDS`. **REJECT** → escalate immediately.
 
-```
-┌─────────────┐     implement     ┌─────────────┐
-│   BUILDER   │ ───────────────→  │  Code/Files  │
-└─────────────┘                   └──────┬───────┘
-                                         │
-                                         ▼
-                                  ┌─────────────┐
-                                  │ CHALLENGER   │
-                                  │  (review)    │
-                                  └──────┬───────┘
-                                         │
-                              ┌──────────┼──────────┐
-                              ▼          ▼          ▼
-                         APPROVE   REQUEST_CHANGES  REJECT
-                           │          │              │
-                           ▼          ▼              ▼
-                         Done    Builder fixes   Escalate
-                                  (cycle++)      to user
-```
-
-### Step-by-Step
-
-1. **Activate**: Set `dual-state.json` → `active: true, mode: "build-review", cycle: 0`
-2. **Builder Phase**: Builder receives the task and implements it normally using genius-dev patterns
-3. **Handoff**: Builder signals completion. Write implementation summary to `.genius/dual-review-request.md`:
-   ```markdown
-   # Dual Review Request
-   ## Task: [description]
-   ## Files Changed: [list]
-   ## Approach: [summary]
-   ## Tests: [pass/fail status]
-   ```
-4. **Challenger Phase**: Spawn Challenger agent (`genius-challenger`) with:
-   - Read-only access to all project files
-   - The review request document
-   - The challenger profile configuration
-5. **Verdict**: Challenger writes `.genius/dual-verdict.md`:
-   ```markdown
-   # Challenger Verdict — Cycle N
-   ## Verdict: APPROVE | REQUEST_CHANGES | REJECT
-   ## Score: XX/100
-   ## Findings:
-   ### Critical (must fix)
-   ### Important (should fix)
-   ### Minor (could fix)
-   ## Rationale: [explanation]
-   ```
-6. **Resolution**:
-   - **APPROVE** → Task complete. Log to history. Set `active: false`.
-   - **REQUEST_CHANGES** → Builder receives findings, fixes issues. Increment `cycle`. If `cycle >= DUAL_MAX_ROUNDS` → escalate to user.
-   - **REJECT** → Escalate to user immediately with Challenger's rationale.
-
-### Spawning the Challenger
-
-Use Agent Teams task delegation:
-```
-Task the genius-challenger agent: Review the implementation described in .genius/dual-review-request.md.
-Apply the {DUAL_CHALLENGER_PROFILE} profile. Write verdict to .genius/dual-verdict.md.
-```
-
-If the configured challenger model CLI is available (codex, kimi, gemini), use it:
-```bash
-# Example with Codex CLI
-codex --approval-mode full-auto "Review the code changes in .genius/dual-review-request.md. Write your verdict to .genius/dual-verdict.md following the format in .claude/skills/genius-dual-engine/SKILL.md"
-```
-
-If no external CLI is available, fall back to spawning a Claude Code Task with the genius-challenger agent prompt.
+**Spawning**: Use Agent Teams task delegation or external CLI (codex/kimi/gemini) if available, else Claude Code Task.
 
 ---
 
@@ -178,113 +107,31 @@ When Builder and Challenger disagree on **approach** (not just implementation de
 
 ## Mode 3: Audit Mode
 
-Challenger performs an independent, comprehensive audit of the current codebase or feature.
-
-### Audit Checklist
-
-The Challenger runs through these checks independently:
-
-| Check | Method | Reference Skill |
-|-------|--------|----------------|
-| **Test Suite** | Run all tests, report failures | genius-qa |
-| **Security Audit** | OWASP Top 10, dependency scan, secrets detection | genius-security |
-| **Performance** | Identify bottlenecks, O(n²) patterns, memory leaks | genius-performance |
-| **Spec Compliance** | Compare implementation against SPECS.md / plan.md | genius-reviewer |
-
-### Audit Output
-
-Write to `.genius/dual-audit-report.md`:
-```markdown
-# Dual Audit Report
-Date: YYYY-MM-DD
-Challenger: [model]
-Profile: [strict|balanced|lenient]
-
-## Summary
-- Tests: X passed, Y failed, Z skipped
-- Security: [score/grade]
-- Performance: [score/grade]
-- Spec Compliance: [percentage]
-
-## Critical Findings
-## Important Findings
-## Minor Findings
-## Recommendations
-
-## Overall Verdict: PASS | CONDITIONAL_PASS | FAIL
-```
+Challenger performs independent audit: tests (genius-qa), security/OWASP (genius-security), performance (genius-performance), spec compliance (genius-reviewer).
+Output to `.genius/dual-audit-report.md` with Summary, Critical/Important/Minor Findings, Recommendations, and Verdict (PASS/CONDITIONAL_PASS/FAIL).
 
 ---
 
 ## Challenger Profiles
 
-Configure via `DUAL_CHALLENGER_PROFILE` env var or per-task override.
-
-### `strict`
-- Challenges every design decision
-- Requires 90+ score for APPROVE
-- Runs full audit suite on every review
-- Security findings are always Critical
-- Best for: production releases, security-critical code, public APIs
-
-### `balanced` (default)
-- Normal senior-engineer code review standards
-- Requires 70+ score for APPROVE
-- Runs tests + basic security check
-- Proportionate severity ratings
-- Best for: regular feature development, most tasks
-
-### `lenient`
-- Focus on real bugs and breaking changes only
-- Requires 50+ score for APPROVE
-- Runs tests only (skips deep audit)
-- Fast approval for straightforward changes
-- Best for: prototyping, internal tools, rapid iteration
+Set via `DUAL_CHALLENGER_PROFILE` env var or per-task override:
+- **strict** (90+ to approve): full audit, every decision challenged. For production/security-critical.
+- **balanced** (70+, default): standard code review. For regular development.
+- **lenient** (50+): bugs/breaking changes only, tests only. For prototyping/internal tools.
 
 ---
 
 ## Integration with Agent Teams
 
-### Team Structure
-```
-Lead Agent (Builder)
-  ├── genius-dev (implementation)
-  ├── genius-architect (design)
-  └── genius-challenger (Challenger) — read-only + review
-```
-
-### Communication Protocol
-- Builder → Challenger: via `.genius/dual-review-request.md`
-- Challenger → Builder: via `.genius/dual-verdict.md`
-- Discussion: via `.genius/dual-discussion.md`
-- Audit: via `.genius/dual-audit-report.md`
-- State: via `.genius/dual-state.json`
-
-All communication is file-based. No direct inter-process messaging required.
-
-### Plan.md Annotations
-Mark tasks requiring dual review in `.claude/plan.md`:
-```markdown
-- [ ] 🔄 Implement auth middleware (DUAL: build-review, strict)
-- [ ] 🔄 Design database schema (DUAL: discussion)
-- [ ] 🔄 Pre-launch audit (DUAL: audit, strict)
-- [ ] Regular task (no dual review needed)
-```
-
-The `🔄` prefix and `(DUAL: ...)` annotation signal the orchestrator to activate the dual engine for that task.
+Team: Lead Agent (Builder) + genius-dev + genius-architect + genius-challenger (read-only reviewer).
+Communication is file-based: `.genius/dual-review-request.md`, `.genius/dual-verdict.md`, `.genius/dual-discussion.md`, `.genius/dual-audit-report.md`, `.genius/dual-state.json`.
+In plan.md, prefix dual tasks with `🔄` and `(DUAL: mode, profile)` to signal the orchestrator.
 
 ---
 
 ## Relationship to Existing Skills
 
-| Skill | Relationship |
-|-------|-------------|
-| **genius-reviewer** | Challenger uses reviewer's scoring rubric. Reviewer is single-pass; Challenger is iterative. |
-| **genius-qa** | Challenger invokes QA checks during audit. QA is testing-focused; Challenger is holistic. |
-| **genius-security** | Challenger references security skill during audit mode. Complementary, not duplicating. |
-| **genius-dev** | Builder uses dev skill for implementation. Challenger never implements. |
-
----
+Challenger reuses reviewer's scoring rubric (iteratively, not single-pass), invokes QA/security checks during audit, and never implements (that's genius-dev's job).
 
 ## Cost & Performance Notes
 
@@ -303,3 +150,42 @@ The `🔄` prefix and `(DUAL: ...)` annotation signal the orchestrator to activa
 4. Iterate until APPROVE or escalation
 5. Check status anytime with `/dual-status`
 6. Force a review with `/dual-challenge`
+
+---
+
+## Switching to/from Dual Mode
+
+To switch an existing project to dual mode:
+```
+/genius-switch-engine dual
+```
+
+To go back to Claude Code only:
+```
+/genius-switch-engine claude
+```
+
+To switch to Codex only:
+```
+/genius-switch-engine codex
+```
+
+This preserves all your project data (.genius/) and only reconfigures the engine files.
+
+## Handoff
+
+- → **genius-dev**: Builder implements the approved changes for the active cycle
+- → **genius-reviewer / genius-code-review**: Challenger performs the critical review pass
+- → **genius-qa / genius-security**: Audit mode escalates to full validation when needed
+
+## Next Step
+
+Advance the current dual cycle to a verdict, then either implement the requested changes or escalate the disagreement.
+
+## Definition of Done
+
+- [ ] Builder and Challenger roles are both exercised for the marked task
+- [ ] Challenger feedback is concrete and either resolved or escalated
+- [ ] Final status is one of `APPROVE`, `REVISE`, or `ESCALATE`
+- [ ] Dual-mode status files reflect the latest outcome
+- [ ] User can see the remaining next step without rereading the thread

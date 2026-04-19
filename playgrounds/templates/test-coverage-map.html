@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Coverage Map | Genius QA</title>
+    <link rel="stylesheet" href="./design-tokens.css">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --border: var(--border-color);
+            --accent: var(--accent-blue);
+            --success: var(--accent-green);
+            --warning: var(--accent-orange);
+            --danger: var(--accent-red);
+            --critical: #ff4757;
+            --high: var(--surface-red-light);
+            --medium: var(--surface-amber);
+            --low: #70a1ff;
+            --coverage-high: #238636;
+            --coverage-medium: #9e6a03;
+            --coverage-low: #da3633;
+        }
+
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.5;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        h1 {
+            font-size: 24px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        h1 .icon { font-size: 28px; }
+        
+        .presets {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .preset-btn {
+            padding: 8px 16px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        
+        .preset-btn:hover {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border-color: var(--accent);
+        }
+        
+        .preset-btn.active {
+            background: var(--accent);
+            color: var(--text-inverse);
+            border-color: var(--accent);
+        }
+        
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 20px;
+        }
+        
+        .left-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        
+        .card-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        /* Stats Bar */
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 16px;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 16px;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+        }
+        
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        
+        .stat-value.success { color: var(--success); }
+        .stat-value.warning { color: var(--warning); }
+        .stat-value.danger { color: var(--danger); }
+        .stat-value.accent { color: var(--accent); }
+        
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+        }
+        
+        /* Filters */
+        .filters {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .filter-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+        }
+        
+        select, input[type="text"] {
+            padding: 8px 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 13px;
+            min-width: 140px;
+        }
+        
+        select:focus, input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        
+        /* Heatmap */
+        .heatmap-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 12px;
+        }
+        
+        .module-card {
+            background: var(--bg-tertiary);
+            border: 2px solid transparent;
+            border-radius: 8px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+        
+        .module-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px var(--overlay-black-30);
+        }
+        
+        .module-card.selected {
+            border-color: var(--accent);
+        }
+        
+        .module-card.coverage-high {
+            border-left: 4px solid var(--coverage-high);
+        }
+        
+        .module-card.coverage-medium {
+            border-left: 4px solid var(--coverage-medium);
+        }
+        
+        .module-card.coverage-low {
+            border-left: 4px solid var(--coverage-low);
+        }
+        
+        .module-name {
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 8px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .module-coverage {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        
+        .module-card.coverage-high .module-coverage { color: var(--coverage-high); }
+        .module-card.coverage-medium .module-coverage { color: var(--coverage-medium); }
+        .module-card.coverage-low .module-coverage { color: var(--coverage-low); }
+        
+        .module-stats {
+            display: flex;
+            gap: 12px;
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+        
+        .module-stats span { display: flex; align-items: center; gap: 4px; }
+        
+        .module-bugs {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: var(--danger);
+            color: white;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 10px;
+        }
+        
+        /* Module Detail Panel */
+        .detail-panel {
+            position: sticky;
+            top: 20px;
+        }
+        
+        .detail-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        
+        .detail-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+        
+        .detail-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .detail-subtitle {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        .coverage-bar {
+            height: 8px;
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 16px 0;
+        }
+        
+        .coverage-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s;
+        }
+        
+        .coverage-fill.high { background: var(--coverage-high); }
+        .coverage-fill.medium { background: var(--coverage-medium); }
+        .coverage-fill.low { background: var(--coverage-low); }
+        
+        /* Tests List */
+        .tests-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .test-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            background: var(--bg-tertiary);
+            border-radius: 6px;
+            margin-bottom: 6px;
+            font-size: 13px;
+        }
+        
+        .test-status {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        
+        .test-status.passed { background: var(--success); }
+        .test-status.failed { background: var(--danger); }
+        .test-status.skipped { background: var(--text-muted); }
+        
+        .test-name {
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .test-type {
+            font-size: 10px;
+            padding: 2px 6px;
+            background: var(--bg-secondary);
+            border-radius: 4px;
+            color: var(--text-secondary);
+        }
+        
+        /* Bug Tracker */
+        .bug-filters {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        
+        .bug-filter-btn {
+            padding: 4px 10px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 11px;
+            transition: all 0.2s;
+        }
+        
+        .bug-filter-btn:hover, .bug-filter-btn.active {
+            border-color: var(--accent);
+            color: var(--text-primary);
+        }
+        
+        .bugs-list {
+            max-height: 180px;
+            overflow-y: auto;
+        }
+        
+        .bug-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 10px;
+            background: var(--bg-tertiary);
+            border-radius: 6px;
+            margin-bottom: 8px;
+            border-left: 3px solid;
+        }
+        
+        .bug-item.critical { border-left-color: var(--critical); }
+        .bug-item.high { border-left-color: var(--high); }
+        .bug-item.medium { border-left-color: var(--medium); }
+        .bug-item.low { border-left-color: var(--low); }
+        
+        .bug-severity {
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            flex-shrink: 0;
+        }
+        
+        .bug-severity.critical { background: var(--critical); color: white; }
+        .bug-severity.high { background: var(--high); color: white; }
+        .bug-severity.medium { background: var(--medium); color: black; }
+        .bug-severity.low { background: var(--low); color: white; }
+        
+        .bug-content { flex: 1; min-width: 0; }
+        
+        .bug-title {
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+        
+        .bug-meta {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+        
+        /* Timeline */
+        .timeline {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 8px;
+        }
+        
+        .timeline-item {
+            min-width: 100px;
+            padding: 12px;
+            background: var(--bg-tertiary);
+            border-radius: 6px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+        
+        .timeline-item:hover {
+            border-color: var(--accent);
+        }
+        
+        .timeline-item.selected {
+            border-color: var(--accent);
+            background: var(--tone-blue-10);
+        }
+        
+        .timeline-date {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+        
+        .timeline-status {
+            font-size: 20px;
+            margin-bottom: 4px;
+        }
+        
+        .timeline-stats {
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+        
+        /* Prompt Output */
+        .prompt-section {
+            margin-top: 20px;
+        }
+        
+        .prompt-output {
+            background: var(--bg-tertiary);
+            border-radius: 6px;
+            padding: 16px;
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+            color: var(--text-secondary);
+        }
+        
+        .copy-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            background: var(--accent);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .copy-btn:hover {
+            background: #4c9aed;
+        }
+        
+        .copy-btn.copied {
+            background: var(--success);
+        }
+        
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+        
+        .empty-state .icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+        
+        .hidden { display: none !important; }
+    
+/* ===== MOBILE RESPONSIVE (v13) ===== */
+@media (max-width: 768px) {
+  body { padding: 1rem !important; }
+
+  /* Single-column grids */
+  [style*="grid-template-columns"],
+  .grid, .cards-grid, .two-col, .three-col,
+  [class*="grid-"] { grid-template-columns: 1fr !important; }
+
+  /* Stack flex rows */
+  .flex-row, .row, [class*="-row"] { flex-direction: column !important; }
+
+  /* Full-width elements */
+  .card, .panel, .box, .section,
+  [class*="card"], [class*="panel"] { width: 100% !important; max-width: 100% !important; }
+
+  /* Touch-friendly inputs and buttons */
+  input, select, textarea, button, .btn,
+  [class*="btn"], [class*="button"] {
+    min-height: 44px !important;
+    font-size: 16px !important;
+  }
+
+  /* Prevent horizontal scroll */
+  .container, .wrapper, main, section { overflow-x: hidden; }
+
+  /* Readable font sizes */
+  h1 { font-size: 1.6rem !important; }
+  h2 { font-size: 1.3rem !important; }
+  h3 { font-size: 1.1rem !important; }
+
+  /* Reduce whitespace */
+  .container, .wrapper, main {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+
+  /* Table responsiveness */
+  table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* Navigation */
+  nav, .nav, .navbar { flex-wrap: wrap; gap: .5rem; }
+}
+
+@media (max-width: 480px) {
+  body { padding: .75rem !important; }
+  h1 { font-size: 1.3rem !important; }
+  .header, header { padding: .75rem 1rem !important; }
+}
+
+</style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>
+                <span class="icon">🧪</span>
+                Test Coverage Map
+            </h1>
+            <div class="presets">
+                <button class="preset-btn active" data-preset="overview">📊 Overview</button>
+                <button class="preset-btn" data-preset="critical">🔥 Critical Paths</button>
+                <button class="preset-btn" data-preset="failed">❌ Failed Focus</button>
+            </div>
+        </header>
+        
+        <!-- Stats Bar -->
+        <div class="card stats-bar" style="margin-bottom: 20px;">
+            <div class="stat-item">
+                <div class="stat-value" id="stat-coverage">--</div>
+                <div class="stat-label">Coverage</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value success" id="stat-passed">--</div>
+                <div class="stat-label">Passed</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value danger" id="stat-failed">--</div>
+                <div class="stat-label">Failed</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value warning" id="stat-bugs">--</div>
+                <div class="stat-label">Open Bugs</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value accent" id="stat-modules">--</div>
+                <div class="stat-label">Modules</div>
+            </div>
+        </div>
+        
+        <div class="main-grid">
+            <div class="left-panel">
+                <!-- Filters -->
+                <div class="card">
+                    <div class="filters">
+                        <div class="filter-group">
+                            <span class="filter-label">Module</span>
+                            <select id="filter-module">
+                                <option value="all">All Modules</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <span class="filter-label">Test Type</span>
+                            <select id="filter-type">
+                                <option value="all">All Types</option>
+                                <option value="unit">Unit</option>
+                                <option value="integration">Integration</option>
+                                <option value="e2e">E2E</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <span class="filter-label">Status</span>
+                            <select id="filter-status">
+                                <option value="all">All Status</option>
+                                <option value="passed">Passed</option>
+                                <option value="failed">Failed</option>
+                                <option value="skipped">Skipped</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <span class="filter-label">Coverage</span>
+                            <select id="filter-coverage">
+                                <option value="all">All</option>
+                                <option value="high">High (80%+)</option>
+                                <option value="medium">Medium (50-79%)</option>
+                                <option value="low">Low (&lt;50%)</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <span class="filter-label">Search</span>
+                            <input type="text" id="filter-search" placeholder="Search modules...">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Coverage Heatmap -->
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">📍 Coverage Heatmap</span>
+                        <span id="module-count" style="font-size: 12px; color: var(--text-secondary);"></span>
+                    </div>
+                    <div class="heatmap-container" id="heatmap"></div>
+                </div>
+                
+                <!-- Timeline -->
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">📅 Recent Test Runs</span>
+                    </div>
+                    <div class="timeline" id="timeline"></div>
+                </div>
+                
+                <!-- Prompt Output -->
+                <div class="card prompt-section">
+                    <div class="card-header">
+                        <span class="card-title">📋 QA Report</span>
+                        <button class="copy-btn" id="copy-btn">
+                            <span>📋</span> Copy Report
+                        </button>
+                    </div>
+                    <pre class="prompt-output" id="prompt-output"></pre>
+                </div>
+            </div>
+            
+            <!-- Right Panel: Details -->
+            <div class="right-panel">
+                <div class="card detail-panel" id="detail-panel">
+                    <div class="empty-state" id="empty-detail">
+                        <div class="icon">👆</div>
+                        <p>Click on a module to see details</p>
+                    </div>
+                    <div class="hidden" id="module-detail">
+                        <div class="detail-header">
+                            <div class="detail-icon" id="detail-icon">📦</div>
+                            <div>
+                                <div class="detail-title" id="detail-title">Module Name</div>
+                                <div class="detail-subtitle" id="detail-subtitle">8 tests • 2 bugs</div>
+                            </div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 13px; color: var(--text-secondary);">Coverage</span>
+                            <span id="detail-coverage" style="font-weight: 700;">85%</span>
+                        </div>
+                        <div class="coverage-bar">
+                            <div class="coverage-fill high" id="detail-coverage-bar" style="width: 85%;"></div>
+                        </div>
+                        
+                        <div class="card-title" style="margin: 16px 0 12px;">Tests</div>
+                        <div class="tests-list" id="tests-list"></div>
+                    </div>
+                </div>
+                
+                <!-- Bug Tracker -->
+                <div class="card" style="margin-top: 20px;">
+                    <div class="card-header">
+                        <span class="card-title">🐛 Bug Tracker</span>
+                        <span id="bug-count" style="font-size: 12px; color: var(--text-secondary);"></span>
+                    </div>
+                    <div class="bug-filters">
+                        <button class="bug-filter-btn active" data-severity="all">All</button>
+                        <button class="bug-filter-btn" data-severity="critical">Critical</button>
+                        <button class="bug-filter-btn" data-severity="high">High</button>
+                        <button class="bug-filter-btn" data-severity="medium">Medium</button>
+                        <button class="bug-filter-btn" data-severity="low">Low</button>
+                    </div>
+                    <div class="bugs-list" id="bugs-list"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ========== STATE ==========
+        const state = {
+            preset: 'overview',
+            selectedModule: null,
+            selectedRun: 0,
+            filters: {
+                module: 'all',
+                type: 'all',
+                status: 'all',
+                coverage: 'all',
+                search: ''
+            },
+            bugFilter: 'all',
+            modules: [
+                { id: 'auth', name: 'Authentication', icon: '🔐', coverage: 92, tests: [
+                    { name: 'Login flow', type: 'e2e', status: 'passed' },
+                    { name: 'JWT validation', type: 'unit', status: 'passed' },
+                    { name: 'Password reset', type: 'integration', status: 'passed' },
+                    { name: 'OAuth providers', type: 'e2e', status: 'passed' },
+                    { name: 'Session expiry', type: 'unit', status: 'failed' }
+                ], bugs: [{ id: 'BUG-101', title: 'Session not cleared on logout', severity: 'high', module: 'auth', assignee: 'John' }]},
+                { id: 'users', name: 'User Management', icon: '👥', coverage: 78, tests: [
+                    { name: 'Create user', type: 'integration', status: 'passed' },
+                    { name: 'Update profile', type: 'unit', status: 'passed' },
+                    { name: 'Delete user cascade', type: 'integration', status: 'failed' },
+                    { name: 'User search', type: 'unit', status: 'passed' }
+                ], bugs: [{ id: 'BUG-102', title: 'Profile image not updating', severity: 'medium', module: 'users', assignee: 'Sarah' }]},
+                { id: 'payments', name: 'Payments', icon: '💳', coverage: 45, tests: [
+                    { name: 'Stripe checkout', type: 'e2e', status: 'failed' },
+                    { name: 'Refund flow', type: 'integration', status: 'skipped' },
+                    { name: 'Invoice generation', type: 'unit', status: 'passed' }
+                ], bugs: [
+                    { id: 'BUG-103', title: 'Double charge on retry', severity: 'critical', module: 'payments', assignee: 'Mike' },
+                    { id: 'BUG-104', title: 'Invoice PDF missing data', severity: 'low', module: 'payments', assignee: 'Lisa' }
+                ]},
+                { id: 'api', name: 'API Gateway', icon: '🌐', coverage: 88, tests: [
+                    { name: 'Rate limiting', type: 'unit', status: 'passed' },
+                    { name: 'API versioning', type: 'integration', status: 'passed' },
+                    { name: 'Error responses', type: 'unit', status: 'passed' },
+                    { name: 'Request validation', type: 'unit', status: 'passed' },
+                    { name: 'CORS handling', type: 'e2e', status: 'passed' }
+                ], bugs: []},
+                { id: 'notifications', name: 'Notifications', icon: '🔔', coverage: 62, tests: [
+                    { name: 'Email sending', type: 'integration', status: 'passed' },
+                    { name: 'Push notifications', type: 'e2e', status: 'failed' },
+                    { name: 'Template rendering', type: 'unit', status: 'passed' }
+                ], bugs: [{ id: 'BUG-105', title: 'Push not working on iOS', severity: 'high', module: 'notifications', assignee: 'Tom' }]},
+                { id: 'search', name: 'Search Engine', icon: '🔍', coverage: 35, tests: [
+                    { name: 'Full-text search', type: 'integration', status: 'failed' },
+                    { name: 'Fuzzy matching', type: 'unit', status: 'skipped' }
+                ], bugs: [{ id: 'BUG-106', title: 'Search returns stale results', severity: 'critical', module: 'search', assignee: 'Alex' }]},
+                { id: 'analytics', name: 'Analytics', icon: '📊', coverage: 81, tests: [
+                    { name: 'Event tracking', type: 'unit', status: 'passed' },
+                    { name: 'Dashboard metrics', type: 'integration', status: 'passed' },
+                    { name: 'Data export', type: 'e2e', status: 'passed' },
+                    { name: 'Real-time updates', type: 'integration', status: 'passed' }
+                ], bugs: []},
+                { id: 'storage', name: 'File Storage', icon: '📁', coverage: 71, tests: [
+                    { name: 'Upload flow', type: 'e2e', status: 'passed' },
+                    { name: 'S3 integration', type: 'integration', status: 'passed' },
+                    { name: 'File deletion', type: 'unit', status: 'failed' }
+                ], bugs: [{ id: 'BUG-107', title: 'Large files timeout', severity: 'medium', module: 'storage', assignee: 'Kim' }]},
+                { id: 'cache', name: 'Cache Layer', icon: '⚡', coverage: 95, tests: [
+                    { name: 'Redis connection', type: 'unit', status: 'passed' },
+                    { name: 'Cache invalidation', type: 'integration', status: 'passed' },
+                    { name: 'TTL handling', type: 'unit', status: 'passed' },
+                    { name: 'Cache warming', type: 'integration', status: 'passed' }
+                ], bugs: []},
+                { id: 'logging', name: 'Logging', icon: '📝', coverage: 55, tests: [
+                    { name: 'Log aggregation', type: 'integration', status: 'passed' },
+                    { name: 'Error tracking', type: 'unit', status: 'skipped' }
+                ], bugs: [{ id: 'BUG-108', title: 'Logs not rotating', severity: 'low', module: 'logging', assignee: 'Dan' }]}
+            ],
+            testRuns: [
+                { date: 'Feb 15', passed: 38, failed: 4, coverage: 72, status: 'warning' },
+                { date: 'Feb 14', passed: 35, failed: 7, coverage: 68, status: 'danger' },
+                { date: 'Feb 13', passed: 40, failed: 2, coverage: 75, status: 'success' },
+                { date: 'Feb 12', passed: 39, failed: 3, coverage: 74, status: 'success' },
+                { date: 'Feb 11', passed: 36, failed: 6, coverage: 70, status: 'warning' },
+                { date: 'Feb 10', passed: 34, failed: 8, coverage: 65, status: 'danger' }
+            ]
+        };
+        
+        // ========== COMPUTED ==========
+        function getFilteredModules() {
+            let modules = [...state.modules];
+            
+            // Apply preset filters
+            if (state.preset === 'critical') {
+                modules = modules.filter(m => m.bugs.some(b => b.severity === 'critical' || b.severity === 'high'));
+            } else if (state.preset === 'failed') {
+                modules = modules.filter(m => m.tests.some(t => t.status === 'failed'));
+            }
+            
+            // Apply user filters
+            if (state.filters.module !== 'all') {
+                modules = modules.filter(m => m.id === state.filters.module);
+            }
+            if (state.filters.type !== 'all') {
+                modules = modules.filter(m => m.tests.some(t => t.type === state.filters.type));
+            }
+            if (state.filters.status !== 'all') {
+                modules = modules.filter(m => m.tests.some(t => t.status === state.filters.status));
+            }
+            if (state.filters.coverage !== 'all') {
+                modules = modules.filter(m => {
+                    if (state.filters.coverage === 'high') return m.coverage >= 80;
+                    if (state.filters.coverage === 'medium') return m.coverage >= 50 && m.coverage < 80;
+                    if (state.filters.coverage === 'low') return m.coverage < 50;
+                    return true;
+                });
+            }
+            if (state.filters.search) {
+                const search = state.filters.search.toLowerCase();
+                modules = modules.filter(m => m.name.toLowerCase().includes(search));
+            }
+            
+            return modules;
+        }
+        
+        function getAllBugs() {
+            let bugs = state.modules.flatMap(m => m.bugs);
+            if (state.bugFilter !== 'all') {
+                bugs = bugs.filter(b => b.severity === state.bugFilter);
+            }
+            if (state.selectedModule) {
+                bugs = bugs.filter(b => b.module === state.selectedModule);
+            }
+            return bugs.sort((a, b) => {
+                const order = { critical: 0, high: 1, medium: 2, low: 3 };
+                return order[a.severity] - order[b.severity];
+            });
+        }
+        
+        function getStats() {
+            const modules = state.modules;
+            const allTests = modules.flatMap(m => m.tests);
+            const allBugs = modules.flatMap(m => m.bugs);
+            
+            return {
+                coverage: Math.round(modules.reduce((sum, m) => sum + m.coverage, 0) / modules.length),
+                passed: allTests.filter(t => t.status === 'passed').length,
+                failed: allTests.filter(t => t.status === 'failed').length,
+                bugs: allBugs.length,
+                modules: modules.length
+            };
+        }
+        
+        function getCoverageClass(coverage) {
+            if (coverage >= 80) return 'high';
+            if (coverage >= 50) return 'medium';
+            return 'low';
+        }
+        
+        // ========== RENDER ==========
+        function renderPreview() {
+            renderStats();
+            renderHeatmap();
+            renderTimeline();
+            renderModuleDetail();
+            renderBugsList();
+            updateModuleFilter();
+        }
+        
+        function renderStats() {
+            const stats = getStats();
+            document.getElementById('stat-coverage').textContent = stats.coverage + '%';
+            document.getElementById('stat-coverage').className = 'stat-value ' + getCoverageClass(stats.coverage);
+            document.getElementById('stat-passed').textContent = stats.passed;
+            document.getElementById('stat-failed').textContent = stats.failed;
+            document.getElementById('stat-bugs').textContent = stats.bugs;
+            document.getElementById('stat-modules').textContent = stats.modules;
+        }
+        
+        function renderHeatmap() {
+            const container = document.getElementById('heatmap');
+            const modules = getFilteredModules();
+            
+            document.getElementById('module-count').textContent = `${modules.length} modules`;
+            
+            container.innerHTML = modules.map(m => {
+                const coverageClass = getCoverageClass(m.coverage);
+                const selected = state.selectedModule === m.id ? 'selected' : '';
+                const bugCount = m.bugs.length;
+                
+                return `
+                    <div class="module-card coverage-${coverageClass} ${selected}" data-module="${m.id}">
+                        ${bugCount > 0 ? `<span class="module-bugs">${bugCount} 🐛</span>` : ''}
+                        <div class="module-name">${m.icon} ${m.name}</div>
+                        <div class="module-coverage">${m.coverage}%</div>
+                        <div class="module-stats">
+                            <span>✅ ${m.tests.filter(t => t.status === 'passed').length}</span>
+                            <span>❌ ${m.tests.filter(t => t.status === 'failed').length}</span>
+                            <span>⏭️ ${m.tests.filter(t => t.status === 'skipped').length}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            // Add click handlers
+            container.querySelectorAll('.module-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    state.selectedModule = card.dataset.module;
+                    updateAll();
+                });
+            });
+        }
+        
+        function renderTimeline() {
+            const container = document.getElementById('timeline');
+            
+            container.innerHTML = state.testRuns.map((run, i) => {
+                const selected = state.selectedRun === i ? 'selected' : '';
+                const icon = run.status === 'success' ? '✅' : run.status === 'warning' ? '⚠️' : '❌';
+                
+                return `
+                    <div class="timeline-item ${selected}" data-run="${i}">
+                        <div class="timeline-date">${run.date}</div>
+                        <div class="timeline-status">${icon}</div>
+                        <div class="timeline-stats">${run.passed}/${run.passed + run.failed} • ${run.coverage}%</div>
+                    </div>
+                `;
+            }).join('');
+            
+            container.querySelectorAll('.timeline-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    state.selectedRun = parseInt(item.dataset.run);
+                    updateAll();
+                });
+            });
+        }
+        
+        function renderModuleDetail() {
+            const emptyEl = document.getElementById('empty-detail');
+            const detailEl = document.getElementById('module-detail');
+            
+            if (!state.selectedModule) {
+                emptyEl.classList.remove('hidden');
+                detailEl.classList.add('hidden');
+                return;
+            }
+            
+            emptyEl.classList.add('hidden');
+            detailEl.classList.remove('hidden');
+            
+            const module = state.modules.find(m => m.id === state.selectedModule);
+            if (!module) return;
+            
+            document.getElementById('detail-icon').textContent = module.icon;
+            document.getElementById('detail-title').textContent = module.name;
+            document.getElementById('detail-subtitle').textContent = `${module.tests.length} tests • ${module.bugs.length} bugs`;
+            document.getElementById('detail-coverage').textContent = module.coverage + '%';
+            
+            const coverageBar = document.getElementById('detail-coverage-bar');
+            coverageBar.style.width = module.coverage + '%';
+            coverageBar.className = 'coverage-fill ' + getCoverageClass(module.coverage);
+            
+            // Filter tests
+            let tests = [...module.tests];
+            if (state.filters.type !== 'all') {
+                tests = tests.filter(t => t.type === state.filters.type);
+            }
+            if (state.filters.status !== 'all') {
+                tests = tests.filter(t => t.status === state.filters.status);
+            }
+            
+            const testsList = document.getElementById('tests-list');
+            testsList.innerHTML = tests.map(t => `
+                <div class="test-item">
+                    <div class="test-status ${t.status}"></div>
+                    <span class="test-name">${t.name}</span>
+                    <span class="test-type">${t.type}</span>
+                </div>
+            `).join('');
+        }
+        
+        function renderBugsList() {
+            const bugs = getAllBugs();
+            const container = document.getElementById('bugs-list');
+            
+            document.getElementById('bug-count').textContent = `${bugs.length} bugs`;
+            
+            if (bugs.length === 0) {
+                container.innerHTML = '<div class="empty-state" style="padding: 20px;"><p>No bugs found 🎉</p></div>';
+                return;
+            }
+            
+            container.innerHTML = bugs.map(bug => `
+                <div class="bug-item ${bug.severity}">
+                    <span class="bug-severity ${bug.severity}">${bug.severity}</span>
+                    <div class="bug-content">
+                        <div class="bug-title">${bug.id}: ${bug.title}</div>
+                        <div class="bug-meta">Module: ${bug.module} • Assignee: ${bug.assignee}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function updateModuleFilter() {
+            const select = document.getElementById('filter-module');
+            const currentValue = select.value;
+            
+            select.innerHTML = '<option value="all">All Modules</option>' +
+                state.modules.map(m => `<option value="${m.id}">${m.icon} ${m.name}</option>`).join('');
+            
+            select.value = currentValue;
+        }
+        
+        // ========== PROMPT ==========
+        function updatePrompt() {
+            const stats = getStats();
+            const modules = getFilteredModules();
+            const bugs = getAllBugs();
+            const run = state.testRuns[state.selectedRun];
+            
+            const criticalModules = modules.filter(m => m.coverage < 50);
+            const failedTests = modules.flatMap(m => m.tests.filter(t => t.status === 'failed'));
+            const criticalBugs = bugs.filter(b => b.severity === 'critical' || b.severity === 'high');
+            
+            const prompt = `# QA Report - Test Coverage Analysis
+Generated: ${new Date().toLocaleString()}
+Preset: ${state.preset.charAt(0).toUpperCase() + state.preset.slice(1)}
+
+## 📊 Overall Statistics
+- **Total Coverage:** ${stats.coverage}%
+- **Tests Passed:** ${stats.passed}/${stats.passed + stats.failed} (${Math.round(stats.passed / (stats.passed + stats.failed) * 100)}%)
+- **Open Bugs:** ${stats.bugs}
+- **Modules Analyzed:** ${modules.length}
+
+## 🔥 Critical Issues
+
+### Low Coverage Modules (< 50%)
+${criticalModules.length === 0 ? '✅ No critical coverage gaps!' : criticalModules.map(m => `- **${m.name}:** ${m.coverage}% coverage`).join('\n')}
+
+### Failed Tests
+${failedTests.length === 0 ? '✅ All tests passing!' : failedTests.map(t => `- ❌ ${t.name} (${t.type})`).join('\n')}
+
+### Critical & High Priority Bugs
+${criticalBugs.length === 0 ? '✅ No critical bugs!' : criticalBugs.map(b => `- **[${b.severity.toUpperCase()}]** ${b.id}: ${b.title} (${b.module})`).join('\n')}
+
+## 📈 Latest Test Run (${run.date})
+- Passed: ${run.passed}
+- Failed: ${run.failed}
+- Coverage: ${run.coverage}%
+- Status: ${run.status === 'success' ? '✅ Healthy' : run.status === 'warning' ? '⚠️ Needs attention' : '❌ Critical'}
+
+## 💡 Recommendations
+
+${criticalModules.length > 0 ? `1. **Increase test coverage** for: ${criticalModules.map(m => m.name).join(', ')}` : ''}
+${failedTests.length > 0 ? `2. **Fix failing tests** before next release: ${failedTests.length} tests need attention` : ''}
+${criticalBugs.length > 0 ? `3. **Prioritize bug fixes** for ${criticalBugs.length} critical/high severity issues` : ''}
+${stats.coverage < 80 ? `4. **Target 80% coverage** - currently at ${stats.coverage}%` : '✅ Coverage target met!'}
+
+## 📋 Module Breakdown
+${modules.map(m => {
+    const passed = m.tests.filter(t => t.status === 'passed').length;
+    const total = m.tests.length;
+    const status = m.coverage >= 80 ? '🟢' : m.coverage >= 50 ? '🟡' : '🔴';
+    return `${status} **${m.name}**: ${m.coverage}% coverage, ${passed}/${total} tests, ${m.bugs.length} bugs`;
+}).join('\n')}
+
+---
+*Report generated by Test Coverage Map - Genius QA*`;
+            
+            document.getElementById('prompt-output').textContent = prompt;
+        }
+        
+        // ========== UPDATE ALL ==========
+        function updateAll() {
+            renderPreview();
+            updatePrompt();
+        }
+        
+        // ========== EVENT HANDLERS ==========
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                state.preset = btn.dataset.preset;
+                state.selectedModule = null;
+                updateAll();
+            });
+        });
+        
+        document.querySelectorAll('.bug-filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.bug-filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                state.bugFilter = btn.dataset.severity;
+                updateAll();
+            });
+        });
+        
+        document.getElementById('filter-module').addEventListener('change', e => {
+            state.filters.module = e.target.value;
+            updateAll();
+        });
+        
+        document.getElementById('filter-type').addEventListener('change', e => {
+            state.filters.type = e.target.value;
+            updateAll();
+        });
+        
+        document.getElementById('filter-status').addEventListener('change', e => {
+            state.filters.status = e.target.value;
+            updateAll();
+        });
+        
+        document.getElementById('filter-coverage').addEventListener('change', e => {
+            state.filters.coverage = e.target.value;
+            updateAll();
+        });
+        
+        document.getElementById('filter-search').addEventListener('input', e => {
+            state.filters.search = e.target.value;
+            updateAll();
+        });
+        
+        document.getElementById('copy-btn').addEventListener('click', () => {
+            const text = document.getElementById('prompt-output').textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.getElementById('copy-btn');
+                btn.innerHTML = '<span>✅</span> Copied!';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.innerHTML = '<span>📋</span> Copy Report';
+                    btn.classList.remove('copied');
+                }, 2000);
+            });
+        });
+        
+        // ========== INIT ==========
+        updateAll();
+    </script>
+</body>
+</html>

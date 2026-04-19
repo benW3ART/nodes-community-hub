@@ -1,0 +1,1303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Architecture Explorer | Genius Playground</title>
+    <link rel="stylesheet" href="./design-tokens.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        :root {
+            --border: var(--border-color);
+            --accent: var(--accent-blue);
+            --accent-hover: var(--accent-blue-hover);
+            --success: var(--accent-green);
+            --warning: var(--accent-orange);
+            --danger: var(--accent-red);
+            --purple: var(--accent-purple);
+            --cyan: var(--accent-cyan);
+            --orange: var(--accent-orange-bright);
+            --pink: var(--accent-pink);
+        }
+
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            font-size: 28px;
+        }
+
+        .logo h1 {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .logo span {
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-weight: 400;
+        }
+
+        .presets {
+            display: flex;
+            gap: 8px;
+        }
+
+        .preset-btn {
+            padding: 8px 16px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .preset-btn:hover {
+            background: var(--border);
+            color: var(--text-primary);
+        }
+
+        .preset-btn.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: var(--text-inverse);
+        }
+
+        .main-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Toolbar */
+        .toolbar {
+            width: 80px;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            padding: 16px 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .tool-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 12px 8px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            cursor: grab;
+            font-size: 10px;
+            transition: all 0.2s;
+        }
+
+        .tool-btn:hover {
+            background: var(--border);
+            color: var(--text-primary);
+            transform: scale(1.05);
+        }
+
+        .tool-btn .icon {
+            font-size: 24px;
+        }
+
+        .tool-btn[data-type="frontend"] { border-left: 3px solid var(--accent); }
+        .tool-btn[data-type="api"] { border-left: 3px solid var(--success); }
+        .tool-btn[data-type="database"] { border-left: 3px solid var(--purple); }
+        .tool-btn[data-type="external"] { border-left: 3px solid var(--orange); }
+        .tool-btn[data-type="queue"] { border-left: 3px solid var(--warning); }
+        .tool-btn[data-type="cache"] { border-left: 3px solid var(--cyan); }
+
+        /* Canvas */
+        .canvas-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background: 
+                linear-gradient(90deg, var(--border) 1px, transparent 1px),
+                linear-gradient(var(--border) 1px, transparent 1px);
+            background-size: 40px 40px;
+            background-position: -1px -1px;
+        }
+
+        #canvas {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        .node {
+            position: absolute;
+            min-width: 160px;
+            background: var(--bg-secondary);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            cursor: move;
+            user-select: none;
+            transition: box-shadow 0.2s, transform 0.1s;
+        }
+
+        .node:hover {
+            box-shadow: 0 4px 20px var(--overlay-black-40);
+        }
+
+        .node.selected {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--tone-blue-30);
+        }
+
+        .node.dragging {
+            opacity: 0.8;
+            transform: scale(1.02);
+            z-index: 1000;
+        }
+
+        .node-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-radius: 10px 10px 0 0;
+        }
+
+        .node[data-type="frontend"] .node-header { background: linear-gradient(135deg, var(--tone-blue-20), transparent); }
+        .node[data-type="api"] .node-header { background: linear-gradient(135deg, var(--tone-green-20), transparent); }
+        .node[data-type="database"] .node-header { background: linear-gradient(135deg, var(--tone-purple-20), transparent); }
+        .node[data-type="external"] .node-header { background: linear-gradient(135deg, var(--tone-orange-20), transparent); }
+        .node[data-type="queue"] .node-header { background: linear-gradient(135deg, var(--tone-orange-20), transparent); }
+        .node[data-type="cache"] .node-header { background: linear-gradient(135deg, var(--tone-blue-20), transparent); }
+
+        .node-icon {
+            font-size: 20px;
+        }
+
+        .node-title {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .node-body {
+            padding: 12px 16px;
+        }
+
+        .node-tech {
+            font-size: 12px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .node-tech::before {
+            content: '⚡';
+            font-size: 10px;
+        }
+
+        .node-delete {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            width: 22px;
+            height: 22px;
+            background: var(--danger);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+
+        .node:hover .node-delete {
+            display: flex;
+        }
+
+        /* Connection points */
+        .connection-point {
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            background: var(--bg-tertiary);
+            border: 2px solid var(--accent);
+            border-radius: 50%;
+            cursor: crosshair;
+            z-index: 10;
+        }
+
+        .connection-point.left { left: -7px; top: 50%; transform: translateY(-50%); }
+        .connection-point.right { right: -7px; top: 50%; transform: translateY(-50%); }
+        .connection-point:hover {
+            background: var(--accent);
+            transform: translateY(-50%) scale(1.3);
+        }
+
+        /* SVG Connections */
+        svg.connections {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .connection-line {
+            fill: none;
+            stroke: var(--accent);
+            stroke-width: 2;
+            opacity: 0.6;
+        }
+
+        .connection-arrow {
+            fill: var(--accent);
+            opacity: 0.8;
+        }
+
+        /* Side Panel */
+        .side-panel {
+            width: 320px;
+            background: var(--bg-secondary);
+            border-left: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panel-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .panel-tab {
+            flex: 1;
+            padding: 12px;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .panel-tab:hover {
+            color: var(--text-primary);
+            background: var(--bg-tertiary);
+        }
+
+        .panel-tab.active {
+            color: var(--accent);
+            border-bottom: 2px solid var(--accent);
+        }
+
+        .panel-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+
+        .panel-section {
+            margin-bottom: 20px;
+        }
+
+        .panel-section h3 {
+            font-size: 12px;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            letter-spacing: 0.5px;
+        }
+
+        .form-group {
+            margin-bottom: 14px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 13px;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 12px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state .icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .empty-state p {
+            font-size: 14px;
+        }
+
+        /* Prompt Output */
+        .prompt-panel {
+            background: var(--bg-primary);
+            border-top: 1px solid var(--border);
+            padding: 16px;
+        }
+
+        .prompt-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .prompt-header h3 {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .copy-btn {
+            padding: 8px 16px;
+            background: var(--accent);
+            border: none;
+            border-radius: 6px;
+            color: var(--text-inverse);
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: background 0.2s;
+        }
+
+        .copy-btn:hover {
+            background: var(--accent-hover);
+        }
+
+        .copy-btn.copied {
+            background: var(--success);
+        }
+
+        #prompt-output {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 12px;
+            line-height: 1.6;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            color: var(--text-secondary);
+        }
+
+        /* Connection Mode Indicator */
+        .connection-mode {
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--accent);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            display: none;
+            z-index: 1000;
+            box-shadow: 0 4px 12px var(--tone-blue-30);
+        }
+
+        .connection-mode.active {
+            display: block;
+        }
+
+        /* Dropdown fix */
+        select option {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-secondary);
+        }
+
+        /* Instructions */
+        .instructions {
+            position: fixed;
+            bottom: 20px;
+            left: 100px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px 16px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            z-index: 100;
+        }
+
+        .instructions kbd {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-family: monospace;
+            font-size: 11px;
+        }
+    
+/* ===== MOBILE RESPONSIVE (v13) ===== */
+@media (max-width: 768px) {
+  body { padding: 1rem !important; }
+
+  /* Single-column grids */
+  [style*="grid-template-columns"],
+  .grid, .cards-grid, .two-col, .three-col,
+  [class*="grid-"] { grid-template-columns: 1fr !important; }
+
+  /* Stack flex rows */
+  .flex-row, .row, [class*="-row"] { flex-direction: column !important; }
+
+  /* Full-width elements */
+  .card, .panel, .box, .section,
+  [class*="card"], [class*="panel"] { width: 100% !important; max-width: 100% !important; }
+
+  /* Touch-friendly inputs and buttons */
+  input, select, textarea, button, .btn,
+  [class*="btn"], [class*="button"] {
+    min-height: 44px !important;
+    font-size: 16px !important;
+  }
+
+  /* Prevent horizontal scroll */
+  .container, .wrapper, main, section { overflow-x: hidden; }
+
+  /* Readable font sizes */
+  h1 { font-size: 1.6rem !important; }
+  h2 { font-size: 1.3rem !important; }
+  h3 { font-size: 1.1rem !important; }
+
+  /* Reduce whitespace */
+  .container, .wrapper, main {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+
+  /* Table responsiveness */
+  table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* Navigation */
+  nav, .nav, .navbar { flex-wrap: wrap; gap: .5rem; }
+}
+
+@media (max-width: 480px) {
+  body { padding: .75rem !important; }
+  h1 { font-size: 1.3rem !important; }
+  .header, header { padding: .75rem 1rem !important; }
+}
+
+</style>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <span class="logo-icon">🏗️</span>
+            <h1>Architecture Explorer <span>| Genius Playground</span></h1>
+        </div>
+        <div class="presets">
+            <button class="preset-btn" data-preset="monolith">Monolith</button>
+            <button class="preset-btn" data-preset="microservices">Microservices</button>
+            <button class="preset-btn" data-preset="serverless">Serverless</button>
+            <button class="preset-btn" data-preset="jamstack">JAMstack</button>
+            <button class="preset-btn" data-preset="clear" style="color: var(--danger);">Clear All</button>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <div class="toolbar">
+            <div class="tool-btn" data-type="frontend" draggable="true">
+                <span class="icon">🖥️</span>
+                <span>Frontend</span>
+            </div>
+            <div class="tool-btn" data-type="api" draggable="true">
+                <span class="icon">⚙️</span>
+                <span>API</span>
+            </div>
+            <div class="tool-btn" data-type="database" draggable="true">
+                <span class="icon">🗄️</span>
+                <span>Database</span>
+            </div>
+            <div class="tool-btn" data-type="external" draggable="true">
+                <span class="icon">🔌</span>
+                <span>External</span>
+            </div>
+            <div class="tool-btn" data-type="queue" draggable="true">
+                <span class="icon">📬</span>
+                <span>Queue</span>
+            </div>
+            <div class="tool-btn" data-type="cache" draggable="true">
+                <span class="icon">⚡</span>
+                <span>Cache</span>
+            </div>
+        </div>
+
+        <div class="canvas-container" id="canvas-container">
+            <svg class="connections" id="connections-svg"></svg>
+            <div id="canvas"></div>
+        </div>
+
+        <div class="side-panel">
+            <div class="panel-tabs">
+                <button class="panel-tab active" data-tab="properties">Properties</button>
+                <button class="panel-tab" data-tab="prompt">Prompt</button>
+            </div>
+
+            <div class="panel-content" id="properties-panel">
+                <div class="empty-state" id="empty-state">
+                    <div class="icon">📦</div>
+                    <p>Drag components to the canvas<br>or select a node to edit</p>
+                </div>
+                <div id="node-editor" style="display: none;">
+                    <div class="panel-section">
+                        <h3>Component</h3>
+                        <div class="form-group">
+                            <label>Name</label>
+                            <input type="text" id="node-name" placeholder="Component name">
+                        </div>
+                        <div class="form-group">
+                            <label>Technology</label>
+                            <select id="node-tech"></select>
+                        </div>
+                    </div>
+                    <div class="panel-section">
+                        <h3>Configuration</h3>
+                        <div class="form-group">
+                            <label>Endpoint / Path</label>
+                            <input type="text" id="node-endpoint" placeholder="/api/v1">
+                        </div>
+                        <div class="form-group">
+                            <label>Port</label>
+                            <input type="number" id="node-port" placeholder="3000">
+                        </div>
+                    </div>
+                    <div class="panel-section">
+                        <h3>Environment Variables</h3>
+                        <div class="form-group">
+                            <textarea id="node-env" placeholder="KEY=value&#10;DATABASE_URL=..."></textarea>
+                        </div>
+                    </div>
+                    <div class="panel-section">
+                        <h3>Notes</h3>
+                        <div class="form-group">
+                            <textarea id="node-notes" placeholder="Additional notes..."></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel-content" id="prompt-panel-content" style="display: none;">
+                <div class="prompt-panel">
+                    <div class="prompt-header">
+                        <h3>📋 Architecture Spec</h3>
+                        <button class="copy-btn" id="copy-btn">
+                            <span>📋</span> Copy
+                        </button>
+                    </div>
+                    <pre id="prompt-output">Add components to generate architecture specification...</pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="connection-mode" id="connection-mode">
+        🔗 Click another node to connect (ESC to cancel)
+    </div>
+
+    <div class="instructions">
+        <strong>Tips:</strong> Drag components • Click nodes to select • <kbd>Del</kbd> to remove • Right-click connector to link
+    </div>
+
+    <script>
+        // ============================================
+        // STATE
+        // ============================================
+        const state = {
+            nodes: [],
+            connections: [],
+            selectedNodeId: null,
+            connectionMode: null, // { sourceId, sourcePoint }
+            dragState: null,
+            nextId: 1,
+            activeTab: 'properties'
+        };
+
+        // ============================================
+        // TECHNOLOGY OPTIONS
+        // ============================================
+        const techOptions = {
+            frontend: ['Next.js', 'React', 'Vue.js', 'Nuxt.js', 'SvelteKit', 'Angular', 'Astro', 'Remix', 'Solid.js'],
+            api: ['Express.js', 'FastAPI', 'NestJS', 'Django', 'Flask', 'Spring Boot', 'Go Fiber', 'Hono', 'tRPC'],
+            database: ['PostgreSQL', 'MongoDB', 'MySQL', 'SQLite', 'Supabase', 'PlanetScale', 'CockroachDB', 'DynamoDB', 'Firestore'],
+            external: ['Stripe', 'Auth0', 'SendGrid', 'Twilio', 'AWS S3', 'Cloudinary', 'OpenAI API', 'GitHub API', 'Custom API'],
+            queue: ['Redis Queue', 'RabbitMQ', 'AWS SQS', 'BullMQ', 'Kafka', 'NATS', 'Celery'],
+            cache: ['Redis', 'Memcached', 'Cloudflare KV', 'Vercel KV', 'Upstash', 'Node-cache']
+        };
+
+        const typeIcons = {
+            frontend: '🖥️',
+            api: '⚙️',
+            database: '🗄️',
+            external: '🔌',
+            queue: '📬',
+            cache: '⚡'
+        };
+
+        const typeLabels = {
+            frontend: 'Frontend',
+            api: 'API Server',
+            database: 'Database',
+            external: 'External Service',
+            queue: 'Message Queue',
+            cache: 'Cache Layer'
+        };
+
+        // ============================================
+        // PRESETS
+        // ============================================
+        const presets = {
+            monolith: {
+                nodes: [
+                    { type: 'frontend', name: 'Web App', tech: 'Next.js', x: 150, y: 100, port: 3000, endpoint: '/' },
+                    { type: 'api', name: 'Backend API', tech: 'Express.js', x: 150, y: 280, port: 4000, endpoint: '/api' },
+                    { type: 'database', name: 'Main Database', tech: 'PostgreSQL', x: 150, y: 460, port: 5432, endpoint: '' }
+                ],
+                connections: [[0, 1], [1, 2]]
+            },
+            microservices: {
+                nodes: [
+                    { type: 'frontend', name: 'Web Client', tech: 'React', x: 300, y: 60, port: 3000, endpoint: '/' },
+                    { type: 'api', name: 'API Gateway', tech: 'Express.js', x: 300, y: 200, port: 4000, endpoint: '/api' },
+                    { type: 'api', name: 'User Service', tech: 'FastAPI', x: 100, y: 360, port: 4001, endpoint: '/users' },
+                    { type: 'api', name: 'Order Service', tech: 'NestJS', x: 300, y: 360, port: 4002, endpoint: '/orders' },
+                    { type: 'api', name: 'Payment Service', tech: 'Go Fiber', x: 500, y: 360, port: 4003, endpoint: '/payments' },
+                    { type: 'database', name: 'Users DB', tech: 'PostgreSQL', x: 100, y: 520, port: 5432, endpoint: '' },
+                    { type: 'database', name: 'Orders DB', tech: 'MongoDB', x: 300, y: 520, port: 27017, endpoint: '' },
+                    { type: 'queue', name: 'Event Bus', tech: 'RabbitMQ', x: 500, y: 520, port: 5672, endpoint: '' }
+                ],
+                connections: [[0, 1], [1, 2], [1, 3], [1, 4], [2, 5], [3, 6], [3, 7], [4, 7]]
+            },
+            serverless: {
+                nodes: [
+                    { type: 'frontend', name: 'SPA', tech: 'React', x: 300, y: 80, port: 3000, endpoint: '/' },
+                    { type: 'api', name: 'Lambda Functions', tech: 'Express.js', x: 300, y: 240, port: 0, endpoint: '/api/*' },
+                    { type: 'database', name: 'DynamoDB', tech: 'DynamoDB', x: 150, y: 400, port: 0, endpoint: '' },
+                    { type: 'external', name: 'Auth0', tech: 'Auth0', x: 450, y: 400, port: 0, endpoint: '' },
+                    { type: 'cache', name: 'Edge Cache', tech: 'Cloudflare KV', x: 300, y: 400, port: 0, endpoint: '' }
+                ],
+                connections: [[0, 1], [1, 2], [1, 3], [1, 4]]
+            },
+            jamstack: {
+                nodes: [
+                    { type: 'frontend', name: 'Static Site', tech: 'Astro', x: 300, y: 80, port: 3000, endpoint: '/' },
+                    { type: 'api', name: 'Edge Functions', tech: 'Hono', x: 150, y: 240, port: 0, endpoint: '/api' },
+                    { type: 'external', name: 'Headless CMS', tech: 'Custom API', x: 450, y: 240, port: 0, endpoint: '' },
+                    { type: 'database', name: 'Serverless DB', tech: 'Supabase', x: 150, y: 400, port: 5432, endpoint: '' },
+                    { type: 'cache', name: 'CDN Cache', tech: 'Cloudflare KV', x: 450, y: 400, port: 0, endpoint: '' }
+                ],
+                connections: [[0, 1], [0, 2], [1, 3], [2, 4]]
+            }
+        };
+
+        // ============================================
+        // DOM ELEMENTS
+        // ============================================
+        const canvas = document.getElementById('canvas');
+        const canvasContainer = document.getElementById('canvas-container');
+        const connectionsSvg = document.getElementById('connections-svg');
+        const connectionModeIndicator = document.getElementById('connection-mode');
+        const emptyState = document.getElementById('empty-state');
+        const nodeEditor = document.getElementById('node-editor');
+        const promptOutput = document.getElementById('prompt-output');
+
+        // ============================================
+        // MAIN UPDATE FUNCTION
+        // ============================================
+        function updateAll() {
+            renderNodes();
+            renderConnections();
+            updatePrompt();
+            updatePanelVisibility();
+        }
+
+        // ============================================
+        // RENDER FUNCTIONS
+        // ============================================
+        function renderNodes() {
+            // Clear existing nodes
+            canvas.querySelectorAll('.node').forEach(n => n.remove());
+
+            state.nodes.forEach(node => {
+                const el = createNodeElement(node);
+                canvas.appendChild(el);
+            });
+        }
+
+        function createNodeElement(node) {
+            const el = document.createElement('div');
+            el.className = 'node';
+            el.dataset.id = node.id;
+            el.dataset.type = node.type;
+            el.style.left = node.x + 'px';
+            el.style.top = node.y + 'px';
+
+            if (node.id === state.selectedNodeId) {
+                el.classList.add('selected');
+            }
+
+            el.innerHTML = `
+                <div class="node-header">
+                    <span class="node-icon">${typeIcons[node.type]}</span>
+                    <span class="node-title">${node.name}</span>
+                </div>
+                <div class="node-body">
+                    <div class="node-tech">${node.tech}</div>
+                </div>
+                <button class="node-delete">×</button>
+                <div class="connection-point left" data-point="left"></div>
+                <div class="connection-point right" data-point="right"></div>
+            `;
+
+            // Event listeners
+            el.addEventListener('mousedown', (e) => startDrag(e, node));
+            el.addEventListener('click', (e) => {
+                if (!state.dragState?.moved) {
+                    selectNode(node.id);
+                }
+                e.stopPropagation();
+            });
+
+            el.querySelector('.node-delete').addEventListener('click', (e) => {
+                e.stopPropagation();
+                deleteNode(node.id);
+            });
+
+            // Connection points
+            el.querySelectorAll('.connection-point').forEach(point => {
+                point.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    handleConnectionPoint(node.id, point.dataset.point);
+                });
+            });
+
+            return el;
+        }
+
+        function renderConnections() {
+            connectionsSvg.innerHTML = '';
+
+            state.connections.forEach(conn => {
+                const sourceNode = state.nodes.find(n => n.id === conn.source);
+                const targetNode = state.nodes.find(n => n.id === conn.target);
+
+                if (sourceNode && targetNode) {
+                    const sourceEl = canvas.querySelector(`[data-id="${conn.source}"]`);
+                    const targetEl = canvas.querySelector(`[data-id="${conn.target}"]`);
+
+                    if (sourceEl && targetEl) {
+                        const sourceRect = sourceEl.getBoundingClientRect();
+                        const targetRect = targetEl.getBoundingClientRect();
+                        const containerRect = canvasContainer.getBoundingClientRect();
+
+                        const x1 = sourceRect.right - containerRect.left;
+                        const y1 = sourceRect.top + sourceRect.height / 2 - containerRect.top;
+                        const x2 = targetRect.left - containerRect.left;
+                        const y2 = targetRect.top + targetRect.height / 2 - containerRect.top;
+
+                        // Create curved path
+                        const midX = (x1 + x2) / 2;
+                        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                        path.setAttribute('d', `M ${x1} ${y1} C ${midX} ${y1}, ${midX} ${y2}, ${x2} ${y2}`);
+                        path.setAttribute('class', 'connection-line');
+                        connectionsSvg.appendChild(path);
+
+                        // Arrow head
+                        const arrow = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+                        const arrowSize = 8;
+                        arrow.setAttribute('points', `${x2},${y2} ${x2-arrowSize},${y2-arrowSize/2} ${x2-arrowSize},${y2+arrowSize/2}`);
+                        arrow.setAttribute('class', 'connection-arrow');
+                        connectionsSvg.appendChild(arrow);
+                    }
+                }
+            });
+        }
+
+        function updatePanelVisibility() {
+            if (state.nodes.length === 0) {
+                emptyState.style.display = 'block';
+                nodeEditor.style.display = 'none';
+            } else if (state.selectedNodeId) {
+                emptyState.style.display = 'none';
+                nodeEditor.style.display = 'block';
+                populateNodeEditor();
+            } else {
+                emptyState.style.display = 'block';
+                nodeEditor.style.display = 'none';
+            }
+        }
+
+        function populateNodeEditor() {
+            const node = state.nodes.find(n => n.id === state.selectedNodeId);
+            if (!node) return;
+
+            document.getElementById('node-name').value = node.name;
+            document.getElementById('node-endpoint').value = node.endpoint || '';
+            document.getElementById('node-port').value = node.port || '';
+            document.getElementById('node-env').value = node.env || '';
+            document.getElementById('node-notes').value = node.notes || '';
+
+            // Populate tech dropdown
+            const techSelect = document.getElementById('node-tech');
+            techSelect.innerHTML = techOptions[node.type].map(t => 
+                `<option value="${t}" ${t === node.tech ? 'selected' : ''}>${t}</option>`
+            ).join('');
+        }
+
+        function updatePrompt() {
+            if (state.nodes.length === 0) {
+                promptOutput.textContent = 'Add components to generate architecture specification...';
+                return;
+            }
+
+            let md = `# Architecture Specification\n\n`;
+            md += `## Components (${state.nodes.length})\n\n`;
+
+            // Group by type
+            const grouped = {};
+            state.nodes.forEach(node => {
+                if (!grouped[node.type]) grouped[node.type] = [];
+                grouped[node.type].push(node);
+            });
+
+            Object.entries(grouped).forEach(([type, nodes]) => {
+                md += `### ${typeLabels[type]}\n\n`;
+                nodes.forEach(node => {
+                    md += `- **${node.name}** (${node.tech})\n`;
+                    if (node.endpoint) md += `  - Endpoint: \`${node.endpoint}\`\n`;
+                    if (node.port) md += `  - Port: ${node.port}\n`;
+                    if (node.env) {
+                        md += `  - Env vars:\n`;
+                        node.env.split('\n').filter(l => l.trim()).forEach(line => {
+                            const key = line.split('=')[0];
+                            md += `    - \`${key}\`\n`;
+                        });
+                    }
+                    if (node.notes) md += `  - Notes: ${node.notes}\n`;
+                });
+                md += '\n';
+            });
+
+            if (state.connections.length > 0) {
+                md += `## Data Flow\n\n`;
+                state.connections.forEach(conn => {
+                    const source = state.nodes.find(n => n.id === conn.source);
+                    const target = state.nodes.find(n => n.id === conn.target);
+                    if (source && target) {
+                        md += `- ${source.name} → ${target.name}\n`;
+                    }
+                });
+                md += '\n';
+            }
+
+            md += `## Tech Stack Summary\n\n`;
+            const techs = [...new Set(state.nodes.map(n => n.tech))];
+            md += techs.map(t => `- ${t}`).join('\n');
+
+            promptOutput.textContent = md;
+        }
+
+        // ============================================
+        // NODE OPERATIONS
+        // ============================================
+        function addNode(type, x, y) {
+            const node = {
+                id: state.nextId++,
+                type,
+                name: typeLabels[type],
+                tech: techOptions[type][0],
+                x,
+                y,
+                endpoint: type === 'api' ? '/api' : '',
+                port: type === 'frontend' ? 3000 : type === 'api' ? 4000 : type === 'database' ? 5432 : 0,
+                env: '',
+                notes: ''
+            };
+            state.nodes.push(node);
+            state.selectedNodeId = node.id;
+            updateAll();
+        }
+
+        function deleteNode(id) {
+            state.nodes = state.nodes.filter(n => n.id !== id);
+            state.connections = state.connections.filter(c => c.source !== id && c.target !== id);
+            if (state.selectedNodeId === id) {
+                state.selectedNodeId = null;
+            }
+            updateAll();
+        }
+
+        function selectNode(id) {
+            state.selectedNodeId = id;
+            updateAll();
+        }
+
+        function updateSelectedNode(field, value) {
+            const node = state.nodes.find(n => n.id === state.selectedNodeId);
+            if (node) {
+                node[field] = value;
+                updateAll();
+            }
+        }
+
+        // ============================================
+        // CONNECTIONS
+        // ============================================
+        function handleConnectionPoint(nodeId, point) {
+            if (state.connectionMode) {
+                // Complete connection
+                if (state.connectionMode.sourceId !== nodeId) {
+                    const exists = state.connections.some(c => 
+                        (c.source === state.connectionMode.sourceId && c.target === nodeId) ||
+                        (c.source === nodeId && c.target === state.connectionMode.sourceId)
+                    );
+                    if (!exists) {
+                        state.connections.push({
+                            source: state.connectionMode.sourceId,
+                            target: nodeId
+                        });
+                    }
+                }
+                cancelConnectionMode();
+            } else {
+                // Start connection
+                state.connectionMode = { sourceId: nodeId, sourcePoint: point };
+                connectionModeIndicator.classList.add('active');
+            }
+            updateAll();
+        }
+
+        function cancelConnectionMode() {
+            state.connectionMode = null;
+            connectionModeIndicator.classList.remove('active');
+        }
+
+        function autoConnect() {
+            // Auto-connect based on typical patterns
+            const frontends = state.nodes.filter(n => n.type === 'frontend');
+            const apis = state.nodes.filter(n => n.type === 'api');
+            const databases = state.nodes.filter(n => n.type === 'database');
+            const caches = state.nodes.filter(n => n.type === 'cache');
+
+            // Frontend → API
+            frontends.forEach(fe => {
+                apis.forEach(api => {
+                    if (!connectionExists(fe.id, api.id)) {
+                        state.connections.push({ source: fe.id, target: api.id });
+                    }
+                });
+            });
+
+            // API → Database
+            apis.forEach(api => {
+                databases.forEach(db => {
+                    if (!connectionExists(api.id, db.id)) {
+                        state.connections.push({ source: api.id, target: db.id });
+                    }
+                });
+            });
+
+            // API → Cache
+            apis.forEach(api => {
+                caches.forEach(cache => {
+                    if (!connectionExists(api.id, cache.id)) {
+                        state.connections.push({ source: api.id, target: cache.id });
+                    }
+                });
+            });
+
+            updateAll();
+        }
+
+        function connectionExists(sourceId, targetId) {
+            return state.connections.some(c => 
+                (c.source === sourceId && c.target === targetId) ||
+                (c.source === targetId && c.target === sourceId)
+            );
+        }
+
+        // ============================================
+        // DRAG & DROP
+        // ============================================
+        function startDrag(e, node) {
+            if (e.target.classList.contains('connection-point') || e.target.classList.contains('node-delete')) {
+                return;
+            }
+
+            const el = canvas.querySelector(`[data-id="${node.id}"]`);
+            const rect = el.getBoundingClientRect();
+
+            state.dragState = {
+                nodeId: node.id,
+                offsetX: e.clientX - rect.left,
+                offsetY: e.clientY - rect.top,
+                moved: false
+            };
+
+            el.classList.add('dragging');
+            document.addEventListener('mousemove', onDrag);
+            document.addEventListener('mouseup', endDrag);
+        }
+
+        function onDrag(e) {
+            if (!state.dragState) return;
+
+            const containerRect = canvasContainer.getBoundingClientRect();
+            const x = e.clientX - containerRect.left - state.dragState.offsetX;
+            const y = e.clientY - containerRect.top - state.dragState.offsetY;
+
+            const node = state.nodes.find(n => n.id === state.dragState.nodeId);
+            if (node) {
+                node.x = Math.max(0, x);
+                node.y = Math.max(0, y);
+                state.dragState.moved = true;
+                updateAll();
+            }
+        }
+
+        function endDrag() {
+            if (state.dragState) {
+                const el = canvas.querySelector(`[data-id="${state.dragState.nodeId}"]`);
+                if (el) el.classList.remove('dragging');
+            }
+            
+            setTimeout(() => {
+                state.dragState = null;
+            }, 10);
+            
+            document.removeEventListener('mousemove', onDrag);
+            document.removeEventListener('mouseup', endDrag);
+        }
+
+        // Toolbar drag
+        document.querySelectorAll('.tool-btn').forEach(btn => {
+            btn.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('type', btn.dataset.type);
+            });
+        });
+
+        canvasContainer.addEventListener('dragover', (e) => {
+            e.preventDefault();
+        });
+
+        canvasContainer.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const type = e.dataTransfer.getData('type');
+            if (type) {
+                const containerRect = canvasContainer.getBoundingClientRect();
+                const x = e.clientX - containerRect.left - 80;
+                const y = e.clientY - containerRect.top - 40;
+                addNode(type, x, y);
+            }
+        });
+
+        // ============================================
+        // PRESETS
+        // ============================================
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const presetName = btn.dataset.preset;
+
+                document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+
+                if (presetName === 'clear') {
+                    state.nodes = [];
+                    state.connections = [];
+                    state.selectedNodeId = null;
+                    state.nextId = 1;
+                } else {
+                    const preset = presets[presetName];
+                    state.nodes = [];
+                    state.connections = [];
+                    state.nextId = 1;
+
+                    preset.nodes.forEach(n => {
+                        state.nodes.push({
+                            ...n,
+                            id: state.nextId++,
+                            env: '',
+                            notes: ''
+                        });
+                    });
+
+                    preset.connections.forEach(([s, t]) => {
+                        state.connections.push({
+                            source: state.nodes[s].id,
+                            target: state.nodes[t].id
+                        });
+                    });
+
+                    state.selectedNodeId = state.nodes[0]?.id || null;
+                }
+
+                updateAll();
+            });
+        });
+
+        // ============================================
+        // PANEL TABS
+        // ============================================
+        document.querySelectorAll('.panel-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.panel-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+
+                const tabName = tab.dataset.tab;
+                document.getElementById('properties-panel').style.display = tabName === 'properties' ? 'block' : 'none';
+                document.getElementById('prompt-panel-content').style.display = tabName === 'prompt' ? 'block' : 'none';
+            });
+        });
+
+        // ============================================
+        // NODE EDITOR INPUTS
+        // ============================================
+        document.getElementById('node-name').addEventListener('input', (e) => updateSelectedNode('name', e.target.value));
+        document.getElementById('node-tech').addEventListener('change', (e) => updateSelectedNode('tech', e.target.value));
+        document.getElementById('node-endpoint').addEventListener('input', (e) => updateSelectedNode('endpoint', e.target.value));
+        document.getElementById('node-port').addEventListener('input', (e) => updateSelectedNode('port', parseInt(e.target.value) || 0));
+        document.getElementById('node-env').addEventListener('input', (e) => updateSelectedNode('env', e.target.value));
+        document.getElementById('node-notes').addEventListener('input', (e) => updateSelectedNode('notes', e.target.value));
+
+        // ============================================
+        // COPY BUTTON
+        // ============================================
+        document.getElementById('copy-btn').addEventListener('click', () => {
+            const text = promptOutput.textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.getElementById('copy-btn');
+                btn.classList.add('copied');
+                btn.innerHTML = '<span>✓</span> Copied!';
+                setTimeout(() => {
+                    btn.classList.remove('copied');
+                    btn.innerHTML = '<span>📋</span> Copy';
+                }, 2000);
+            });
+        });
+
+        // ============================================
+        // KEYBOARD SHORTCUTS
+        // ============================================
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                cancelConnectionMode();
+            }
+            if (e.key === 'Delete' || e.key === 'Backspace') {
+                if (state.selectedNodeId && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
+                    deleteNode(state.selectedNodeId);
+                }
+            }
+        });
+
+        // Click outside to deselect
+        canvasContainer.addEventListener('click', (e) => {
+            if (e.target === canvasContainer || e.target === canvas) {
+                state.selectedNodeId = null;
+                cancelConnectionMode();
+                updateAll();
+            }
+        });
+
+        // ============================================
+        // INIT
+        // ============================================
+        updateAll();
+    </script>
+</body>
+</html>

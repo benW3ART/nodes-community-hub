@@ -1,27 +1,61 @@
 ---
 name: genius-designer
-description: Creates complete brand identity and design system with 2-3 visual options in an interactive HTML playground. Covers colors, typography, components, and brand personality. User explores options interactively then exports their choice. Use for "design system", "branding", "colors", "UI design", "visual design", "look and feel", "style guide".
+description: >-
+  Brand and design system creation. Generates design options (colors, typography, layout)
+  and produces DESIGN-SYSTEM.html. Use when SPECIFICATIONS.xml exists and user says
+  "design the brand", "create design system", "design options", "visual identity", "UI design".
+  Do NOT use for CSS implementation — that's genius-dev-frontend.
 ---
 
-## ⚠️ MANDATORY ARTIFACT
+## 🚨🚨🚨 CRITICAL: NEVER PRESENT DESIGN OPTIONS AS TEXT 🚨🚨🚨
 
-**This skill MUST generate:**
-- Config: `.genius/design-config.json`
-- Unified State: `.genius/outputs/state.json` (with `phases.design` populated)
+**STOP. READ THIS BEFORE DOING ANYTHING.**
+
+You MUST generate an **interactive HTML file** to present design options.
+DO NOT write colors/fonts as text in the chat. The user CANNOT see colors from hex codes.
+
+**The FIRST thing you do** after deciding on 3 design options:
+1. Write the file `.genius/outputs/design-playground.html`
+2. Tell the user: "Open the playground to see and compare the 3 options live:"
+3. `open .genius/outputs/design-playground.html`
+
+If you present design options as text instead of HTML → **you have failed this skill**.
+
+---
+
+## ⚠️ MANDATORY ARTIFACTS
+
+**This skill MUST generate (ALL of these, no exceptions):**
+
+### 1. Interactive Playground HTML: `.genius/outputs/design-playground.html`
+This is the **PRIMARY OUTPUT**. Not the config, not the state — the HTML.
+- Self-contained, zero external dependencies
+- Dark background (#0F0F0F)
+- 3 tabs or cards: Option A, Option B, Option C
+- Each option shows:
+  - **Live color swatches** (actual colored rectangles, not hex codes)
+  - **Typography samples** (load Google Fonts via `<link>`, show real text in the font)
+  - **Button examples** with the actual border-radius and colors
+  - **A mini mockup** showing how a dashboard/form would look with these colors
+- User clicks between options to compare
+- At the bottom: "Which option do you prefer? Tell Claude: I prefer option 1/2/3"
+
+### 2. Config: `.genius/design-config.json`
+### 3. Unified State: `.genius/outputs/state.json` (with `phases.design` populated)
 
 **Before transitioning to next skill:**
-1. Verify design-config.json exists
-2. Verify state.json has design phase complete
-3. Update `currentPhase` to next phase
-4. Announce transition
+1. Verify **design-playground.html EXISTS and was announced to user**
+2. Verify design-config.json exists
+3. Verify state.json has design phase complete
+4. User has CHOSEN an option from the playground
 
-**If artifacts missing:** DO NOT proceed. Generate them first.
+**If playground HTML is missing:** DO NOT proceed. Generate it first.
 
 ---
 
 ## Unified Dashboard Integration
 
-**DO NOT launch separate HTML files.** Update the unified state instead.
+Update the unified state AND generate an interactive playground HTML.
 
 ### On Phase Start
 Update `.genius/outputs/state.json`:
@@ -99,47 +133,11 @@ The unified dashboard shows the design phase where users can:
 
 ### Updating state.json with Design Presets
 
-Write design options to `phases.design.data.presets`:
+Write 3+ presets to `phases.design.data.presets` in state.json. Each preset has: primary, secondary, accent, neutralLight, neutralDark (hex colors), fontFamily, fontSize, scaleRatio, spacingBase, borderRadius, shadowIntensity, shadowBlur. Name presets descriptively: `modernMinimal`, `boldEnergetic`, `warmOrganic`, `techProfessional`.
 
-```json
-{
-  "currentPhase": "design",
-  "phases": {
-    "design": {
-      "status": "in-progress",
-      "data": {
-        "presets": {
-          "modernMinimal": {
-            "primary": "#XXXXXX",
-            "secondary": "#XXXXXX",
-            "accent": "#XXXXXX",
-            "neutralLight": "#XXXXXX",
-            "neutralDark": "#XXXXXX",
-            "fontFamily": "Font Name",
-            "fontSize": 16,
-            "scaleRatio": 1.25,
-            "spacingBase": 4,
-            "borderRadius": 8,
-            "shadowIntensity": 0.1,
-            "shadowBlur": 16
-          },
-          "boldEnergetic": { ... },
-          "warmOrganic": { ... }
-        },
-        "selectedPreset": null,
-        "customizations": {}
-      }
-    }
-  }
-}
-```
+### Output: design-tokens.css (MANDATORY)
 
-### Preset Naming Convention
-Use descriptive names reflecting the design direction:
-- `modernMinimal` — Clean, spacious, subtle
-- `boldEnergetic` — High contrast, strong colors
-- `warmOrganic` — Earth tones, rounded, soft shadows
-- `techProfessional` — Blues, sharp, corporate feel
+After user approval, write `playgrounds/templates/design-tokens.css` with `:root` CSS custom properties using the ACTUAL chosen colors. Required tokens: `--color-primary`, `--color-secondary`, `--color-accent`, `--color-bg-*`, `--color-text-*`, `--font-family`, `--font-size-base`, `--spacing-unit`, `--border-radius`, `--color-success/warning/error/info`. All playground templates import this file for brand consistency.
 
 ### DO NOT Create Separate HTML Files
 
@@ -223,12 +221,14 @@ Copy the "Prompt" output and paste it here so I can save your final configuratio
 
 ## Output Files
 
-| File | Location | Purpose |
-|------|----------|---------|
-| `state.json` | `.genius/outputs/` | Unified state with design presets (phases.design.data) |
-| `design-config.json` | `.genius/` | Final validated design tokens |
+- `.genius/outputs/state.json` for unified design phase state
+- `.genius/design-config.json` for validated design tokens
 
 ---
+
+## 🗂️ Post-Output: Refresh Dashboard
+
+Regenerate `.genius/DASHBOARD.html` via `.claude/commands/genius-dashboard.md` and surface its path to the user.
 
 ## Handoffs
 
@@ -240,3 +240,20 @@ Provides: DESIGN-SYSTEM.html, design-config.json, brand personality
 
 ### To: genius-dev (later)
 Provides: design-config.json (Tailwind or CSS variables ready)
+
+
+---
+
+## Next Step (Auto-Chain)
+
+When this skill completes its work:
+→ **Automatically suggest**: "Design system created! Ready for marketing strategy? (CHECKPOINT: choose design option first) I'll hand off to **genius-marketer**."
+→ If user approves: route to genius-marketer
+→ Update state.json: `currentSkill = "genius-marketer"`
+## Definition of Done
+
+- [ ] Design system tokens defined (colors, typography, spacing)
+- [ ] 3 design options (A/B/C) presented with trade-offs
+- [ ] User selected preferred option at checkpoint
+- [ ] Design decisions logged in `.genius/memory/decisions.json`
+- [ ] Responsive breakpoints defined (mobile, tablet, desktop)

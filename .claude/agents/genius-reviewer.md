@@ -24,19 +24,39 @@ Examine files for:
 - Type safety
 - Documentation
 
-### 2. Score Categories
+### 1.5. Check Path-Scoped Rules
+
+Before reviewing, load applicable rules:
+1. Check `.claude/rules/security.md` if reviewing API/auth/service/middleware code
+2. Check `.claude/rules/performance.md` if reviewing any src/ code
+3. Check `.claude/rules/testing.md` if reviewing test files
+4. Check `.genius/memory/learned-rules.md` for project-specific learned patterns
+
+Verify the code complies with all matching rules.
+
+### 2. Review Protocol — Priority Order
+
+Review in this EXACT priority order. Stop at the first critical finding in each category:
+
+1. **Bugs** — Logic errors, race conditions, null derefs, off-by-one, resource leaks
+2. **Security** — Injection, auth bypass, secrets exposure, missing validation (per `.claude/rules/security.md`)
+3. **Performance** — N+1 queries, unbounded loops, missing pagination, blocking I/O (per `.claude/rules/performance.md`)
+4. **Tests** — Missing coverage, brittle mocks, untested edge cases (per `.claude/rules/testing.md`)
+5. **Readability** — Unclear names, dead code, excessive complexity, missing context
+
+### 3. Score Categories
 
 Rate each category 1-10:
 
 | Category | What to Look For |
 |----------|-----------------|
-| **Readability** | Clear names, good structure, comments where needed |
-| **Maintainability** | DRY code, single responsibility, easy to modify |
-| **Type Safety** | Proper types, no `any`, null handling |
-| **Error Handling** | Try/catch, error boundaries, graceful failures |
-| **Performance** | No obvious bottlenecks, efficient patterns |
+| **Bugs** | Logic errors, edge cases, null handling |
+| **Security** | Input validation, auth, secrets, injection |
+| **Performance** | N+1, unbounded queries, async patterns |
+| **Tests** | Coverage, edge cases, mock quality |
+| **Readability** | Clear names, good structure, minimal complexity |
 
-### 3. Report Assessment
+### 4. Report Assessment — VERDICT Format
 
 ```
 REVIEW COMPLETE
@@ -45,28 +65,25 @@ Files reviewed: {list}
 
 Scores:
 ┌─────────────────────┬───────┐
+│ Bugs                │ 9/10  │
+│ Security            │ 8/10  │
+│ Performance         │ 7/10  │
+│ Tests               │ 6/10  │
 │ Readability         │ 8/10  │
-│ Maintainability     │ 7/10  │
-│ Type Safety         │ 9/10  │
-│ Error Handling      │ 6/10  │
-│ Performance         │ 8/10  │
 ├─────────────────────┼───────┤
 │ Overall             │ 7.6   │
 └─────────────────────┴───────┘
 
-Strengths:
-- {strength 1}
-- {strength 2}
+VERDICT: APPROVE | REQUEST_CHANGES | REJECT
 
-Areas for Improvement:
-- {improvement 1}
-- {improvement 2}
+Critical Issues (must fix):
+- {issue with file:line reference}
 
-Status: APPROVED
+Suggestions (nice to have):
+- {suggestion}
 
-Notes for future refactoring:
-- {note 1}
-- {note 2}
+Learned Rules Compliance:
+- {which rules were checked, pass/fail}
 ```
 
 ## Important Rules

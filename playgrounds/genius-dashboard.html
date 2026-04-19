@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Genius Dashboard</title>
+<style>
+:root {
+  --bg: #0a0a0f;
+  --bg2: #12121a;
+  --bg3: #1a1a24;
+  --purple: #7c3aed;
+  --cyan: #06b6d4;
+  --green: #22c55e;
+  --yellow: #eab308;
+  --red: #ef4444;
+  --text: #f8f8ff;
+  --text2: rgba(248,248,255,.7);
+  --text3: rgba(248,248,255,.4);
+  --grad: linear-gradient(135deg, #7c3aed, #06b6d4);
+  --grad-soft: linear-gradient(135deg, rgba(124,58,237,.15), rgba(6,182,212,.08));
+  --border: rgba(255,255,255,.06);
+  --border-purple: rgba(124,58,237,.25);
+  --radius: 12px;
+  --radius-lg: 16px;
+  --sidebar-w: 260px;
+  --header-h: 60px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); font-size: 15px; }
+
+/* ── LAYOUT ── */
+.app { display: flex; flex-direction: column; height: 100vh; }
+.header { height: var(--header-h); background: var(--bg2); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 1.25rem; gap: 1rem; position: sticky; top: 0; z-index: 100; flex-shrink: 0; }
+.body { display: flex; flex: 1; overflow: hidden; }
+.sidebar { width: var(--sidebar-w); background: var(--bg2); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow-y: auto; flex-shrink: 0; }
+.content { flex: 1; overflow-y: auto; position: relative; }
+
+/* ── HEADER ── */
+.logo { font-weight: 800; font-size: 1rem; background: var(--grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; white-space: nowrap; }
+.project-select-wrap { flex: 1; max-width: 280px; }
+.project-select { width: 100%; background: var(--bg3); border: 1px solid var(--border-purple); border-radius: 8px; padding: .45rem .75rem; color: var(--text); font-size: .85rem; cursor: pointer; outline: none; }
+.project-select:focus { border-color: var(--purple); }
+.header-actions { margin-left: auto; display: flex; gap: .5rem; align-items: center; }
+.btn-icon { background: none; border: 1px solid var(--border); border-radius: 8px; padding: .4rem .7rem; color: var(--text2); font-size: .8rem; cursor: pointer; transition: all .2s; white-space: nowrap; }
+.btn-icon:hover { border-color: var(--border-purple); color: var(--text); }
+.mobile-menu-btn { display: none; background: none; border: none; color: var(--text); font-size: 1.3rem; cursor: pointer; padding: .25rem; }
+
+/* ── SIDEBAR ── */
+.sidebar-section { padding: .75rem .75rem .25rem; font-size: .7rem; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: .08em; }
+.nav-item { display: flex; align-items: center; gap: .65rem; padding: .6rem .9rem; cursor: pointer; color: var(--text2); font-size: .87rem; border-left: 2px solid transparent; transition: all .15s; user-select: none; }
+.nav-item:hover { background: rgba(124,58,237,.07); color: var(--text); }
+.nav-item.active { background: rgba(124,58,237,.12); color: var(--text); border-left-color: var(--purple); }
+.nav-item .nav-icon { font-size: 1rem; flex-shrink: 0; width: 20px; text-align: center; }
+.nav-item .nav-label { flex: 1; }
+.nav-badge { font-size: .65rem; font-weight: 700; padding: .1rem .4rem; border-radius: 100px; background: rgba(124,58,237,.2); color: var(--purple); white-space: nowrap; }
+.nav-badge.done { background: rgba(34,197,94,.15); color: var(--green); }
+.nav-badge.empty { background: rgba(255,255,255,.06); color: var(--text3); }
+
+/* ── DASHBOARD VIEW ── */
+.view { padding: 1.75rem; }
+.view-title { font-size: 1.4rem; font-weight: 800; margin-bottom: .25rem; }
+.view-sub { color: var(--text2); font-size: .9rem; margin-bottom: 2rem; }
+
+/* Stats row */
+.stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2rem; }
+.stat-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; position: relative; overflow: hidden; }
+.stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--grad); }
+.stat-value { font-size: 2rem; font-weight: 800; line-height: 1; margin-bottom: .25rem; background: var(--grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.stat-label { font-size: .78rem; color: var(--text3); font-weight: 500; }
+
+/* Phase badge */
+.phase-badge { display: inline-flex; align-items: center; gap: .4rem; padding: .35rem .9rem; border-radius: 100px; font-size: .78rem; font-weight: 700; background: rgba(124,58,237,.15); border: 1px solid rgba(124,58,237,.3); color: var(--purple); margin-bottom: 2rem; }
+
+/* Playgrounds grid */
+.pg-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+.pg-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; cursor: pointer; transition: all .2s; }
+.pg-card:hover { border-color: var(--border-purple); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.3); }
+.pg-card-header { display: flex; align-items: center; gap: .65rem; margin-bottom: .75rem; }
+.pg-card-icon { font-size: 1.4rem; flex-shrink: 0; }
+.pg-card-title { font-weight: 700; font-size: .95rem; }
+.pg-card-status { margin-left: auto; font-size: .7rem; font-weight: 700; padding: .15rem .5rem; border-radius: 100px; }
+.status-done { background: rgba(34,197,94,.15); color: var(--green); }
+.status-progress { background: rgba(124,58,237,.15); color: var(--purple); }
+.status-empty { background: rgba(255,255,255,.06); color: var(--text3); }
+.pg-progress-bar { height: 4px; background: rgba(255,255,255,.08); border-radius: 4px; overflow: hidden; margin-bottom: .65rem; }
+.pg-progress-fill { height: 100%; background: var(--grad); border-radius: 4px; transition: width .8s cubic-bezier(.4,0,.2,1); }
+.pg-card-desc { font-size: .8rem; color: var(--text3); line-height: 1.4; margin-bottom: .85rem; }
+.pg-open-btn { width: 100%; padding: .5rem; background: rgba(124,58,237,.1); border: 1px solid rgba(124,58,237,.2); border-radius: 8px; color: var(--purple); font-size: .8rem; font-weight: 600; cursor: pointer; transition: all .2s; }
+.pg-open-btn:hover { background: rgba(124,58,237,.2); border-color: var(--purple); }
+
+/* ── IFRAME VIEW ── */
+.iframe-view { position: absolute; inset: 0; display: flex; flex-direction: column; }
+.iframe-bar { height: 48px; background: var(--bg2); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: .75rem; padding: 0 1rem; flex-shrink: 0; }
+.back-btn { display: flex; align-items: center; gap: .4rem; background: none; border: 1px solid var(--border); border-radius: 8px; padding: .35rem .75rem; color: var(--text2); font-size: .82rem; cursor: pointer; transition: all .15s; }
+.back-btn:hover { border-color: var(--border-purple); color: var(--text); }
+.iframe-title { font-size: .88rem; font-weight: 600; }
+.iframe-frame { flex: 1; border: none; background: var(--bg); }
+
+/* ── PROJECTS VIEW ── */
+.projects-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.25rem; }
+.project-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.5rem; cursor: pointer; transition: all .2s; }
+.project-card:hover { border-color: var(--border-purple); box-shadow: 0 8px 32px rgba(0,0,0,.3); }
+.project-card.active-project { border-color: var(--purple); background: linear-gradient(135deg, rgba(124,58,237,.08), rgba(6,182,212,.04)); }
+.project-name { font-size: 1.05rem; font-weight: 700; margin-bottom: .3rem; }
+.project-meta { font-size: .78rem; color: var(--text3); margin-bottom: 1rem; }
+.project-overall { display: flex; align-items: center; gap: .75rem; margin-bottom: .65rem; }
+.project-pct { font-size: 1.5rem; font-weight: 800; background: var(--grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1; }
+.project-bar-wrap { flex: 1; }
+.project-bar { height: 6px; background: rgba(255,255,255,.08); border-radius: 6px; overflow: hidden; }
+.project-bar-fill { height: 100%; background: var(--grad); border-radius: 6px; transition: width .8s cubic-bezier(.4,0,.2,1); }
+
+/* ── EMPTY STATE ── */
+.empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4rem 2rem; text-align: center; }
+.empty-icon { font-size: 3rem; margin-bottom: 1rem; opacity: .4; }
+.empty-title { font-size: 1.2rem; font-weight: 700; margin-bottom: .5rem; color: var(--text2); }
+.empty-sub { font-size: .88rem; color: var(--text3); max-width: 300px; line-height: 1.6; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+  :root { --sidebar-w: 0px; }
+  .sidebar { position: fixed; left: -100%; top: var(--header-h); bottom: 0; width: 260px; z-index: 200; transition: left .25s; }
+  .sidebar.open { left: 0; box-shadow: 8px 0 32px rgba(0,0,0,.5); }
+  .mobile-menu-btn { display: flex; }
+  .stats-row { grid-template-columns: repeat(2, 1fr); }
+  .view { padding: 1rem; }
+  .pg-grid { grid-template-columns: 1fr; }
+  .project-select-wrap { max-width: none; flex: 1; }
+}
+@media (max-width: 480px) {
+  .stats-row { grid-template-columns: 1fr 1fr; gap: .65rem; }
+  .stat-value { font-size: 1.5rem; }
+  .header-actions .btn-icon { display: none; }
+}
+
+/* ── LOADING ── */
+.loading { display: flex; align-items: center; justify-content: center; height: 200px; color: var(--text3); font-size: .9rem; }
+.spin { width: 24px; height: 24px; border: 2px solid rgba(124,58,237,.2); border-top-color: var(--purple); border-radius: 50%; animation: spin .7s linear infinite; margin-right: .75rem; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── OVERLAY for mobile sidebar close ── */
+.overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 150; }
+.overlay.visible { display: block; }
+</style>
+</head>
+<body>
+
+<div class="app" id="app">
+  <!-- HEADER -->
+  <header class="header">
+    <button class="mobile-menu-btn" id="menuBtn" onclick="toggleSidebar()">☰</button>
+    <span class="logo">🧠 Genius Dashboard</span>
+    <div class="project-select-wrap">
+      <select class="project-select" id="projectSelect" onchange="switchProject(this.value)">
+        <option value="">Loading projects…</option>
+      </select>
+    </div>
+    <div class="header-actions">
+      <button class="btn-icon" onclick="navigateTo('projects')">📁 All Projects</button>
+      <button class="btn-icon" onclick="startServer()">🚀 Server</button>
+    </div>
+  </header>
+
+  <!-- MOBILE OVERLAY -->
+  <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+
+  <div class="body">
+    <!-- SIDEBAR -->
+    <nav class="sidebar" id="sidebar">
+      <div class="sidebar-section">Overview</div>
+      <div class="nav-item active" data-view="dashboard" onclick="navigateTo('dashboard')">
+        <span class="nav-icon">📊</span>
+        <span class="nav-label">Dashboard</span>
+      </div>
+      <div class="nav-item" data-view="projects" onclick="navigateTo('projects')">
+        <span class="nav-icon">📁</span>
+        <span class="nav-label">All Projects</span>
+      </div>
+      <div class="sidebar-section" style="margin-top:.5rem">Playgrounds</div>
+      <div id="navPlaygrounds"></div>
+    </nav>
+
+    <!-- CONTENT -->
+    <main class="content" id="content">
+      <div class="loading"><div class="spin"></div>Loading…</div>
+    </main>
+  </div>
+</div>
+
+<script>
+// ─── DATA ──────────────────────────────────────────────────────────────────
+const PLAYGROUNDS = [
+  // ── Classic (Phase-based) ──────────────────────────────────────────────
+  { slug: 'project-canvas',        icon: '🗺️',  title: 'Project Canvas',         desc: 'Define vision, scope, and success metrics before building anything.',  category: 'planning' },
+  { slug: 'market-simulator',      icon: '📊',  title: 'Market Simulator',       desc: 'Model your market size, positioning, and competitive landscape.',       category: 'planning' },
+  { slug: 'architecture-explorer', icon: '🏗️',  title: 'Architecture Explorer',  desc: 'Compare architectural patterns with trade-off analysis.',               category: 'planning' },
+  { slug: 'stack-configurator',    icon: '⚙️',  title: 'Stack Configurator',     desc: 'Pick your tech stack with compatibility checks.',                       category: 'planning' },
+  { slug: 'design-system-builder', icon: '🎨',  title: 'Design System Builder',  desc: 'Define your design tokens, component library, and visual language.',    category: 'design' },
+  { slug: 'gtm-simulator',         icon: '📣',  title: 'GTM Simulator',          desc: 'Simulate go-to-market strategies and find the best launch approach.',   category: 'marketing' },
+  { slug: 'copy-ab-tester',        icon: '✍️',  title: 'Copy A/B Tester',        desc: 'Compare messaging variants and select the most compelling copy.',       category: 'marketing' },
+  { slug: 'progress-dashboard',    icon: '📈',  title: 'Progress Dashboard',     desc: 'Real-time view of project status, milestones, and velocity.',           category: 'execution' },
+  { slug: 'risk-matrix',           icon: '⚠️',  title: 'Risk Matrix',            desc: 'Identify, score, and mitigate project risks before they become blockers.', category: 'planning' },
+  { slug: 'user-journey-builder',  icon: '🛤️',  title: 'User Journey Builder',   desc: 'Map user flows and touchpoints to design the ideal experience.',        category: 'design' },
+  { slug: 'deploy-checklist',      icon: '✅',  title: 'Deploy Checklist',       desc: 'Step-by-step pre-launch checklist with automated status tracking.',     category: 'execution' },
+  { slug: 'test-coverage-map',     icon: '🧪',  title: 'Test Coverage Map',      desc: 'Visualize test coverage across your codebase and spot gaps.',           category: 'quality' },
+  // ── New in v17 ────────────────────────────────────────────────────────
+  { slug: 'seo-dashboard',         icon: '🌐',  title: 'SEO Dashboard',          desc: 'GEO/SEO scores, AI crawler status, llms.txt editor, actionable fixes.', category: 'launch', isNew: true },
+  { slug: 'crypto-analyzer',       icon: '🪙',  title: 'Crypto Analyzer',        desc: 'Token metrics, NFT analytics, liquidity scoring, Dune query builder.',  category: 'launch', isNew: true },
+  { slug: 'analytics-wizard',      icon: '📊',  title: 'Analytics Wizard',       desc: 'Setup GA4/Plausible/PostHog, event taxonomy, funnels, GDPR.',           category: 'launch', isNew: true },
+  { slug: 'performance-monitor',   icon: '⚡',  title: 'Performance Monitor',    desc: 'Lighthouse gauges, Core Web Vitals (LCP/CLS/INP), bundle size.',        category: 'quality', isNew: true },
+  { slug: 'accessibility-checker', icon: '♿',  title: 'Accessibility Checker',  desc: 'WCAG 2.2 AA checklist, color contrast checker, ARIA audit export.',     category: 'quality', isNew: true },
+  { slug: 'experiments-tracker',   icon: '🔬',  title: 'Experiments Tracker',    desc: 'Run log, metric evolution chart, best-found result, experiment export.', category: 'execution', isNew: true },
+  { slug: 'code-review-reporter',  icon: '🔍',  title: 'Code Review Reporter',   desc: 'PR findings: CRITICAL/HIGH/MEDIUM/LOW, agent breakdown, GitHub comment.',category: 'quality', isNew: true },
+];
+
+const PHASES = ['Interview', 'Ideation', 'Build', 'QA', 'Deployed'];
+const PHASE_COLORS = { Interview: '#06b6d4', Ideation: '#7c3aed', Build: '#eab308', QA: '#f97316', Deployed: '#22c55e' };
+
+const DEMO_PROJECTS = [
+  {
+    slug: 'booking-app',
+    name: 'Salon Booking App',
+    createdAt: '2026-02-01',
+    phase: 'Build',
+    playgrounds: { 'project-canvas': 100, 'market-simulator': 85, 'architecture-explorer': 70, 'stack-configurator': 100, 'design-system-builder': 55, 'gtm-simulator': 30, 'copy-ab-tester': 0, 'progress-dashboard': 60, 'risk-matrix': 45, 'user-journey-builder': 80, 'deploy-checklist': 0, 'test-coverage-map': 35, 'seo-dashboard': 0, 'crypto-analyzer': 0, 'analytics-wizard': 0, 'performance-monitor': 0, 'accessibility-checker': 0, 'experiments-tracker': 0, 'code-review-reporter': 0 }
+  },
+  {
+    slug: 'saas-dashboard',
+    name: 'SaaS Analytics Dashboard',
+    createdAt: '2026-01-15',
+    phase: 'Deployed',
+    playgrounds: { 'project-canvas': 100, 'market-simulator': 100, 'architecture-explorer': 100, 'stack-configurator': 100, 'design-system-builder': 100, 'gtm-simulator': 90, 'copy-ab-tester': 80, 'progress-dashboard': 100, 'risk-matrix': 100, 'user-journey-builder': 100, 'deploy-checklist': 100, 'test-coverage-map': 90, 'seo-dashboard': 85, 'crypto-analyzer': 0, 'analytics-wizard': 100, 'performance-monitor': 70, 'accessibility-checker': 60, 'experiments-tracker': 45, 'code-review-reporter': 90 }
+  },
+  {
+    slug: 'new-mvp',
+    name: 'New MVP',
+    createdAt: '2026-02-25',
+    phase: 'Interview',
+    playgrounds: { 'project-canvas': 20, 'market-simulator': 0, 'architecture-explorer': 0, 'stack-configurator': 0, 'design-system-builder': 0, 'gtm-simulator': 0, 'copy-ab-tester': 0, 'progress-dashboard': 0, 'risk-matrix': 0, 'user-journey-builder': 0, 'deploy-checklist': 0, 'test-coverage-map': 0 }
+  }
+];
+
+// ─── STATE ──────────────────────────────────────────────────────────────────
+let projects = [];
+let currentProject = null;
+let currentView = 'dashboard'; // 'dashboard' | 'projects' | playground slug
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+async function init() {
+  await loadProjects();
+  buildSidebarNav();
+  handleHashNav();
+  window.addEventListener('hashchange', handleHashNav);
+}
+
+async function loadProjects() {
+  try {
+    // Try to load from .genius/data/projects.json (relative to server root)
+    const res = await fetch('../data/projects.json');
+    if (res.ok) {
+      projects = await res.json();
+    } else throw new Error('not found');
+  } catch (_) {
+    // Fallback: try same directory
+    try {
+      const res2 = await fetch('./data/projects.json');
+      if (res2.ok) { projects = await res2.json(); return; }
+    } catch (_) {}
+    projects = DEMO_PROJECTS;
+  }
+  if (projects.length > 0) {
+    currentProject = projects[0];
+  }
+  populateProjectSelect();
+}
+
+function populateProjectSelect() {
+  const sel = document.getElementById('projectSelect');
+  sel.innerHTML = projects.map(p =>
+    `<option value="${p.slug}" ${p.slug === currentProject?.slug ? 'selected' : ''}>${p.name}</option>`
+  ).join('');
+  if (projects.length === 0) {
+    sel.innerHTML = '<option value="">No projects found</option>';
+  }
+}
+
+function switchProject(slug) {
+  currentProject = projects.find(p => p.slug === slug) || projects[0];
+  if (currentView === 'dashboard') renderDashboard();
+  updateSidebarBadges();
+}
+
+// ─── NAVIGATION ──────────────────────────────────────────────────────────────
+function handleHashNav() {
+  const hash = window.location.hash.replace('#', '') || 'dashboard';
+  navigateTo(hash, false);
+}
+
+function navigateTo(view, updateHash = true) {
+  currentView = view;
+  if (updateHash) window.location.hash = view;
+
+  // Update active nav item
+  document.querySelectorAll('.nav-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.view === view);
+  });
+
+  closeSidebar();
+
+  if (view === 'dashboard') {
+    renderDashboard();
+  } else if (view === 'projects') {
+    renderProjects();
+  } else {
+    // It's a playground slug
+    const pg = PLAYGROUNDS.find(p => p.slug === view);
+    if (pg) renderIframe(pg);
+    else renderDashboard();
+  }
+}
+
+// ─── SIDEBAR ─────────────────────────────────────────────────────────────────
+function buildSidebarNav() {
+  const container = document.getElementById('navPlaygrounds');
+  container.innerHTML = PLAYGROUNDS.map(pg => `
+    <div class="nav-item" data-view="${pg.slug}" onclick="navigateTo('${pg.slug}')">
+      <span class="nav-icon">${pg.icon}</span>
+      <span class="nav-label">${pg.title}</span>
+      <span class="nav-badge ${getBadgeClass(pg.slug)}" id="badge-${pg.slug}">—</span>
+    </div>
+  `).join('');
+  updateSidebarBadges();
+}
+
+function updateSidebarBadges() {
+  if (!currentProject) return;
+  PLAYGROUNDS.forEach(pg => {
+    const el = document.getElementById(`badge-${pg.slug}`);
+    if (!el) return;
+    const pct = currentProject.playgrounds[pg.slug] ?? 0;
+    el.textContent = pct === 0 ? '—' : pct === 100 ? '✓' : `${pct}%`;
+    el.className = `nav-badge ${pct === 100 ? 'done' : pct === 0 ? 'empty' : ''}`;
+  });
+}
+
+function getBadgeClass(slug) {
+  if (!currentProject) return 'empty';
+  const pct = currentProject.playgrounds[slug] ?? 0;
+  return pct === 100 ? 'done' : pct === 0 ? 'empty' : '';
+}
+
+function toggleSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('overlay');
+  const open = sidebar.classList.toggle('open');
+  overlay.classList.toggle('visible', open);
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('overlay').classList.remove('visible');
+}
+
+// ─── DASHBOARD VIEW ───────────────────────────────────────────────────────────
+function renderDashboard() {
+  const content = document.getElementById('content');
+  if (!currentProject) {
+    content.innerHTML = `<div class="view"><div class="empty-state">
+      <div class="empty-icon">🧠</div>
+      <div class="empty-title">No project selected</div>
+      <div class="empty-sub">Create a project with Genius Team, then come back here.</div>
+    </div></div>`;
+    return;
+  }
+
+  const p = currentProject;
+  const pgValues = Object.values(p.playgrounds);
+  const overall = Math.round(pgValues.reduce((a, b) => a + b, 0) / pgValues.length);
+  const done = pgValues.filter(v => v === 100).length;
+  const inProgress = pgValues.filter(v => v > 0 && v < 100).length;
+  const phaseColor = PHASE_COLORS[p.phase] || 'var(--purple)';
+  const createdDate = new Date(p.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+  content.innerHTML = `
+    <div class="view">
+      <div class="view-title">${p.name}</div>
+      <div class="view-sub">Created ${createdDate}</div>
+
+      <div style="margin-bottom:1.5rem">
+        <span class="phase-badge" style="border-color:${phaseColor}33;color:${phaseColor};background:${phaseColor}18">
+          ${getPhaseDot(p.phase)} ${p.phase} phase
+        </span>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-value">${overall}%</div>
+          <div class="stat-label">Overall completion</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${done}</div>
+          <div class="stat-label">Playgrounds complete</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${inProgress}</div>
+          <div class="stat-label">In progress</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${12 - done - inProgress}</div>
+          <div class="stat-label">Not started</div>
+        </div>
+      </div>
+
+      <div id="pgGrid" class="pg-grid">
+        ${PLAYGROUNDS.map(pg => renderPgCard(pg, p.playgrounds[pg.slug] ?? 0)).join('')}
+      </div>
+    </div>
+  `;
+
+  // Animate progress bars after render
+  requestAnimationFrame(() => {
+    document.querySelectorAll('.pg-progress-fill').forEach(el => {
+      const target = el.dataset.target;
+      el.style.width = target + '%';
+    });
+  });
+}
+
+function getPhaseDot(phase) {
+  const dots = { Interview: '🎤', Ideation: '📋', Build: '⚡', QA: '✅', Deployed: '🚀' };
+  return dots[phase] || '🔵';
+}
+
+function renderPgCard(pg, pct) {
+  const statusLabel = pct === 100 ? 'Complete' : pct > 0 ? `${pct}%` : 'Not started';
+  const statusClass = pct === 100 ? 'status-done' : pct > 0 ? 'status-progress' : 'status-empty';
+  const btnLabel = pct === 0 ? 'Start' : pct === 100 ? 'Review' : 'Continue';
+  return `
+    <div class="pg-card" onclick="navigateTo('${pg.slug}')" style="${pg.isNew ? 'border-color:rgba(124,58,237,.3)' : ''}">
+      <div class="pg-card-header">
+        <span class="pg-card-icon">${pg.icon}</span>
+        <span class="pg-card-title">${pg.title}</span>
+        ${pg.isNew ? '<span style="font-size:.55rem;font-weight:800;background:linear-gradient(135deg,#7c3aed,#06b6d4);color:#fff;padding:.15rem .45rem;border-radius:100px;margin-left:.5rem">NEW</span>' : ''}
+        <span class="pg-card-status ${statusClass}" style="margin-left:auto">${statusLabel}</span>
+      </div>
+      <div class="pg-progress-bar">
+        <div class="pg-progress-fill" data-target="${pct}" style="width:0%"></div>
+      </div>
+      <div class="pg-card-desc">${pg.desc}</div>
+      <button class="pg-open-btn">${btnLabel} →</button>
+    </div>
+  `;
+}
+
+// ─── PROJECTS VIEW ────────────────────────────────────────────────────────────
+function renderProjects() {
+  const content = document.getElementById('content');
+  if (projects.length === 0) {
+    content.innerHTML = `<div class="view"><div class="empty-state">
+      <div class="empty-icon">📁</div>
+      <div class="empty-title">No projects yet</div>
+      <div class="empty-sub">Start a new project with Genius Team and it will appear here.</div>
+    </div></div>`;
+    return;
+  }
+
+  content.innerHTML = `
+    <div class="view">
+      <div class="view-title">All Projects</div>
+      <div class="view-sub">${projects.length} project${projects.length > 1 ? 's' : ''}</div>
+      <div class="projects-grid" id="projectsGrid">
+        ${projects.map(p => renderProjectCard(p)).join('')}
+      </div>
+    </div>
+  `;
+
+  // Animate bars
+  requestAnimationFrame(() => {
+    document.querySelectorAll('.project-bar-fill').forEach(el => {
+      el.style.width = el.dataset.target + '%';
+    });
+  });
+}
+
+function renderProjectCard(p) {
+  const pgValues = Object.values(p.playgrounds);
+  const overall = Math.round(pgValues.reduce((a, b) => a + b, 0) / pgValues.length);
+  const isActive = currentProject?.slug === p.slug;
+  const phaseColor = PHASE_COLORS[p.phase] || 'var(--purple)';
+  const date = new Date(p.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  return `
+    <div class="project-card ${isActive ? 'active-project' : ''}" onclick="selectAndGo('${p.slug}')">
+      <div class="project-name">${p.name}</div>
+      <div class="project-meta">Started ${date} · <span style="color:${phaseColor}">${getPhaseDot(p.phase)} ${p.phase}</span></div>
+      <div class="project-overall">
+        <div class="project-pct">${overall}%</div>
+        <div class="project-bar-wrap">
+          <div class="project-bar">
+            <div class="project-bar-fill" data-target="${overall}" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+      <div style="font-size:.75rem;color:var(--text3)">${Object.values(p.playgrounds).filter(v => v===100).length}/12 playgrounds complete</div>
+    </div>
+  `;
+}
+
+function selectAndGo(slug) {
+  const p = projects.find(x => x.slug === slug);
+  if (p) {
+    currentProject = p;
+    document.getElementById('projectSelect').value = slug;
+    updateSidebarBadges();
+    navigateTo('dashboard');
+  }
+}
+
+// ─── IFRAME VIEW ──────────────────────────────────────────────────────────────
+function renderIframe(pg) {
+  const content = document.getElementById('content');
+  content.innerHTML = `
+    <div class="iframe-view">
+      <div class="iframe-bar">
+        <button class="back-btn" onclick="navigateTo('dashboard')">← Back</button>
+        <span class="iframe-title">${pg.icon} ${pg.title}</span>
+      </div>
+      <iframe class="iframe-frame" src="templates/${pg.slug}.html" title="${pg.title}" allowfullscreen></iframe>
+    </div>
+  `;
+}
+
+// ─── SERVER INFO ──────────────────────────────────────────────────────────────
+function startServer() {
+  alert('To start the Genius Server:\n\nnode scripts/genius-server.js --tunnel\n\nor\n\nbash scripts/start-genius.sh --tunnel --open\n\nThe server will serve this dashboard at http://localhost:3333');
+}
+
+// ─── BOOT ────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

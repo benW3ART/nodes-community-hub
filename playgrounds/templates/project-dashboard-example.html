@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FlowTask — Project Dashboard</title>
+    <link rel="stylesheet" href="./design-tokens.css">
+  <style>
+    :root {
+      --bg: var(--bg-primary);
+      --surface: var(--bg-secondary);
+      --surface2: #232636;
+      --border: #2e3249;
+      --text: var(--text-primary);
+      --text-muted: #7b8ba3;
+      --accent: #6c63ff;
+      --accent2: #00d4aa;
+      --accent3: var(--surface-amber);
+      --danger: var(--surface-red);
+      --success: #22c55e;
+      --radius: 12px;
+      --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+
+    [data-theme="light"] {
+      --bg: #f1f5f9;
+      --surface: #ffffff;
+      --surface2: #f8fafc;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --text-muted: #64748b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      min-height: 100vh;
+      padding: 24px;
+    }
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 28px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .header-left { display: flex; align-items: center; gap: 16px; }
+    .logo {
+      width: 48px; height: 48px; border-radius: 12px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+    }
+    .project-title h1 { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.5px; }
+    .project-title p { color: var(--text-muted); font-size: 0.88rem; margin-top: 2px; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 12px; border-radius: 999px; font-size: 0.75rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .badge-dev { background: rgba(108, 99, 255, 0.15); color: var(--accent); border: 1px solid rgba(108,99,255,0.3); }
+    .badge-success { background: rgba(34,197,94,0.12); color: var(--success); border: 1px solid rgba(34,197,94,0.25); }
+    .header-right { display: flex; align-items: center; gap: 10px; }
+    .btn-icon {
+      background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+      padding: 8px 14px; font-size: 0.82rem; color: var(--text-muted); cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-icon:hover { border-color: var(--accent); color: var(--accent); }
+    /* Grid */
+    .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px; }
+    .col-4 { grid-column: span 4; }
+    .col-6 { grid-column: span 6; }
+    .col-8 { grid-column: span 8; }
+    .col-12 { grid-column: span 12; }
+    @media (max-width: 900px) { .col-4, .col-6, .col-8 { grid-column: span 12; } }
+    /* Card */
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px;
+    }
+    .card-title {
+      font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 1px; color: var(--text-muted); margin-bottom: 16px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    /* Phase progress */
+    .phases { display: flex; gap: 8px; flex-wrap: wrap; }
+    .phase-item { flex: 1; min-width: 80px; }
+    .phase-label {
+      font-size: 0.72rem; color: var(--text-muted); margin-bottom: 6px;
+      display: flex; justify-content: space-between;
+    }
+    .phase-label span:last-child { font-weight: 700; }
+    .progress-bar {
+      height: 6px; background: var(--surface2); border-radius: 999px; overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%; border-radius: 999px;
+      transition: width 0.8s cubic-bezier(0.4,0,0.2,1);
+    }
+    .fill-100 { background: var(--success); }
+    .fill-80  { background: var(--accent2); }
+    .fill-60  { background: var(--accent); }
+    .fill-40  { background: var(--accent3); }
+    .fill-0   { background: var(--border); }
+    /* Stats row */
+    .stat-row { display: flex; gap: 12px; flex-wrap: wrap; }
+    .stat {
+      flex: 1; min-width: 90px; background: var(--surface2);
+      border-radius: 10px; padding: 14px 16px; border: 1px solid var(--border);
+    }
+    .stat-value { font-size: 1.6rem; font-weight: 800; line-height: 1; }
+    .stat-label { font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; }
+    .stat-delta { font-size: 0.72rem; color: var(--success); margin-top: 2px; }
+    /* Stack pills */
+    .stack-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+    .pill {
+      padding: 5px 12px; border-radius: 6px; font-size: 0.78rem; font-weight: 600;
+      border: 1px solid;
+    }
+    .pill-fe  { background: rgba(59,130,246,0.1);  color: #60a5fa; border-color: rgba(59,130,246,0.25); }
+    .pill-be  { background: rgba(34,197,94,0.1);   color: #4ade80; border-color: rgba(34,197,94,0.25); }
+    .pill-db  { background: rgba(245,158,11,0.1);  color: #fbbf24; border-color: rgba(245,158,11,0.25); }
+    .pill-svc { background: rgba(168,85,247,0.1);  color: #c084fc; border-color: rgba(168,85,247,0.25); }
+    .pill-inf { background: rgba(239,68,68,0.1);   color: #f87171; border-color: rgba(239,68,68,0.25); }
+    /* Competitor cards */
+    .competitor { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+    .competitor:last-child { border-bottom: none; }
+    .comp-rank {
+      width: 28px; height: 28px; border-radius: 6px;
+      background: var(--surface2); display: flex; align-items: center;
+      justify-content: center; font-size: 0.8rem; font-weight: 700; color: var(--text-muted);
+      flex-shrink: 0;
+    }
+    .comp-info { flex: 1; }
+    .comp-name { font-size: 0.88rem; font-weight: 600; }
+    .comp-note { font-size: 0.72rem; color: var(--text-muted); margin-top: 1px; }
+    .comp-score {
+      font-size: 0.75rem; font-weight: 700; padding: 3px 8px;
+      border-radius: 999px; background: var(--surface2);
+    }
+    /* Market bars */
+    .market-item { margin-bottom: 14px; }
+    .market-label { display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 5px; }
+    .market-label strong { color: var(--accent2); }
+    /* Tasks */
+    .task-item {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 9px 0; border-bottom: 1px solid var(--border);
+    }
+    .task-item:last-child { border-bottom: none; }
+    .task-check {
+      width: 18px; height: 18px; border-radius: 4px; flex-shrink: 0; margin-top: 1px;
+      display: flex; align-items: center; justify-content: center; font-size: 11px;
+    }
+    .task-check.done   { background: var(--success); color: var(--text-inverse); }
+    .task-check.active { background: var(--accent); color: var(--text-inverse); }
+    .task-check.todo   { background: var(--surface2); border: 1px solid var(--border); }
+    .task-text { font-size: 0.83rem; line-height: 1.4; }
+    .task-text.done { color: var(--text-muted); text-decoration: line-through; }
+    .task-tag {
+      margin-left: auto; font-size: 0.68rem; padding: 2px 7px; border-radius: 4px;
+      background: var(--surface2); color: var(--text-muted); flex-shrink: 0;
+    }
+    /* SEO Gauge */
+    .seo-gauge { text-align: center; padding: 8px 0; }
+    .gauge-number { font-size: 3.5rem; font-weight: 900; line-height: 1; }
+    .gauge-label  { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; }
+    .gauge-score-good { color: var(--accent2); }
+    .seo-items { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+    .seo-row {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 0.78rem; padding: 7px 10px; border-radius: 8px;
+      background: var(--surface2);
+    }
+    .seo-icon { font-size: 14px; flex-shrink: 0; }
+    /* Actions */
+    .action-btns { display: flex; flex-direction: column; gap: 8px; }
+    .action-btn {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 10px 14px; cursor: pointer;
+      font-size: 0.82rem; color: var(--text); transition: all 0.15s; width: 100%;
+      text-align: left; font-family: var(--font);
+    }
+    .action-btn:hover { border-color: var(--accent); background: rgba(108,99,255,0.07); }
+    .action-btn code {
+      font-family: 'SF Mono', 'Cascadia Code', monospace;
+      font-size: 0.78rem; color: var(--accent); background: none;
+    }
+    .action-btn .icon { font-size: 16px; }
+    /* Footer */
+    .footer {
+      margin-top: 28px; padding-top: 16px; border-top: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 0.72rem; color: var(--text-muted); flex-wrap: wrap; gap: 8px;
+    }
+    .footer a { color: var(--accent); text-decoration: none; }
+    /* Toast */
+    #toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: var(--accent); color: var(--text-inverse); padding: 10px 18px;
+      border-radius: 8px; font-size: 0.82rem; font-weight: 600;
+      opacity: 0; transform: translateY(8px); transition: all 0.2s;
+      pointer-events: none; z-index: 999;
+    }
+    #toast.show { opacity: 1; transform: translateY(0); }
+    @media print {
+      body { background: var(--text-inverse); color: var(--text-dark); }
+      .card { border: 1px solid #ddd; }
+      .btn-icon, .action-btns { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <div class="logo">⚡</div>
+      <div class="project-title">
+        <h1>FlowTask</h1>
+        <p>Team productivity SaaS &nbsp;·&nbsp; <span class="badge badge-dev">🔨 Development</span></p>
+      </div>
+    </div>
+    <div class="header-right">
+      <button class="btn-icon" onclick="toggleTheme()">🌓 Theme</button>
+      <button class="btn-icon" onclick="window.print()">🖨 Print</button>
+      <span id="refresh-ts" class="btn-icon" style="cursor:default">Updated just now</span>
+    </div>
+  </div>
+
+  <!-- Phase progress (full width) -->
+  <div class="grid" style="margin-bottom:16px">
+    <div class="card col-12">
+      <div class="card-title">📍 Project Phases</div>
+      <div class="phases">
+        <div class="phase-item">
+          <div class="phase-label"><span>Discovery</span><span>100%</span></div>
+          <div class="progress-bar"><div class="progress-fill fill-100" style="width:100%"></div></div>
+        </div>
+        <div class="phase-item">
+          <div class="phase-label"><span>Specs</span><span>100%</span></div>
+          <div class="progress-bar"><div class="progress-fill fill-100" style="width:100%"></div></div>
+        </div>
+        <div class="phase-item">
+          <div class="phase-label"><span>Architecture</span><span>80%</span></div>
+          <div class="progress-bar"><div class="progress-fill fill-80" style="width:80%"></div></div>
+        </div>
+        <div class="phase-item">
+          <div class="phase-label"><span>Development</span><span>60%</span></div>
+          <div class="progress-bar"><div class="progress-fill fill-60" style="width:60%"></div></div>
+        </div>
+        <div class="phase-item">
+          <div class="phase-label"><span>QA</span><span>0%</span></div>
+          <div class="progress-bar"><div class="progress-fill fill-0" style="width:0%"></div></div>
+        </div>
+        <div class="phase-item">
+          <div class="phase-label"><span>Deploy</span><span>0%</span></div>
+          <div class="progress-bar"><div class="progress-fill fill-0" style="width:0%"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats row -->
+  <div class="grid" style="margin-bottom:16px">
+    <div class="col-12">
+      <div class="stat-row">
+        <div class="stat">
+          <div class="stat-value" style="color:var(--accent)">12</div>
+          <div class="stat-label">Features defined</div>
+          <div class="stat-delta">↑ 3 since last week</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" style="color:var(--success)">7</div>
+          <div class="stat-label">Features complete</div>
+          <div class="stat-delta">58% of MVP</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" style="color:var(--accent3)">5</div>
+          <div class="stat-label">In progress</div>
+          <div class="stat-delta">Est. 2 weeks remaining</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" style="color:var(--accent2)">72</div>
+          <div class="stat-label">GEO/SEO score</div>
+          <div class="stat-delta">↑ 4 pts since audit</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" style="color:#c084fc">$4.2B</div>
+          <div class="stat-label">TAM (2024)</div>
+          <div class="stat-delta">↑ 18% YoY growth</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main grid -->
+  <div class="grid">
+
+    <!-- Tech Stack -->
+    <div class="card col-6">
+      <div class="card-title">🔧 Tech Stack</div>
+      <div style="margin-bottom:12px">
+        <div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:6px">Frontend</div>
+        <div class="stack-grid">
+          <span class="pill pill-fe">Next.js 14</span>
+          <span class="pill pill-fe">TypeScript</span>
+          <span class="pill pill-fe">Tailwind CSS</span>
+          <span class="pill pill-fe">Radix UI</span>
+        </div>
+      </div>
+      <div style="margin-bottom:12px">
+        <div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:6px">Backend &amp; Database</div>
+        <div class="stack-grid">
+          <span class="pill pill-be">Supabase</span>
+          <span class="pill pill-db">PostgreSQL</span>
+          <span class="pill pill-be">Edge Functions</span>
+          <span class="pill pill-db">pgvector</span>
+        </div>
+      </div>
+      <div style="margin-bottom:12px">
+        <div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:6px">Services</div>
+        <div class="stack-grid">
+          <span class="pill pill-svc">Stripe</span>
+          <span class="pill pill-svc">Resend</span>
+          <span class="pill pill-svc">Clerk Auth</span>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:6px">Infrastructure</div>
+        <div class="stack-grid">
+          <span class="pill pill-inf">Vercel</span>
+          <span class="pill pill-inf">GitHub Actions</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Development tasks -->
+    <div class="card col-6">
+      <div class="card-title">⚙️ Development Progress</div>
+      <div class="task-item">
+        <div class="task-check done">✓</div>
+        <div class="task-text done">Auth flow — Clerk integration + protected routes</div>
+        <span class="task-tag">done</span>
+      </div>
+      <div class="task-item">
+        <div class="task-check done">✓</div>
+        <div class="task-text done">Dashboard layout — sidebar + responsive nav</div>
+        <span class="task-tag">done</span>
+      </div>
+      <div class="task-item">
+        <div class="task-check done">✓</div>
+        <div class="task-text done">Task CRUD — create, edit, delete, reorder</div>
+        <span class="task-tag">done</span>
+      </div>
+      <div class="task-item">
+        <div class="task-check done">✓</div>
+        <div class="task-text done">Team workspace + member invites</div>
+        <span class="task-tag">done</span>
+      </div>
+      <div class="task-item">
+        <div class="task-check done">✓</div>
+        <div class="task-text done">Stripe billing — subscription tiers</div>
+        <span class="task-tag">done</span>
+      </div>
+      <div class="task-item">
+        <div class="task-check active">→</div>
+        <div class="task-text">Real-time notifications — Supabase Realtime</div>
+        <span class="task-tag" style="color:var(--accent)">active</span>
+      </div>
+      <div class="task-item">
+        <div class="task-check todo"></div>
+        <div class="task-text" style="color:var(--text-muted)">AI task suggestions — pgvector embeddings</div>
+        <span class="task-tag">next</span>
+      </div>
+      <div class="task-item">
+        <div class="task-check todo"></div>
+        <div class="task-text" style="color:var(--text-muted)">Email digest — Resend weekly summary</div>
+        <span class="task-tag">todo</span>
+      </div>
+    </div>
+
+    <!-- Market Intelligence -->
+    <div class="card col-8">
+      <div class="card-title">📊 Market Intelligence</div>
+      <div style="margin-bottom: 18px">
+        <div class="market-item">
+          <div class="market-label"><span>TAM — Total Addressable Market</span><strong>$4.2B</strong></div>
+          <div class="progress-bar" style="height:8px"><div class="progress-fill" style="width:100%;background:var(--accent)"></div></div>
+        </div>
+        <div class="market-item">
+          <div class="market-label"><span>SAM — Serviceable Addressable Market</span><strong>$840M</strong></div>
+          <div class="progress-bar" style="height:8px"><div class="progress-fill" style="width:20%;background:var(--accent2)"></div></div>
+        </div>
+        <div class="market-item">
+          <div class="market-label"><span>SOM — Serviceable Obtainable Market (3yr)</span><strong>$42M</strong></div>
+          <div class="progress-bar" style="height:8px"><div class="progress-fill" style="width:1%;background:var(--accent3)"></div></div>
+        </div>
+      </div>
+      <div class="card-title" style="margin-top:4px">🥊 Competitors</div>
+      <div class="competitor">
+        <div class="comp-rank">#1</div>
+        <div class="comp-info">
+          <div class="comp-name">Linear</div>
+          <div class="comp-note">Best-in-class UX, dev-focused — lacks AI-native features</div>
+        </div>
+        <div class="comp-score" style="color:var(--danger)">High threat</div>
+      </div>
+      <div class="competitor">
+        <div class="comp-rank">#2</div>
+        <div class="comp-info">
+          <div class="comp-name">Asana</div>
+          <div class="comp-note">Enterprise feature-heavy, complex onboarding</div>
+        </div>
+        <div class="comp-score" style="color:var(--accent3)">Med threat</div>
+      </div>
+      <div class="competitor">
+        <div class="comp-rank">#3</div>
+        <div class="comp-info">
+          <div class="comp-name">Notion</div>
+          <div class="comp-note">All-in-one but no real-time collab task focus</div>
+        </div>
+        <div class="comp-score" style="color:var(--success)">Low threat</div>
+      </div>
+    </div>
+
+    <!-- Right column: SEO + Quick Actions -->
+    <div class="col-4" style="display:flex;flex-direction:column;gap:16px">
+
+      <!-- SEO Score -->
+      <div class="card">
+        <div class="card-title">🤖 GEO / SEO Score</div>
+        <div class="seo-gauge">
+          <div class="gauge-number gauge-score-good">72</div>
+          <div class="gauge-label">out of 100 — Good</div>
+        </div>
+        <div class="seo-items">
+          <div class="seo-row"><span class="seo-icon">✅</span> robots.txt & sitemap present</div>
+          <div class="seo-row"><span class="seo-icon">✅</span> Structured data (JSON-LD)</div>
+          <div class="seo-row"><span class="seo-icon">✅</span> AI crawler allowlisted</div>
+          <div class="seo-row"><span class="seo-icon">⚠️</span> Missing OpenGraph images</div>
+          <div class="seo-row"><span class="seo-icon">⚠️</span> LCP > 2.5s on mobile</div>
+          <div class="seo-row"><span class="seo-icon">❌</span> No /llms.txt file</div>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="card">
+        <div class="card-title">⚡ Quick Actions</div>
+        <div class="action-btns">
+          <button class="action-btn" onclick="copyCmd('/genius-start')">
+            <span class="icon">🚀</span>
+            <code>/genius-start</code>
+            <span style="margin-left:auto;font-size:0.7rem;color:var(--text-muted)">copy</span>
+          </button>
+          <button class="action-btn" onclick="copyCmd('/status')">
+            <span class="icon">📊</span>
+            <code>/status</code>
+            <span style="margin-left:auto;font-size:0.7rem;color:var(--text-muted)">copy</span>
+          </button>
+          <button class="action-btn" onclick="copyCmd('/continue')">
+            <span class="icon">▶️</span>
+            <code>/continue</code>
+            <span style="margin-left:auto;font-size:0.7rem;color:var(--text-muted)">copy</span>
+          </button>
+          <button class="action-btn" onclick="copyCmd('/genius-playground-generator')">
+            <span class="icon">🎮</span>
+            <code>/genius-playground-generator</code>
+            <span style="margin-left:auto;font-size:0.7rem;color:var(--text-muted)">copy</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Specs summary -->
+    <div class="card col-12">
+      <div class="card-title">📋 Specifications Summary — FlowTask MVP</div>
+      <div style="display:flex;gap:24px;flex-wrap:wrap">
+        <div style="flex:1;min-width:200px">
+          <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:8px">MVP Features (7 of 12)</div>
+          <div style="display:flex;flex-direction:column;gap:4px;font-size:0.82rem">
+            <span>✅ Authentication &amp; team workspaces</span>
+            <span>✅ Task management (CRUD + drag-drop)</span>
+            <span>✅ Real-time collaboration</span>
+            <span>✅ Stripe subscriptions (Free / Pro / Team)</span>
+            <span>✅ Activity feed &amp; notifications</span>
+            <span style="color:var(--text-muted)">⬜ AI task suggestions</span>
+            <span style="color:var(--text-muted)">⬜ Advanced analytics dashboard</span>
+          </div>
+        </div>
+        <div style="flex:1;min-width:200px">
+          <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:8px">Key Constraints</div>
+          <div style="display:flex;flex-direction:column;gap:4px;font-size:0.82rem">
+            <span>⚡ LCP &lt; 2s (Core Web Vitals)</span>
+            <span>🔒 GDPR compliant data handling</span>
+            <span>🌍 i18n: EN + FR at launch</span>
+            <span>♿ WCAG 2.1 AA accessibility</span>
+            <span>💰 Stripe webhook idempotency</span>
+          </div>
+        </div>
+        <div style="flex:1;min-width:200px">
+          <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:8px">Pricing Tiers</div>
+          <div style="display:flex;flex-direction:column;gap:4px;font-size:0.82rem">
+            <span>🆓 Free — up to 5 members, 3 projects</span>
+            <span>💜 Pro — $12/mo, unlimited projects</span>
+            <span>🏢 Team — $29/mo/seat, SSO + analytics</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <span>Generated by <strong>genius-playground-generator v17</strong> · <a href="#">Genius Team</a></span>
+    <span id="gen-time">Generated: 2026-03-10T10:30:00+01:00</span>
+    <span>💡 Re-generate: <code style="font-size:0.72rem;color:var(--accent)">/genius-playground</code></span>
+  </div>
+
+  <div id="toast">✅ Copied to clipboard!</div>
+
+  <script>
+    // Data snapshot (embedded at generation time)
+    const PROJECT_DATA = {
+      name: "FlowTask",
+      tagline: "Team productivity SaaS",
+      phase: "development",
+      phaseProgress: 60,
+      stack: {
+        frontend: ["Next.js 14", "TypeScript", "Tailwind CSS", "Radix UI"],
+        backend: ["Supabase", "Edge Functions"],
+        database: ["PostgreSQL", "pgvector"],
+        services: ["Stripe", "Resend", "Clerk Auth"],
+        infra: ["Vercel", "GitHub Actions"]
+      },
+      market: { tam: "$4.2B", sam: "$840M", som: "$42M", growth: "18% YoY" },
+      competitors: ["Linear", "Asana", "Notion"],
+      features: { total: 12, complete: 7 },
+      seo: { score: 72, grade: "Good" },
+      generatedAt: new Date().toISOString()
+    };
+
+    // Update timestamps
+    document.getElementById('gen-time').textContent = 'Generated: ' + PROJECT_DATA.generatedAt.replace('T',' ').slice(0,19);
+    document.getElementById('refresh-ts').textContent = '🔄 Updated just now';
+
+    // Theme toggle
+    function toggleTheme() {
+      const html = document.documentElement;
+      html.setAttribute('data-theme', html.getAttribute('data-theme') === 'light' ? 'dark' : 'light');
+    }
+
+    // Copy command buttons
+    function copyCmd(cmd) {
+      navigator.clipboard.writeText(cmd).then(() => {
+        const t = document.getElementById('toast');
+        t.textContent = '✅ Copied: ' + cmd;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 2000);
+      });
+    }
+
+    // Animate progress bars on load
+    document.querySelectorAll('.progress-fill').forEach(bar => {
+      const w = bar.style.width;
+      bar.style.width = '0';
+      setTimeout(() => { bar.style.width = w; }, 100);
+    });
+  </script>
+</body>
+</html>

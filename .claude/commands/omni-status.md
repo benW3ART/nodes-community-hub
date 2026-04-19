@@ -4,7 +4,7 @@ Run this bash script and display the results:
 
 ```bash
 echo "╔════════════════════════════════════════════════════════════╗"
-echo "║  🌐 Genius Team v9.0 — Omni Mode Provider Status         ║"
+echo "║  🌐 Genius Team v17.0 — Omni Mode Provider Status         ║"
 echo "╚════════════════════════════════════════════════════════════╝"
 echo ""
 

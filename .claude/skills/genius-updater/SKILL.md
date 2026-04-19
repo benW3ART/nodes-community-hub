@@ -1,6 +1,9 @@
 ---
 name: genius-updater
-description: Detects Claude Code AND Genius Team version changes. Proposes updates for both. Use for "check for updates", "update check", "upgrade genius team".
+description: >-
+  Detects Claude Code and Genius Team version changes and proposes updates. Use when user says
+  "check for updates", "upgrade genius", "is there a new version", or automatically at session
+  start. Do NOT use manually for code implementation.
 user-invocable: true
 allowed-tools:
   - Read(*)
@@ -16,7 +19,7 @@ allowed-tools:
   - Bash(curl *)
 ---
 
-# Genius Updater v10.0 — Self-Update Protocol
+# Genius Updater v17.0 — Self-Update Protocol
 
 **Keep your repo in sync with Claude Code AND Genius Team evolution.**
 
@@ -55,7 +58,7 @@ If they differ, outputs a `<version_change>` tag.
 #### 2. Genius Team Version
 ```bash
 # Check Genius Team version
-LOCAL_GT=$(cat VERSION 2>/dev/null || echo "9.0.0")
+LOCAL_GT=$(cat VERSION 2>/dev/null || echo "10.0.0")
 REMOTE_GT=$(curl -sfL https://raw.githubusercontent.com/w-3-art/genius-team/main/VERSION 2>/dev/null || echo "$LOCAL_GT")
 if [ "$LOCAL_GT" != "$REMOTE_GT" ]; then
   echo "<genius_team_update>New Genius Team version: $LOCAL_GT → $REMOTE_GT. Run /genius-upgrade</genius_team_update>"
@@ -93,25 +96,25 @@ fi
 ```
 🔄 Update Check
 
-Claude Code: v1.0.50 ✅ (à jour)
+Claude Code: v1.0.50 ✅ (up to date)
 
-Genius Team: v9.0.0 → v10.0.0 disponible! 🆕
-Nouveautés:
-- 12 playgrounds interactifs
-- Système anti-dérive
-- Mémoire persistante
+Genius Team: v13.0.0 → v14.0.0 available! 🆕
+What's new:
+- 12 interactive playgrounds
+- Anti-drift system
+- Persistent memory
 
-Exécuter /genius-upgrade pour mettre à jour.
+Run /genius-upgrade to update.
 ```
 
 If both are up-to-date:
 ```
 🔄 Update Check
 
-Claude Code: v1.0.50 ✅ (à jour)
-Genius Team: v10.0.0 ✅ (à jour)
+Claude Code: v1.0.50 ✅ (up to date)
+Genius Team: v14.0.0 ✅ (up to date)
 
-Tout est à jour! 🎉
+Everything is up to date! 🎉
 ```
 
 ---
@@ -123,7 +126,7 @@ Tout est à jour! 🎉
 **Local version sources (in priority order):**
 1. `VERSION` file in repo root
 2. `.genius/state.json` → `version` field
-3. Default: "9.0.0" (legacy)
+3. Default: "10.0.0" (legacy)
 
 **Remote version:**
 ```bash
@@ -189,3 +192,11 @@ Provides: New features that could improve skills
 
 ### From SessionStart hook
 Triggered: When version mismatch detected (Claude Code or Genius Team)
+
+## Definition of Done
+
+- [ ] Version gap is identified with concrete impacted files or features
+- [ ] Proposed changes are reviewed before any modification happens
+- [ ] Backup, verification, and logging steps are specified
+- [ ] User approval requirements remain explicit
+- [ ] Follow-up optimization or maintenance handoff is clear

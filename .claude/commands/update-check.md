@@ -42,19 +42,19 @@ No changes needed.
 
 3. **Propose modifications**:
    ```
-   🔄 Nouvelle version Claude Code détectée!
+   🔄 New Claude Code version detected!
 
    Version: {old} → {new}
 
-   Nouveautés:
+   New features:
    - [feature 1]
    - [feature 2]
 
-   Modifications proposées:
+   Proposed modifications:
    1. [change 1] — [reason]
    2. [change 2] — [reason]
 
-   Souhaites-tu que je procède? (oui/non)
+   Would you like me to proceed? (yes/no)
    ```
 
 ### Step 4: On User Approval

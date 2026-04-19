@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Journey Builder - Genius Playground</title>
+    <link rel="stylesheet" href="./design-tokens.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 0;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        @media (max-width: 1200px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .panel-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .panel-title .icon {
+            font-size: 1.5rem;
+        }
+
+        /* Controls Row */
+        .controls-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .control-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .control-group label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        select, input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 10px 14px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            transition: border-color 0.2s;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: var(--accent-purple);
+        }
+
+        /* Presets */
+        .presets {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .preset-btn {
+            flex: 1;
+            padding: 10px 15px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .preset-btn:hover {
+            border-color: var(--accent-purple);
+            background: var(--tone-purple-10);
+        }
+
+        .preset-btn.active {
+            border-color: var(--accent-purple);
+            background: var(--tone-purple-20);
+        }
+
+        /* Add Story Form */
+        .add-story-form {
+            display: grid;
+            grid-template-columns: 1fr auto auto auto;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: var(--bg-tertiary);
+            border-radius: 10px;
+        }
+
+        .add-story-form input[type="text"] {
+            background: var(--bg-secondary);
+        }
+
+        .add-story-form select {
+            background: var(--bg-secondary);
+            width: auto;
+            min-width: 100px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+            color: white;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--accent-purple);
+        }
+
+        /* Stories List */
+        .stories-list {
+            min-height: 200px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .story-item {
+            display: grid;
+            grid-template-columns: auto 1fr auto auto auto auto;
+            gap: 12px;
+            align-items: center;
+            padding: 12px 15px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            cursor: grab;
+            transition: all 0.2s;
+        }
+
+        .story-item:hover {
+            border-color: var(--accent-purple);
+        }
+
+        .story-item.dragging {
+            opacity: 0.5;
+            cursor: grabbing;
+        }
+
+        .story-item.drag-over {
+            border-color: var(--accent-blue);
+            background: var(--tone-blue-10);
+        }
+
+        .story-item.filtered-out {
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
+        .drag-handle {
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+            cursor: grab;
+        }
+
+        .story-title {
+            font-weight: 500;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .story-priority {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .priority-must { background: var(--tone-red-20); color: var(--accent-red); }
+        .priority-should { background: var(--tone-orange-20); color: var(--accent-orange-deep); }
+        .priority-could { background: var(--tone-orange-20); color: var(--accent-orange); }
+        .priority-wont { background: var(--tone-gray-20); color: var(--text-secondary); }
+
+        .story-estimate {
+            padding: 4px 10px;
+            background: var(--tone-blue-20);
+            color: var(--accent-blue);
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .story-points {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            min-width: 40px;
+            text-align: center;
+        }
+
+        .delete-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 1.2rem;
+            padding: 5px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .delete-btn:hover {
+            color: var(--accent-red);
+            background: var(--tone-red-10);
+        }
+
+        /* Scope Filter */
+        .scope-filter {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .scope-btn {
+            flex: 1;
+            padding: 12px;
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .scope-btn:hover {
+            border-color: var(--accent-purple);
+        }
+
+        .scope-btn.active {
+            border-color: var(--accent-purple);
+            background: var(--tone-purple-20);
+        }
+
+        .scope-btn .scope-name {
+            display: block;
+            font-size: 1rem;
+            margin-bottom: 4px;
+        }
+
+        .scope-btn .scope-stories {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        /* Sprint Calculator */
+        .sprint-calculator {
+            background: var(--bg-tertiary);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .sprint-slider {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .sprint-slider label {
+            min-width: 140px;
+            color: var(--text-secondary);
+        }
+
+        .sprint-slider input[type="range"] {
+            flex: 1;
+            height: 6px;
+            -webkit-appearance: none;
+            background: var(--border-color);
+            border-radius: 3px;
+        }
+
+        .sprint-slider input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: var(--accent-purple);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .sprint-slider .value {
+            min-width: 60px;
+            text-align: right;
+            font-weight: 600;
+            color: var(--accent-blue);
+        }
+
+        .sprint-results {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .sprint-stat {
+            text-align: center;
+            padding: 15px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+        }
+
+        .sprint-stat .number {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .sprint-stat .label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }
+
+        /* Flow Diagram */
+        .flow-container {
+            background: var(--bg-tertiary);
+            border-radius: 10px;
+            padding: 20px;
+            min-height: 300px;
+            overflow-x: auto;
+        }
+
+        .flow-diagram {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            min-width: max-content;
+        }
+
+        .flow-phase {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .phase-label {
+            min-width: 80px;
+            padding: 8px 15px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        .phase-mvp { border-left: 3px solid var(--accent-green); }
+        .phase-v1 { border-left: 3px solid var(--accent-blue); }
+        .phase-full { border-left: 3px solid var(--accent-purple); }
+
+        .flow-nodes {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .flow-node {
+            padding: 10px 15px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 0.85rem;
+            max-width: 200px;
+            position: relative;
+        }
+
+        .flow-node::after {
+            content: '→';
+            position: absolute;
+            right: -15px;
+            color: var(--text-secondary);
+        }
+
+        .flow-node:last-child::after {
+            content: '';
+        }
+
+        .flow-node.must { border-left: 3px solid var(--accent-red); }
+        .flow-node.should { border-left: 3px solid var(--accent-orange-deep); }
+        .flow-node.could { border-left: 3px solid var(--accent-orange); }
+        .flow-node.wont { border-left: 3px solid var(--text-secondary); }
+
+        /* Output Panel */
+        .output-panel {
+            margin-top: 30px;
+        }
+
+        .output-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .output-content {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 20px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .copy-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .copy-btn.copied {
+            background: var(--accent-green);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state .icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-secondary);
+        }
+
+        /* Badge */
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            background: var(--tone-purple-20);
+            color: var(--accent-purple);
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+    
+/* ===== MOBILE RESPONSIVE (v13) ===== */
+@media (max-width: 768px) {
+  body { padding: 1rem !important; }
+
+  /* Single-column grids */
+  [style*="grid-template-columns"],
+  .grid, .cards-grid, .two-col, .three-col,
+  [class*="grid-"] { grid-template-columns: 1fr !important; }
+
+  /* Stack flex rows */
+  .flex-row, .row, [class*="-row"] { flex-direction: column !important; }
+
+  /* Full-width elements */
+  .card, .panel, .box, .section,
+  [class*="card"], [class*="panel"] { width: 100% !important; max-width: 100% !important; }
+
+  /* Touch-friendly inputs and buttons */
+  input, select, textarea, button, .btn,
+  [class*="btn"], [class*="button"] {
+    min-height: 44px !important;
+    font-size: 16px !important;
+  }
+
+  /* Prevent horizontal scroll */
+  .container, .wrapper, main, section { overflow-x: hidden; }
+
+  /* Readable font sizes */
+  h1 { font-size: 1.6rem !important; }
+  h2 { font-size: 1.3rem !important; }
+  h3 { font-size: 1.1rem !important; }
+
+  /* Reduce whitespace */
+  .container, .wrapper, main {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+
+  /* Table responsiveness */
+  table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* Navigation */
+  nav, .nav, .navbar { flex-wrap: wrap; gap: .5rem; }
+}
+
+@media (max-width: 480px) {
+  body { padding: .75rem !important; }
+  h1 { font-size: 1.3rem !important; }
+  .header, header { padding: .75rem 1rem !important; }
+}
+
+</style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🗺️ User Journey Builder</h1>
+            <p>Visualize, prioritize, and scope your user stories for MVP, V1, and beyond</p>
+        </header>
+
+        <div class="presets">
+            <button class="preset-btn" onclick="applyPreset('lean')">🚀 Lean MVP</button>
+            <button class="preset-btn" onclick="applyPreset('standard')">📦 Standard V1</button>
+            <button class="preset-btn" onclick="applyPreset('full')">🎯 Full Product</button>
+            <button class="preset-btn" onclick="applyPreset('clear')">🗑️ Clear All</button>
+        </div>
+
+        <div class="main-grid">
+            <!-- Left Panel: Stories -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">
+                        <span class="icon">📋</span>
+                        User Stories
+                        <span class="badge" id="story-count">0 stories</span>
+                    </h2>
+                </div>
+
+                <div class="add-story-form">
+                    <input type="text" id="new-story-title" placeholder="Enter user story..." onkeypress="if(event.key==='Enter')addStory()">
+                    <select id="new-story-priority">
+                        <option value="must">Must</option>
+                        <option value="should">Should</option>
+                        <option value="could">Could</option>
+                        <option value="wont">Won't</option>
+                    </select>
+                    <select id="new-story-estimate">
+                        <option value="S">S (1pt)</option>
+                        <option value="M">M (3pts)</option>
+                        <option value="L">L (5pts)</option>
+                        <option value="XL">XL (8pts)</option>
+                    </select>
+                    <button class="btn btn-primary" onclick="addStory()">+ Add</button>
+                </div>
+
+                <div class="scope-filter">
+                    <button class="scope-btn active" data-scope="all" onclick="setScope('all')">
+                        <span class="scope-name">All</span>
+                        <span class="scope-stories" id="scope-all-count">0 stories</span>
+                    </button>
+                    <button class="scope-btn" data-scope="mvp" onclick="setScope('mvp')">
+                        <span class="scope-name">MVP</span>
+                        <span class="scope-stories" id="scope-mvp-count">0 stories</span>
+                    </button>
+                    <button class="scope-btn" data-scope="v1" onclick="setScope('v1')">
+                        <span class="scope-name">V1</span>
+                        <span class="scope-stories" id="scope-v1-count">0 stories</span>
+                    </button>
+                    <button class="scope-btn" data-scope="full" onclick="setScope('full')">
+                        <span class="scope-name">Full</span>
+                        <span class="scope-stories" id="scope-full-count">0 stories</span>
+                    </button>
+                </div>
+
+                <div class="stories-list" id="stories-list">
+                    <div class="empty-state">
+                        <div class="icon">📝</div>
+                        <p>No stories yet. Add your first user story above!</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Flow & Calculator -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">
+                        <span class="icon">🔄</span>
+                        Journey Flow
+                    </h2>
+                </div>
+
+                <div class="sprint-calculator">
+                    <div class="sprint-slider">
+                        <label>Sprint Capacity:</label>
+                        <input type="range" id="sprint-capacity" min="5" max="50" value="20" oninput="updateAll()">
+                        <span class="value" id="capacity-value">20 pts</span>
+                    </div>
+                    <div class="sprint-slider">
+                        <label>Sprint Duration:</label>
+                        <input type="range" id="sprint-duration" min="1" max="4" value="2" oninput="updateAll()">
+                        <span class="value" id="duration-value">2 weeks</span>
+                    </div>
+
+                    <div class="sprint-results">
+                        <div class="sprint-stat">
+                            <div class="number" id="total-points">0</div>
+                            <div class="label">Total Points</div>
+                        </div>
+                        <div class="sprint-stat">
+                            <div class="number" id="sprints-needed">0</div>
+                            <div class="label">Sprints Needed</div>
+                        </div>
+                        <div class="sprint-stat">
+                            <div class="number" id="total-weeks">0</div>
+                            <div class="label">Total Weeks</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flow-container">
+                    <div class="flow-diagram" id="flow-diagram">
+                        <div class="empty-state">
+                            <div class="icon">🗺️</div>
+                            <p>Flow diagram will appear here</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Output Panel -->
+        <div class="output-panel panel">
+            <div class="output-header">
+                <h2 class="panel-title">
+                    <span class="icon">📤</span>
+                    Generated Prompt
+                </h2>
+                <button class="btn btn-primary copy-btn" onclick="copyPrompt()">
+                    <span>📋</span>
+                    <span id="copy-text">Copy</span>
+                </button>
+            </div>
+            <div class="output-content" id="output-content">
+// Output will appear here...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // STATE
+        // ============================================
+        const state = {
+            stories: [],
+            currentScope: 'all',
+            sprintCapacity: 20,
+            sprintDuration: 2,
+            draggedIndex: null,
+            projectName: 'My Project'
+        };
+
+        const ESTIMATE_POINTS = { S: 1, M: 3, L: 5, XL: 8 };
+        const PRIORITY_ORDER = { must: 0, should: 1, could: 2, wont: 3 };
+
+        // ============================================
+        // MAIN UPDATE FUNCTION
+        // ============================================
+        function updateAll() {
+            renderStories();
+            renderFlowDiagram();
+            updatePrompt();
+            updateStats();
+            saveToLocalStorage();
+        }
+
+        // ============================================
+        // STORIES MANAGEMENT
+        // ============================================
+        function addStory() {
+            const titleInput = document.getElementById('new-story-title');
+            const priorityInput = document.getElementById('new-story-priority');
+            const estimateInput = document.getElementById('new-story-estimate');
+
+            const title = titleInput.value.trim();
+            if (!title) return;
+
+            state.stories.push({
+                id: Date.now(),
+                title,
+                priority: priorityInput.value,
+                estimate: estimateInput.value,
+                scope: getScopeFromPriority(priorityInput.value)
+            });
+
+            titleInput.value = '';
+            updateAll();
+        }
+
+        function getScopeFromPriority(priority) {
+            switch (priority) {
+                case 'must': return 'mvp';
+                case 'should': return 'v1';
+                default: return 'full';
+            }
+        }
+
+        function deleteStory(id) {
+            state.stories = state.stories.filter(s => s.id !== id);
+            updateAll();
+        }
+
+        function setScope(scope) {
+            state.currentScope = scope;
+            document.querySelectorAll('.scope-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.scope === scope);
+            });
+            updateAll();
+        }
+
+        // ============================================
+        // RENDER STORIES
+        // ============================================
+        function renderStories() {
+            const container = document.getElementById('stories-list');
+            const filteredStories = getFilteredStories();
+
+            if (state.stories.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">📝</div>
+                        <p>No stories yet. Add your first user story above!</p>
+                    </div>
+                `;
+                document.getElementById('story-count').textContent = '0 stories';
+                return;
+            }
+
+            container.innerHTML = state.stories.map((story, index) => {
+                const isFiltered = state.currentScope !== 'all' && !matchesScope(story, state.currentScope);
+                return `
+                    <div class="story-item ${isFiltered ? 'filtered-out' : ''}"
+                         draggable="true"
+                         data-index="${index}"
+                         ondragstart="handleDragStart(event, ${index})"
+                         ondragover="handleDragOver(event)"
+                         ondrop="handleDrop(event, ${index})"
+                         ondragend="handleDragEnd(event)">
+                        <span class="drag-handle">⋮⋮</span>
+                        <span class="story-title">${escapeHtml(story.title)}</span>
+                        <span class="story-priority priority-${story.priority}">${story.priority}</span>
+                        <span class="story-estimate">${story.estimate}</span>
+                        <span class="story-points">${ESTIMATE_POINTS[story.estimate]}pt</span>
+                        <button class="delete-btn" onclick="deleteStory(${story.id})">×</button>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('story-count').textContent = `${state.stories.length} stories`;
+        }
+
+        function matchesScope(story, scope) {
+            if (scope === 'mvp') return story.priority === 'must';
+            if (scope === 'v1') return story.priority === 'must' || story.priority === 'should';
+            return true;
+        }
+
+        function getFilteredStories() {
+            if (state.currentScope === 'all') return state.stories;
+            return state.stories.filter(s => matchesScope(s, state.currentScope));
+        }
+
+        // ============================================
+        // DRAG & DROP
+        // ============================================
+        function handleDragStart(e, index) {
+            state.draggedIndex = index;
+            e.target.classList.add('dragging');
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.currentTarget.classList.add('drag-over');
+        }
+
+        function handleDrop(e, dropIndex) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('drag-over');
+
+            if (state.draggedIndex !== null && state.draggedIndex !== dropIndex) {
+                const [draggedItem] = state.stories.splice(state.draggedIndex, 1);
+                state.stories.splice(dropIndex, 0, draggedItem);
+                updateAll();
+            }
+        }
+
+        function handleDragEnd(e) {
+            e.target.classList.remove('dragging');
+            document.querySelectorAll('.story-item').forEach(el => el.classList.remove('drag-over'));
+            state.draggedIndex = null;
+        }
+
+        // ============================================
+        // FLOW DIAGRAM
+        // ============================================
+        function renderFlowDiagram() {
+            const container = document.getElementById('flow-diagram');
+
+            if (state.stories.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">🗺️</div>
+                        <p>Flow diagram will appear here</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const mvpStories = state.stories.filter(s => s.priority === 'must');
+            const v1Stories = state.stories.filter(s => s.priority === 'should');
+            const fullStories = state.stories.filter(s => s.priority === 'could' || s.priority === 'wont');
+
+            let html = '';
+
+            if (mvpStories.length > 0) {
+                html += `
+                    <div class="flow-phase">
+                        <div class="phase-label phase-mvp">MVP</div>
+                        <div class="flow-nodes">
+                            ${mvpStories.map(s => `<div class="flow-node ${s.priority}">${escapeHtml(s.title)}</div>`).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            if (v1Stories.length > 0) {
+                html += `
+                    <div class="flow-phase">
+                        <div class="phase-label phase-v1">V1</div>
+                        <div class="flow-nodes">
+                            ${v1Stories.map(s => `<div class="flow-node ${s.priority}">${escapeHtml(s.title)}</div>`).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            if (fullStories.length > 0) {
+                html += `
+                    <div class="flow-phase">
+                        <div class="phase-label phase-full">Full</div>
+                        <div class="flow-nodes">
+                            ${fullStories.map(s => `<div class="flow-node ${s.priority}">${escapeHtml(s.title)}</div>`).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = html || '<div class="empty-state"><div class="icon">🗺️</div><p>No stories to display</p></div>';
+        }
+
+        // ============================================
+        // STATS & CALCULATOR
+        // ============================================
+        function updateStats() {
+            state.sprintCapacity = parseInt(document.getElementById('sprint-capacity').value);
+            state.sprintDuration = parseInt(document.getElementById('sprint-duration').value);
+
+            document.getElementById('capacity-value').textContent = `${state.sprintCapacity} pts`;
+            document.getElementById('duration-value').textContent = `${state.sprintDuration} week${state.sprintDuration > 1 ? 's' : ''}`;
+
+            const filteredStories = getFilteredStories();
+            const totalPoints = filteredStories.reduce((sum, s) => sum + ESTIMATE_POINTS[s.estimate], 0);
+            const sprintsNeeded = Math.ceil(totalPoints / state.sprintCapacity);
+            const totalWeeks = sprintsNeeded * state.sprintDuration;
+
+            document.getElementById('total-points').textContent = totalPoints;
+            document.getElementById('sprints-needed').textContent = sprintsNeeded;
+            document.getElementById('total-weeks').textContent = totalWeeks;
+
+            // Update scope counts
+            const mvpCount = state.stories.filter(s => s.priority === 'must').length;
+            const v1Count = state.stories.filter(s => s.priority === 'must' || s.priority === 'should').length;
+
+            document.getElementById('scope-all-count').textContent = `${state.stories.length} stories`;
+            document.getElementById('scope-mvp-count').textContent = `${mvpCount} stories`;
+            document.getElementById('scope-v1-count').textContent = `${v1Count} stories`;
+            document.getElementById('scope-full-count').textContent = `${state.stories.length} stories`;
+        }
+
+        // ============================================
+        // PROMPT OUTPUT
+        // ============================================
+        function updatePrompt() {
+            const filteredStories = getFilteredStories();
+            const scopeLabel = state.currentScope.toUpperCase();
+
+            const totalPoints = filteredStories.reduce((sum, s) => sum + ESTIMATE_POINTS[s.estimate], 0);
+            const sprintsNeeded = Math.ceil(totalPoints / state.sprintCapacity);
+
+            const mustStories = filteredStories.filter(s => s.priority === 'must');
+            const shouldStories = filteredStories.filter(s => s.priority === 'should');
+            const couldStories = filteredStories.filter(s => s.priority === 'could');
+            const wontStories = filteredStories.filter(s => s.priority === 'wont');
+
+            let output = `# User Journey Scope: ${scopeLabel === 'ALL' ? 'Full Backlog' : scopeLabel}
+
+## Sprint Planning
+- Sprint Capacity: ${state.sprintCapacity} points
+- Sprint Duration: ${state.sprintDuration} week(s)
+- Total Points: ${totalPoints}
+- Estimated Sprints: ${sprintsNeeded}
+- Estimated Duration: ${sprintsNeeded * state.sprintDuration} weeks
+
+## Prioritized Backlog (${filteredStories.length} stories)
+`;
+
+            if (mustStories.length > 0) {
+                output += `\n### 🔴 MUST HAVE (MVP Core)\n`;
+                mustStories.forEach((s, i) => {
+                    output += `${i + 1}. ${s.title} [${s.estimate} - ${ESTIMATE_POINTS[s.estimate]}pt]\n`;
+                });
+            }
+
+            if (shouldStories.length > 0) {
+                output += `\n### 🟠 SHOULD HAVE (V1 Features)\n`;
+                shouldStories.forEach((s, i) => {
+                    output += `${i + 1}. ${s.title} [${s.estimate} - ${ESTIMATE_POINTS[s.estimate]}pt]\n`;
+                });
+            }
+
+            if (couldStories.length > 0) {
+                output += `\n### 🟡 COULD HAVE (Nice to Have)\n`;
+                couldStories.forEach((s, i) => {
+                    output += `${i + 1}. ${s.title} [${s.estimate} - ${ESTIMATE_POINTS[s.estimate]}pt]\n`;
+                });
+            }
+
+            if (wontStories.length > 0) {
+                output += `\n### ⚪ WON'T HAVE (Future/Parking Lot)\n`;
+                wontStories.forEach((s, i) => {
+                    output += `${i + 1}. ${s.title} [${s.estimate} - ${ESTIMATE_POINTS[s.estimate]}pt]\n`;
+                });
+            }
+
+            output += `\n---
+## Implementation Order (by priority & position)
+${filteredStories.map((s, i) => `${i + 1}. [${s.priority.toUpperCase()}] ${s.title}`).join('\n')}
+
+---
+Generated by User Journey Builder | ${new Date().toLocaleDateString()}`;
+
+            document.getElementById('output-content').textContent = output;
+        }
+
+        function copyPrompt() {
+            const output = document.getElementById('output-content').textContent;
+            navigator.clipboard.writeText(output).then(() => {
+                const btn = document.querySelector('.copy-btn');
+                const text = document.getElementById('copy-text');
+                btn.classList.add('copied');
+                text.textContent = 'Copied!';
+                setTimeout(() => {
+                    btn.classList.remove('copied');
+                    text.textContent = 'Copy';
+                }, 2000);
+            });
+        }
+
+        // ============================================
+        // PRESETS
+        // ============================================
+        function applyPreset(preset) {
+            document.querySelectorAll('.preset-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            switch (preset) {
+                case 'lean':
+                    state.stories = [
+                        { id: 1, title: 'User can sign up with email', priority: 'must', estimate: 'M', scope: 'mvp' },
+                        { id: 2, title: 'User can log in', priority: 'must', estimate: 'S', scope: 'mvp' },
+                        { id: 3, title: 'User can view main dashboard', priority: 'must', estimate: 'M', scope: 'mvp' },
+                        { id: 4, title: 'User can perform core action', priority: 'must', estimate: 'L', scope: 'mvp' },
+                        { id: 5, title: 'User can log out', priority: 'must', estimate: 'S', scope: 'mvp' },
+                    ];
+                    state.sprintCapacity = 15;
+                    break;
+
+                case 'standard':
+                    state.stories = [
+                        { id: 1, title: 'User registration with email', priority: 'must', estimate: 'M', scope: 'mvp' },
+                        { id: 2, title: 'User login/logout', priority: 'must', estimate: 'M', scope: 'mvp' },
+                        { id: 3, title: 'Password reset flow', priority: 'must', estimate: 'M', scope: 'mvp' },
+                        { id: 4, title: 'Main dashboard view', priority: 'must', estimate: 'L', scope: 'mvp' },
+                        { id: 5, title: 'Core feature #1', priority: 'must', estimate: 'L', scope: 'mvp' },
+                        { id: 6, title: 'Core feature #2', priority: 'must', estimate: 'L', scope: 'mvp' },
+                        { id: 7, title: 'User profile management', priority: 'should', estimate: 'M', scope: 'v1' },
+                        { id: 8, title: 'Settings page', priority: 'should', estimate: 'M', scope: 'v1' },
+                        { id: 9, title: 'Email notifications', priority: 'should', estimate: 'M', scope: 'v1' },
+                        { id: 10, title: 'Search functionality', priority: 'should', estimate: 'L', scope: 'v1' },
+                        { id: 11, title: 'Data export', priority: 'could', estimate: 'M', scope: 'full' },
+                        { id: 12, title: 'Dark mode', priority: 'could', estimate: 'S', scope: 'full' },
+                    ];
+                    state.sprintCapacity = 20;
+                    break;
+
+                case 'full':
+                    state.stories = [
+                        { id: 1, title: 'User registration (email + social)', priority: 'must', estimate: 'L', scope: 'mvp' },
+                        { id: 2, title: 'Authentication system', priority: 'must', estimate: 'M', scope: 'mvp' },
+                        { id: 3, title: 'Password management', priority: 'must', estimate: 'M', scope: 'mvp' },
+                        { id: 4, title: 'Main dashboard', priority: 'must', estimate: 'L', scope: 'mvp' },
+                        { id: 5, title: 'Core feature #1', priority: 'must', estimate: 'XL', scope: 'mvp' },
+                        { id: 6, title: 'Core feature #2', priority: 'must', estimate: 'L', scope: 'mvp' },
+                        { id: 7, title: 'Core feature #3', priority: 'must', estimate: 'L', scope: 'mvp' },
+                        { id: 8, title: 'User profiles', priority: 'should', estimate: 'L', scope: 'v1' },
+                        { id: 9, title: 'Settings & preferences', priority: 'should', estimate: 'M', scope: 'v1' },
+                        { id: 10, title: 'Notifications system', priority: 'should', estimate: 'L', scope: 'v1' },
+                        { id: 11, title: 'Search & filtering', priority: 'should', estimate: 'L', scope: 'v1' },
+                        { id: 12, title: 'Activity history', priority: 'should', estimate: 'M', scope: 'v1' },
+                        { id: 13, title: 'Data import/export', priority: 'could', estimate: 'L', scope: 'full' },
+                        { id: 14, title: 'Advanced analytics', priority: 'could', estimate: 'XL', scope: 'full' },
+                        { id: 15, title: 'Team collaboration', priority: 'could', estimate: 'XL', scope: 'full' },
+                        { id: 16, title: 'API access', priority: 'could', estimate: 'L', scope: 'full' },
+                        { id: 17, title: 'Mobile app', priority: 'wont', estimate: 'XL', scope: 'full' },
+                        { id: 18, title: 'AI-powered features', priority: 'wont', estimate: 'XL', scope: 'full' },
+                    ];
+                    state.sprintCapacity = 25;
+                    break;
+
+                case 'clear':
+                    state.stories = [];
+                    state.sprintCapacity = 20;
+                    break;
+            }
+
+            document.getElementById('sprint-capacity').value = state.sprintCapacity;
+            state.currentScope = 'all';
+            document.querySelectorAll('.scope-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.scope === 'all');
+            });
+            updateAll();
+        }
+
+        // ============================================
+        // UTILITIES
+        // ============================================
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function saveToLocalStorage() {
+            localStorage.setItem('userJourneyBuilder', JSON.stringify(state));
+        }
+
+        function loadFromLocalStorage() {
+            const saved = localStorage.getItem('userJourneyBuilder');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                state.stories = parsed.stories || [];
+                state.currentScope = parsed.currentScope || 'all';
+                state.sprintCapacity = parsed.sprintCapacity || 20;
+                state.sprintDuration = parsed.sprintDuration || 2;
+
+                document.getElementById('sprint-capacity').value = state.sprintCapacity;
+                document.getElementById('sprint-duration').value = state.sprintDuration;
+                document.querySelectorAll('.scope-btn').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.scope === state.currentScope);
+                });
+            }
+        }
+
+        // ============================================
+        // INIT
+        // ============================================
+        document.addEventListener('DOMContentLoaded', () => {
+            loadFromLocalStorage();
+            updateAll();
+        });
+    </script>
+</body>
+</html>

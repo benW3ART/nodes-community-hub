@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SEO + GEO Dashboard — Genius Team</title>
+    <link rel="stylesheet" href="./design-tokens.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+        .header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 14px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .header h1 { font-size: 18px; font-weight: 600; display: flex; align-items: center; gap: 10px; }
+        .header-right { display: flex; align-items: center; gap: 12px; }
+        .url-input {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            width: 260px;
+        }
+        .url-input:focus { outline: none; border-color: var(--accent-purple); }
+        .btn {
+            background: var(--accent-purple);
+            color: var(--text-inverse);
+            border: none;
+            padding: 7px 14px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .btn:hover { opacity: 0.85; }
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+        .main { padding: 24px; max-width: 1400px; margin: 0 auto; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+        .card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 20px;
+        }
+        .card-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        /* Gauge */
+        .gauge-wrap {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+        }
+        .gauge-svg { flex-shrink: 0; }
+        .gauge-details { flex: 1; }
+        .gauge-score {
+            font-size: 36px;
+            font-weight: 700;
+            line-height: 1;
+        }
+        .gauge-label { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+        .detail-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 13px;
+        }
+        .detail-row:last-child { border-bottom: none; }
+        .detail-bar-wrap { display: flex; align-items: center; gap: 8px; }
+        .detail-bar {
+            width: 80px;
+            height: 6px;
+            background: var(--bg-tertiary);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .detail-bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s; }
+        /* Crawler table */
+        .crawler-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .crawler-table th {
+            text-align: left;
+            padding: 8px 12px;
+            color: var(--text-secondary);
+            font-weight: 500;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .crawler-table td { padding: 10px 12px; border-bottom: 1px solid var(--border-color); }
+        .crawler-table tr:last-child td { border-bottom: none; }
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            user-select: none;
+            transition: opacity 0.2s;
+        }
+        .status-badge:hover { opacity: 0.8; }
+        .status-allowed { background: var(--tone-green-15); color: var(--accent-green); border: 1px solid var(--tone-green-30); }
+        .status-blocked { background: var(--tone-red-15); color: var(--accent-red); border: 1px solid var(--tone-red-30); }
+        .status-partial { background: var(--tone-orange-15); color: var(--accent-orange); border: 1px solid var(--tone-orange-30); }
+        /* Issues */
+        .issue-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 13px;
+        }
+        .issue-item:last-child { border-bottom: none; }
+        .issue-badge {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+        .badge-critical { background: var(--tone-red-20); color: var(--accent-red); }
+        .badge-high { background: var(--tone-orange-20); color: var(--accent-orange); }
+        .badge-medium { background: var(--tone-blue-20); color: var(--accent-blue); }
+        /* llms textarea */
+        .llms-textarea {
+            width: 100%;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 12px;
+            border-radius: 6px;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 12px;
+            resize: vertical;
+            min-height: 140px;
+        }
+        .llms-textarea:focus { outline: none; border-color: var(--accent-cyan); }
+        .slider-row { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+        .slider { flex: 1; accent-color: var(--accent-purple); }
+        .slider-val { font-size: 13px; font-weight: 600; color: var(--accent-purple); width: 30px; text-align: right; }
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: var(--accent-green);
+            color: var(--text-inverse);
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.3s;
+            pointer-events: none;
+            z-index: 999;
+        }
+        .toast.show { opacity: 1; transform: translateY(0); }
+    </style>
+</head>
+<body>
+<div class="header">
+    <h1>🔍 SEO + GEO Dashboard</h1>
+    <div class="header-right">
+        <input type="text" class="url-input" id="siteUrl" placeholder="https://yoursite.com" value="https://genius.w3art.io">
+        <button class="btn btn-secondary" onclick="copyRobotsFix()">📋 Copy robots.txt fix</button>
+        <button class="btn" onclick="refreshScores()">↻ Refresh</button>
+    </div>
+</div>
+
+<div class="main">
+    <div class="grid-2">
+        <!-- GEO Score -->
+        <div class="card">
+            <div class="card-title">🌐 GEO Score (AI Visibility)</div>
+            <div class="gauge-wrap">
+                <svg class="gauge-svg" width="100" height="100" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="40" fill="none" stroke="var(--bg-tertiary)" stroke-width="10"/>
+                    <circle cx="50" cy="50" r="40" fill="none" stroke="var(--accent-cyan)" stroke-width="10"
+                        stroke-dasharray="251.3" id="geoGaugeCircle"
+                        stroke-dashoffset="75.4"
+                        stroke-linecap="round"
+                        transform="rotate(-90 50 50)"/>
+                    <text x="50" y="54" text-anchor="middle" fill="var(--text-primary)" font-size="18" font-weight="700" id="geoGaugeText">70</text>
+                </svg>
+                <div class="gauge-details">
+                    <div class="detail-row">
+                        <span>Citability</span>
+                        <div class="detail-bar-wrap">
+                            <div class="detail-bar"><div class="detail-bar-fill" id="geo-citability" style="width:78%;background:var(--accent-cyan)"></div></div>
+                            <span id="geo-citability-val">78</span>
+                        </div>
+                    </div>
+                    <div class="detail-row">
+                        <span>AI Crawler Access</span>
+                        <div class="detail-bar-wrap">
+                            <div class="detail-bar"><div class="detail-bar-fill" id="geo-crawler" style="width:65%;background:var(--accent-blue)"></div></div>
+                            <span id="geo-crawler-val">65</span>
+                        </div>
+                    </div>
+                    <div class="detail-row">
+                        <span>llms.txt Status</span>
+                        <div class="detail-bar-wrap">
+                            <div class="detail-bar"><div class="detail-bar-fill" id="geo-llms" style="width:55%;background:var(--accent-orange)"></div></div>
+                            <span id="geo-llms-val">55</span>
+                        </div>
+                    </div>
+                    <div class="detail-row">
+                        <span>Brand Authority</span>
+                        <div class="detail-bar-wrap">
+                            <div class="detail-bar"><div class="detail-bar-fill" id="geo-brand" style="width:82%;background:var(--accent-purple)"></div></div>
+                            <span id="geo-brand-val">82</span>
+                        </div>
+                    </div>
+                    <div class="slider-row">
+                        <span style="font-size:12px;color:var(--text-secondary)">GEO:</span>
+                        <input type="range" class="slider" id="geoSlider" min="0" max="100" value="70" oninput="updateGeoScore(this.value)">
+                        <span class="slider-val" id="geoScoreVal">70</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SEO Score -->
+        <div class="card">
+            <div class="card-title">📈 SEO Score (Search Visibility)</div>
+            <div class="gauge-wrap">
+                <svg class="gauge-svg" width="100" height="100" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="40" fill="none" stroke="var(--bg-tertiary)" stroke-width="10"/>
+                    <circle cx="50" cy="50" r="40" fill="none" stroke="var(--accent-green)" stroke-width="10"
+                        stroke-dasharray="251.3" id="seoGaugeCircle"
+                        stroke-dashoffset="87.96"
+                        stroke-linecap="round"
+                        transform="rotate(-90 50 50)"/>
+                    <text x="50" y="54" text-anchor="middle" fill="var(--text-primary)" font-size="18" font-weight="700" id="seoGaugeText">65</text>
+                </svg>
+                <div class="gauge-details">
+                    <div class="detail-row">
+                        <span>Technical SEO</span>
+                        <div class="detail-bar-wrap">
+                            <div class="detail-bar"><div class="detail-bar-fill" id="seo-tech" style="width:72%;background:var(--accent-green)"></div></div>
+                            <span id="seo-tech-val">72</span>
+                        </div>
+                    </div>
+                    <div class="detail-row">
+                        <span>Content Quality</span>
+                        <div class="detail-bar-wrap">
+                            <div class="detail-bar"><div class="detail-bar-fill" id="seo-content" style="width:60%;background:var(--accent-blue)"></div></div>
+                            <span id="seo-content-val">60</span>
+                        </div>
+                    </div>
+                    <div class="detail-row">
+                        <span>Schema Markup</span>
+                        <div class="detail-bar-wrap">
+                            <div class="detail-bar"><div class="detail-bar-fill" id="seo-schema" style="width:45%;background:var(--accent-orange)"></div></div>
+                            <span id="seo-schema-val">45</span>
+                        </div>
+                    </div>
+                    <div class="detail-row">
+                        <span>Performance</span>
+                        <div class="detail-bar-wrap">
+                            <div class="detail-bar"><div class="detail-bar-fill" id="seo-perf" style="width:80%;background:var(--accent-purple)"></div></div>
+                            <span id="seo-perf-val">80</span>
+                        </div>
+                    </div>
+                    <div class="slider-row">
+                        <span style="font-size:12px;color:var(--text-secondary)">SEO:</span>
+                        <input type="range" class="slider" id="seoSlider" min="0" max="100" value="65" oninput="updateSeoScore(this.value)">
+                        <span class="slider-val" id="seoScoreVal">65</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid-2">
+        <!-- AI Crawler Status -->
+        <div class="card">
+            <div class="card-title">🤖 AI Crawler Status</div>
+            <table class="crawler-table">
+                <thead>
+                    <tr>
+                        <th>Bot</th>
+                        <th>User-Agent</th>
+                        <th>Status</th>
+                        <th>robots.txt</th>
+                    </tr>
+                </thead>
+                <tbody id="crawlerBody">
+                    <tr>
+                        <td>GPTBot</td>
+                        <td style="color:var(--text-secondary);font-size:12px">OpenAI</td>
+                        <td><span class="status-badge status-allowed" onclick="toggleCrawler(this)">✅ Allowed</span></td>
+                        <td><span style="font-size:11px;color:var(--accent-green)">Allow: /</span></td>
+                    </tr>
+                    <tr>
+                        <td>ClaudeBot</td>
+                        <td style="color:var(--text-secondary);font-size:12px">Anthropic</td>
+                        <td><span class="status-badge status-allowed" onclick="toggleCrawler(this)">✅ Allowed</span></td>
+                        <td><span style="font-size:11px;color:var(--accent-green)">Allow: /</span></td>
+                    </tr>
+                    <tr>
+                        <td>PerplexityBot</td>
+                        <td style="color:var(--text-secondary);font-size:12px">Perplexity</td>
+                        <td><span class="status-badge status-partial" onclick="toggleCrawler(this)">⚠️ Partial</span></td>
+                        <td><span style="font-size:11px;color:var(--accent-orange)">Partial</span></td>
+                    </tr>
+                    <tr>
+                        <td>GoogleOther</td>
+                        <td style="color:var(--text-secondary);font-size:12px">Google AI</td>
+                        <td><span class="status-badge status-blocked" onclick="toggleCrawler(this)">❌ Blocked</span></td>
+                        <td><span style="font-size:11px;color:var(--accent-red)">Disallow: /</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Issues -->
+        <div class="card">
+            <div class="card-title">⚠️ Issues Found</div>
+            <div id="issuesList">
+                <div class="issue-item">
+                    <span class="issue-badge badge-critical">CRITICAL</span>
+                    <div>
+                        <div style="font-weight:500">Missing llms.txt file</div>
+                        <div style="color:var(--text-secondary);font-size:12px;margin-top:2px">AI crawlers cannot find structured context for your site</div>
+                    </div>
+                </div>
+                <div class="issue-item">
+                    <span class="issue-badge badge-critical">CRITICAL</span>
+                    <div>
+                        <div style="font-weight:500">GoogleOther blocked in robots.txt</div>
+                        <div style="color:var(--text-secondary);font-size:12px;margin-top:2px">Google AI overview won't index your content</div>
+                    </div>
+                </div>
+                <div class="issue-item">
+                    <span class="issue-badge badge-high">HIGH</span>
+                    <div>
+                        <div style="font-weight:500">Missing schema.org markup</div>
+                        <div style="color:var(--text-secondary);font-size:12px;margin-top:2px">Organization, Product, and FAQ schemas not found</div>
+                    </div>
+                </div>
+                <div class="issue-item">
+                    <span class="issue-badge badge-medium">MEDIUM</span>
+                    <div>
+                        <div style="font-weight:500">No sitemap.xml referenced in robots.txt</div>
+                        <div style="color:var(--text-secondary);font-size:12px;margin-top:2px">Crawlers discover sitemaps faster via robots.txt</div>
+                    </div>
+                </div>
+                <div class="issue-item">
+                    <span class="issue-badge badge-medium">MEDIUM</span>
+                    <div>
+                        <div style="font-weight:500">Brand mentions below threshold (12)</div>
+                        <div style="color:var(--text-secondary);font-size:12px;margin-top:2px">Increase brand citations across the web for GEO authority</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- llms.txt Editor -->
+    <div class="card" style="margin-bottom:20px">
+        <div class="card-title" style="justify-content:space-between">
+            <span>📄 llms.txt Editor</span>
+            <button class="btn" style="font-size:11px;padding:4px 10px" onclick="copyLlmsTxt()">Copy llms.txt</button>
+        </div>
+        <textarea class="llms-textarea" id="llmsTxtContent"># llms.txt — AI Context File
+# Site: genius.w3art.io
+
+## About
+Genius Team is an open-source AI product team framework for Claude Code.
+It enables solo founders to run a full AI-powered product team.
+
+## Key Pages
+- /docs — Full documentation
+- /playgrounds — Interactive templates
+- /agents — Available AI agents
+
+## Capabilities
+- CLI, IDE, Omni, and Dual modes
+- 21+ specialized skills
+- Multi-agent orchestration
+
+## Contact
+- GitHub: https://github.com/w-3-art/genius-team
+- Site: https://genius.w3art.io
+</textarea>
+    </div>
+</div>
+
+<div class="toast" id="toast">✅ Copied to clipboard!</div>
+
+<script>
+    function updateGeoScore(v) {
+        document.getElementById('geoScoreVal').textContent = v;
+        document.getElementById('geoGaugeText').textContent = v;
+        const offset = 251.3 * (1 - v / 100);
+        document.getElementById('geoGaugeCircle').setAttribute('stroke-dashoffset', offset);
+    }
+
+    function updateSeoScore(v) {
+        document.getElementById('seoScoreVal').textContent = v;
+        document.getElementById('seoGaugeText').textContent = v;
+        const offset = 251.3 * (1 - v / 100);
+        document.getElementById('seoGaugeCircle').setAttribute('stroke-dashoffset', offset);
+    }
+
+    const crawlerStates = ['status-allowed', 'status-partial', 'status-blocked'];
+    const crawlerLabels = ['✅ Allowed', '⚠️ Partial', '❌ Blocked'];
+
+    function toggleCrawler(el) {
+        let idx = crawlerStates.findIndex(s => el.classList.contains(s));
+        el.classList.remove(crawlerStates[idx]);
+        idx = (idx + 1) % 3;
+        el.classList.add(crawlerStates[idx]);
+        el.textContent = crawlerLabels[idx];
+    }
+
+    function refreshScores() {
+        const geo = Math.floor(Math.random() * 40 + 50);
+        const seo = Math.floor(Math.random() * 40 + 45);
+        document.getElementById('geoSlider').value = geo;
+        updateGeoScore(geo);
+        document.getElementById('seoSlider').value = seo;
+        updateSeoScore(seo);
+        showToast('↻ Scores refreshed!');
+    }
+
+    function copyRobotsFix() {
+        const url = document.getElementById('siteUrl').value || 'https://yoursite.com';
+        const robots = `User-agent: *
+Allow: /
+
+# AI Crawlers — Explicitly allowed for GEO indexing
+User-agent: GPTBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: GoogleOther
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+Sitemap: ${url}/sitemap.xml
+`;
+        navigator.clipboard.writeText(robots).then(() => showToast('📋 robots.txt fix copied!'));
+    }
+
+    function copyLlmsTxt() {
+        const txt = document.getElementById('llmsTxtContent').value;
+        navigator.clipboard.writeText(txt).then(() => showToast('📋 llms.txt copied!'));
+    }
+
+    function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 2500);
+    }
+
+    // Load state.json if available
+    async function loadState() {
+        try {
+            const r = await fetch('../.genius/outputs/state.json?t=' + Date.now(), { cache: 'no-store' });
+            if (!r.ok) return;
+            const s = await r.json();
+            if (s.siteUrl) document.getElementById('siteUrl').value = s.siteUrl;
+            if (s.geoScore) { document.getElementById('geoSlider').value = s.geoScore; updateGeoScore(s.geoScore); }
+            if (s.seoScore) { document.getElementById('seoSlider').value = s.seoScore; updateSeoScore(s.seoScore); }
+        } catch(e) {}
+    }
+    loadState();
+</script>
+</body>
+</html>

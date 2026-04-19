@@ -1,5 +1,5 @@
 ---
-description: Initialize Genius Team v9.0 environment, load memory, and hydrate tasks
+description: Initialize Genius Team v21.0 environment, load memory, hydrate tasks, and offer playground dashboard
 ---
 
 # /genius-start
@@ -21,6 +21,29 @@ if [ "$MODE" = "null" ] || [ -z "$MODE" ]; then
   echo "  ./scripts/setup.sh --mode cli   (terminal)"
   echo "  ./scripts/setup.sh --mode ide   (VS Code / Cursor)"
   exit 1
+fi
+```
+
+### Step 1b: Detect Experience Mode
+
+```bash
+# Check if mode.json exists — first run asks user
+if [ ! -f .genius/mode.json ]; then
+  echo '{"mode": "builder", "set_at": "'"2026-03-29T16:02:43+02:00"'", "set_by": "default"}' > .genius/mode.json
+fi
+EXPERIENCE_MODE=$(jq -r '.mode // "builder"' .genius/mode.json 2>/dev/null || echo "builder")
+echo "Experience: $EXPERIENCE_MODE"
+```
+
+### Step 1c: Run Migration if Needed
+
+```bash
+# If state.json has no mode/origin fields, run migration
+if [ -f .genius/state.json ]; then
+  HAS_MODE=$(jq -r '.mode // "missing"' .genius/state.json 2>/dev/null)
+  if [ "$HAS_MODE" = "missing" ]; then
+    bash scripts/migrate-state.sh 2>/dev/null || true
+  fi
 fi
 ```
 
@@ -59,6 +82,26 @@ bash scripts/memory-briefing.sh 2>/dev/null
 cat .genius/memory/BRIEFING.md 2>/dev/null
 ```
 
+> 💡 **BRIEFING.md is auto-loaded via `@.genius/memory/BRIEFING.md` import in CLAUDE.md** — no manual load needed in most cases. This step regenerates it from the JSON memory files to keep it fresh.
+
+### Step 4b: Auto Memory Check
+
+Claude Code's native **Auto Memory** (`~/.claude/projects/<project>/memory/MEMORY.md`) is loaded automatically.
+
+On first run, tell Claude to bootstrap Auto Memory with key project facts:
+```
+If .genius/state.json exists and Auto Memory MEMORY.md is empty or doesn't mention this project:
+→ Write a concise summary (5-10 lines) to Auto Memory:
+  - Project name and stack
+  - Current phase
+  - Key conventions (package manager, test command, etc.)
+  - Important paths
+
+Example: "remember: this project uses pnpm, runs on port 3001, tests with `pnpm test`"
+```
+
+On subsequent runs, Auto Memory is already populated — no action needed.
+
 ### Step 5: Check for Version Updates
 
 ```bash
@@ -74,7 +117,7 @@ fi
 
 ```
 ╔════════════════════════════════════════════════════════════╗
-║  🧠 Genius Team v9.0 — Environment Ready                   ║
+║  🧠 Genius Team v21.0 — Environment Ready                   ║
 ║  Mode: {MODE}                                               ║
 ╚════════════════════════════════════════════════════════════╝
 
@@ -93,6 +136,13 @@ Ready! What would you like to do?
   ▶️  "continue"                  → Resume where we left off
   🔧 "/reset"                     → Start over
   💰 "/save-tokens"               → Toggle save-token mode
+
+📊 **Your Dashboard & Playgrounds:**
+  open .genius/DASHBOARD.html
+  (run /genius-dashboard to refresh, /genius-playground for project-specific dashboard)
+
+🎮 **Playgrounds available** — interactive previews of each skill output.
+  After each skill completes, its playground tab unlocks in the dashboard.
 ```
 
 If in **IDE mode**, also show:

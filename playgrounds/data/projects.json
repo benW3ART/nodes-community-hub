@@ -1,0 +1,42 @@
+[
+  {
+    "slug": "booking-app",
+    "name": "Salon Booking App",
+    "createdAt": "2026-02-01",
+    "phase": "Build",
+    "playgrounds": {
+      "project-canvas": 100,
+      "market-simulator": 85,
+      "architecture-explorer": 70,
+      "stack-configurator": 100,
+      "design-system-builder": 55,
+      "gtm-simulator": 30,
+      "copy-ab-tester": 0,
+      "progress-dashboard": 60,
+      "risk-matrix": 45,
+      "user-journey-builder": 80,
+      "deploy-checklist": 0,
+      "test-coverage-map": 35
+    }
+  },
+  {
+    "slug": "saas-dashboard",
+    "name": "SaaS Analytics Dashboard",
+    "createdAt": "2026-01-15",
+    "phase": "Deployed",
+    "playgrounds": {
+      "project-canvas": 100,
+      "market-simulator": 100,
+      "architecture-explorer": 100,
+      "stack-configurator": 100,
+      "design-system-builder": 100,
+      "gtm-simulator": 90,
+      "copy-ab-tester": 80,
+      "progress-dashboard": 100,
+      "risk-matrix": 100,
+      "user-journey-builder": 100,
+      "deploy-checklist": 100,
+      "test-coverage-map": 90
+    }
+  }
+]

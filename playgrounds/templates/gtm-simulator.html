@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GTM Simulator | Genius Marketer</title>
+    <link rel="stylesheet" href="./design-tokens.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 32px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        header p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        .presets {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-bottom: 32px;
+            flex-wrap: wrap;
+        }
+
+        .preset-btn {
+            padding: 12px 24px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.95rem;
+        }
+
+        .preset-btn:hover {
+            border-color: var(--accent-blue);
+            background: var(--bg-tertiary);
+        }
+
+        .preset-btn.active {
+            border-color: var(--accent-blue);
+            background: var(--tone-blue-10);
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+
+        @media (max-width: 1200px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 24px;
+        }
+
+        .panel h2 {
+            font-size: 1.25rem;
+            margin-bottom: 20px;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .panel h2 .icon {
+            font-size: 1.5rem;
+        }
+
+        /* Budget Section */
+        .budget-main {
+            margin-bottom: 24px;
+            padding: 20px;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+        }
+
+        .budget-display {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--accent-green);
+            text-align: center;
+            margin-bottom: 12px;
+        }
+
+        .slider-container {
+            margin-bottom: 16px;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+
+        .slider-label span:first-child {
+            color: var(--text-secondary);
+        }
+
+        .slider-label span:last-child {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: var(--bg-tertiary);
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--accent-blue);
+            cursor: pointer;
+            border: 2px solid var(--bg-primary);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--accent-blue);
+            cursor: pointer;
+            border: 2px solid var(--bg-primary);
+        }
+
+        /* Channel Sliders */
+        .channels-grid {
+            display: grid;
+            gap: 16px;
+        }
+
+        .channel-row {
+            display: grid;
+            grid-template-columns: 140px 1fr 60px;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .channel-name {
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .channel-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .channel-value {
+            font-weight: 600;
+            text-align: right;
+            font-size: 0.9rem;
+        }
+
+        /* Timeline */
+        .timeline {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            overflow-x: auto;
+            padding-bottom: 8px;
+        }
+
+        .month-block {
+            flex: 1;
+            min-width: 60px;
+            text-align: center;
+            padding: 12px 8px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+        }
+
+        .month-block.pre-launch {
+            background: var(--tone-purple-20);
+            border: 1px solid var(--accent-purple);
+        }
+
+        .month-block.launch {
+            background: var(--tone-red-20);
+            border: 1px solid var(--accent-red);
+        }
+
+        .month-block.growth {
+            background: var(--tone-green-20);
+            border: 1px solid var(--accent-green);
+        }
+
+        .month-block.scale {
+            background: var(--tone-blue-20);
+            border: 1px solid var(--accent-blue);
+        }
+
+        .month-num {
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        .phase-label {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        .phase-legend {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-top: 12px;
+        }
+
+        .phase-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.85rem;
+        }
+
+        .phase-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+        }
+
+        /* Charts */
+        .chart-container {
+            position: relative;
+            height: 250px;
+            margin: 20px 0;
+        }
+
+        .pie-container {
+            position: relative;
+            height: 300px;
+            display: flex;
+            justify-content: center;
+        }
+
+        /* ROI Section */
+        .roi-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .roi-card {
+            background: var(--bg-tertiary);
+            padding: 16px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .roi-card .label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .roi-card .value {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .roi-card .value.positive {
+            color: var(--accent-green);
+        }
+
+        .roi-card .value.negative {
+            color: var(--accent-red);
+        }
+
+        .roi-card .value.neutral {
+            color: var(--accent-blue);
+        }
+
+        /* CAC/LTV Section */
+        .metrics-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .metric-input {
+            background: var(--bg-tertiary);
+            padding: 16px;
+            border-radius: 8px;
+        }
+
+        .metric-input label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .metric-input input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+
+        .metric-input input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+        }
+
+        /* Prompt Output */
+        .prompt-section {
+            margin-top: 32px;
+        }
+
+        .prompt-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .prompt-output {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.85rem;
+            line-height: 1.8;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .copy-btn {
+            padding: 10px 20px;
+            background: var(--accent-blue);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .copy-btn:hover {
+            background: var(--accent-blue-strong);
+        }
+
+        .copy-btn.copied {
+            background: var(--accent-green);
+        }
+
+        /* Full Width Panels */
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        /* Acquisition Breakdown */
+        .acquisition-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 16px;
+        }
+
+        .acquisition-table th,
+        .acquisition-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .acquisition-table th {
+            color: var(--text-secondary);
+            font-weight: 500;
+            font-size: 0.85rem;
+        }
+
+        .acquisition-table td {
+            font-size: 0.9rem;
+        }
+
+        .acquisition-table tr:last-child td {
+            border-bottom: none;
+            font-weight: bold;
+            background: var(--bg-tertiary);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-secondary);
+        }
+    
+/* ===== MOBILE RESPONSIVE (v13) ===== */
+@media (max-width: 768px) {
+  body { padding: 1rem !important; }
+
+  /* Single-column grids */
+  [style*="grid-template-columns"],
+  .grid, .cards-grid, .two-col, .three-col,
+  [class*="grid-"] { grid-template-columns: 1fr !important; }
+
+  /* Stack flex rows */
+  .flex-row, .row, [class*="-row"] { flex-direction: column !important; }
+
+  /* Full-width elements */
+  .card, .panel, .box, .section,
+  [class*="card"], [class*="panel"] { width: 100% !important; max-width: 100% !important; }
+
+  /* Touch-friendly inputs and buttons */
+  input, select, textarea, button, .btn,
+  [class*="btn"], [class*="button"] {
+    min-height: 44px !important;
+    font-size: 16px !important;
+  }
+
+  /* Prevent horizontal scroll */
+  .container, .wrapper, main, section { overflow-x: hidden; }
+
+  /* Readable font sizes */
+  h1 { font-size: 1.6rem !important; }
+  h2 { font-size: 1.3rem !important; }
+  h3 { font-size: 1.1rem !important; }
+
+  /* Reduce whitespace */
+  .container, .wrapper, main {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+
+  /* Table responsiveness */
+  table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* Navigation */
+  nav, .nav, .navbar { flex-wrap: wrap; gap: .5rem; }
+}
+
+@media (max-width: 480px) {
+  body { padding: .75rem !important; }
+  h1 { font-size: 1.3rem !important; }
+  .header, header { padding: .75rem 1rem !important; }
+}
+
+</style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚀 GTM Simulator</h1>
+            <p>Go-To-Market Strategy Simulator — Model acquisition, budget allocation & ROI projections</p>
+        </header>
+
+        <div class="presets">
+            <button class="preset-btn" onclick="applyPreset('bootstrap')">🥾 Bootstrap (€0)</button>
+            <button class="preset-btn" onclick="applyPreset('seed')">🌱 Seed (€10K)</button>
+            <button class="preset-btn active" onclick="applyPreset('seriesA')">🚀 Series A (€100K)</button>
+        </div>
+
+        <div class="main-grid">
+            <!-- Budget Panel -->
+            <div class="panel">
+                <h2><span class="icon">💰</span> Budget & Channel Mix</h2>
+                
+                <div class="budget-main">
+                    <div class="budget-display" id="budgetDisplay">€100,000</div>
+                    <input type="range" id="budgetSlider" min="0" max="500000" step="1000" value="100000" oninput="updateBudget()">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-secondary);">
+                        <span>€0</span>
+                        <span>€500K</span>
+                    </div>
+                </div>
+
+                <h3 style="margin-bottom: 16px; font-size: 1rem;">Channel Allocation (%)</h3>
+                <div class="channels-grid" id="channelSliders"></div>
+
+                <div class="pie-container">
+                    <canvas id="pieChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Timeline Panel -->
+            <div class="panel">
+                <h2><span class="icon">📅</span> 12-Month Timeline</h2>
+                
+                <div class="timeline" id="timeline"></div>
+                
+                <div class="phase-legend">
+                    <div class="phase-item">
+                        <div class="phase-dot" style="background: var(--accent-purple);"></div>
+                        <span>Pre-launch (M1-2)</span>
+                    </div>
+                    <div class="phase-item">
+                        <div class="phase-dot" style="background: var(--accent-red);"></div>
+                        <span>Launch (M3-4)</span>
+                    </div>
+                    <div class="phase-item">
+                        <div class="phase-dot" style="background: var(--accent-green);"></div>
+                        <span>Growth (M5-8)</span>
+                    </div>
+                    <div class="phase-item">
+                        <div class="phase-dot" style="background: var(--accent-blue);"></div>
+                        <span>Scale (M9-12)</span>
+                    </div>
+                </div>
+
+                <h3 style="margin: 24px 0 16px; font-size: 1rem;">📈 Projected User Acquisition</h3>
+                <div class="chart-container">
+                    <canvas id="acquisitionChart"></canvas>
+                </div>
+            </div>
+
+            <!-- CAC/LTV Panel -->
+            <div class="panel">
+                <h2><span class="icon">🎯</span> Unit Economics</h2>
+                
+                <div class="metrics-row">
+                    <div class="metric-input">
+                        <label>Target LTV (€)</label>
+                        <input type="number" id="ltvInput" value="150" min="0" oninput="updateAll()">
+                    </div>
+                    <div class="metric-input">
+                        <label>Avg Monthly Revenue/User (€)</label>
+                        <input type="number" id="arpu" value="15" min="0" oninput="updateAll()">
+                    </div>
+                </div>
+
+                <h3 style="margin-bottom: 16px; font-size: 1rem;">CAC by Channel (€)</h3>
+                <div class="channels-grid" id="cacSliders"></div>
+            </div>
+
+            <!-- ROI Panel -->
+            <div class="panel">
+                <h2><span class="icon">📊</span> ROI Projections</h2>
+                
+                <div class="roi-grid">
+                    <div class="roi-card">
+                        <div class="label">Total Users (12mo)</div>
+                        <div class="value neutral" id="totalUsers">0</div>
+                    </div>
+                    <div class="roi-card">
+                        <div class="label">Blended CAC</div>
+                        <div class="value neutral" id="blendedCAC">€0</div>
+                    </div>
+                    <div class="roi-card">
+                        <div class="label">LTV:CAC Ratio</div>
+                        <div class="value" id="ltvCacRatio">0x</div>
+                    </div>
+                    <div class="roi-card">
+                        <div class="label">Projected Revenue</div>
+                        <div class="value neutral" id="projectedRevenue">€0</div>
+                    </div>
+                    <div class="roi-card">
+                        <div class="label">Net ROI</div>
+                        <div class="value" id="netROI">0%</div>
+                    </div>
+                    <div class="roi-card">
+                        <div class="label">Payback Period</div>
+                        <div class="value neutral" id="paybackPeriod">0 mo</div>
+                    </div>
+                </div>
+
+                <h3 style="margin-bottom: 12px; font-size: 1rem;">Acquisition Breakdown by Channel</h3>
+                <table class="acquisition-table" id="acquisitionTable">
+                    <thead>
+                        <tr>
+                            <th>Channel</th>
+                            <th>Budget</th>
+                            <th>CAC</th>
+                            <th>Users</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <!-- Prompt Output -->
+            <div class="panel full-width prompt-section">
+                <div class="prompt-header">
+                    <h2><span class="icon">✨</span> GTM Strategy Prompt</h2>
+                    <button class="copy-btn" onclick="copyPrompt()">
+                        <span id="copyIcon">📋</span>
+                        <span id="copyText">Copy</span>
+                    </button>
+                </div>
+                <div class="prompt-output" id="promptOutput"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // STATE
+        // ============================================
+        const state = {
+            budget: 100000,
+            ltv: 150,
+            arpu: 15,
+            channels: {
+                'Paid Ads': { allocation: 30, cac: 25, color: '#58a6ff' },
+                'Content Marketing': { allocation: 20, cac: 15, color: '#3fb950' },
+                'Social': { allocation: 15, cac: 20, color: '#a371f7' },
+                'Influencers': { allocation: 15, cac: 35, color: '#d29922' },
+                'PR': { allocation: 10, cac: 50, color: '#f85149' },
+                'Partnerships': { allocation: 10, cac: 10, color: '#db61a2' }
+            },
+            phases: [
+                { name: 'Pre-launch', months: [1, 2], multiplier: 0.2 },
+                { name: 'Launch', months: [3, 4], multiplier: 0.8 },
+                { name: 'Growth', months: [5, 6, 7, 8], multiplier: 1.2 },
+                { name: 'Scale', months: [9, 10, 11, 12], multiplier: 1.5 }
+            ]
+        };
+
+        // ============================================
+        // PRESETS
+        // ============================================
+        const presets = {
+            bootstrap: {
+                budget: 0,
+                ltv: 100,
+                arpu: 10,
+                channels: {
+                    'Paid Ads': { allocation: 0, cac: 25 },
+                    'Content Marketing': { allocation: 40, cac: 5 },
+                    'Social': { allocation: 35, cac: 5 },
+                    'Influencers': { allocation: 0, cac: 35 },
+                    'PR': { allocation: 5, cac: 10 },
+                    'Partnerships': { allocation: 20, cac: 5 }
+                }
+            },
+            seed: {
+                budget: 10000,
+                ltv: 120,
+                arpu: 12,
+                channels: {
+                    'Paid Ads': { allocation: 25, cac: 20 },
+                    'Content Marketing': { allocation: 25, cac: 12 },
+                    'Social': { allocation: 20, cac: 15 },
+                    'Influencers': { allocation: 15, cac: 30 },
+                    'PR': { allocation: 5, cac: 40 },
+                    'Partnerships': { allocation: 10, cac: 8 }
+                }
+            },
+            seriesA: {
+                budget: 100000,
+                ltv: 150,
+                arpu: 15,
+                channels: {
+                    'Paid Ads': { allocation: 30, cac: 25 },
+                    'Content Marketing': { allocation: 20, cac: 15 },
+                    'Social': { allocation: 15, cac: 20 },
+                    'Influencers': { allocation: 15, cac: 35 },
+                    'PR': { allocation: 10, cac: 50 },
+                    'Partnerships': { allocation: 10, cac: 10 }
+                }
+            }
+        };
+
+        // Charts
+        let pieChart, acquisitionChart;
+
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+        function init() {
+            renderChannelSliders();
+            renderCACSliders();
+            renderTimeline();
+            initCharts();
+            updateAll();
+        }
+
+        function renderChannelSliders() {
+            const container = document.getElementById('channelSliders');
+            container.innerHTML = '';
+            
+            Object.entries(state.channels).forEach(([name, data]) => {
+                container.innerHTML += `
+                    <div class="channel-row">
+                        <div class="channel-name">
+                            <div class="channel-dot" style="background: ${data.color}"></div>
+                            ${name}
+                        </div>
+                        <input type="range" 
+                            id="alloc_${name.replace(/\s/g, '_')}" 
+                            min="0" max="100" 
+                            value="${data.allocation}"
+                            oninput="updateChannelAllocation('${name}', this.value)">
+                        <div class="channel-value" id="allocVal_${name.replace(/\s/g, '_')}">${data.allocation}%</div>
+                    </div>
+                `;
+            });
+        }
+
+        function renderCACSliders() {
+            const container = document.getElementById('cacSliders');
+            container.innerHTML = '';
+            
+            Object.entries(state.channels).forEach(([name, data]) => {
+                container.innerHTML += `
+                    <div class="channel-row">
+                        <div class="channel-name">
+                            <div class="channel-dot" style="background: ${data.color}"></div>
+                            ${name}
+                        </div>
+                        <input type="range" 
+                            id="cac_${name.replace(/\s/g, '_')}" 
+                            min="1" max="100" 
+                            value="${data.cac}"
+                            oninput="updateChannelCAC('${name}', this.value)">
+                        <div class="channel-value" id="cacVal_${name.replace(/\s/g, '_')}">€${data.cac}</div>
+                    </div>
+                `;
+            });
+        }
+
+        function renderTimeline() {
+            const container = document.getElementById('timeline');
+            container.innerHTML = '';
+            
+            for (let m = 1; m <= 12; m++) {
+                let phase = state.phases.find(p => p.months.includes(m));
+                let className = phase.name.toLowerCase().replace('-', '-');
+                container.innerHTML += `
+                    <div class="month-block ${className}">
+                        <div class="month-num">M${m}</div>
+                        <div class="phase-label">${phase.name}</div>
+                    </div>
+                `;
+            }
+        }
+
+        function initCharts() {
+            // Pie Chart
+            const pieCtx = document.getElementById('pieChart').getContext('2d');
+            pieChart = new Chart(pieCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(state.channels),
+                    datasets: [{
+                        data: Object.values(state.channels).map(c => c.allocation),
+                        backgroundColor: Object.values(state.channels).map(c => c.color),
+                        borderColor: '#161b22',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                color: '#e6edf3',
+                                padding: 12,
+                                font: { size: 11 }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Acquisition Chart
+            const acqCtx = document.getElementById('acquisitionChart').getContext('2d');
+            acquisitionChart = new Chart(acqCtx, {
+                type: 'line',
+                data: {
+                    labels: Array.from({length: 12}, (_, i) => `M${i+1}`),
+                    datasets: [{
+                        label: 'Projected Users',
+                        data: [],
+                        borderColor: '#3fb950',
+                        backgroundColor: 'rgba(63, 185, 80, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            grid: { color: '#30363d' },
+                            ticks: { color: '#8b949e' }
+                        },
+                        y: {
+                            grid: { color: '#30363d' },
+                            ticks: { color: '#8b949e' }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: { color: '#e6edf3' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // ============================================
+        // UPDATE FUNCTIONS
+        // ============================================
+        function updateBudget() {
+            state.budget = parseInt(document.getElementById('budgetSlider').value);
+            document.getElementById('budgetDisplay').textContent = formatCurrency(state.budget);
+            updateAll();
+        }
+
+        function updateChannelAllocation(name, value) {
+            state.channels[name].allocation = parseInt(value);
+            document.getElementById(`allocVal_${name.replace(/\s/g, '_')}`).textContent = value + '%';
+            updateAll();
+        }
+
+        function updateChannelCAC(name, value) {
+            state.channels[name].cac = parseInt(value);
+            document.getElementById(`cacVal_${name.replace(/\s/g, '_')}`).textContent = '€' + value;
+            updateAll();
+        }
+
+        function applyPreset(presetName) {
+            const preset = presets[presetName];
+            
+            // Update buttons
+            document.querySelectorAll('.preset-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Apply preset
+            state.budget = preset.budget;
+            state.ltv = preset.ltv;
+            state.arpu = preset.arpu;
+            
+            Object.entries(preset.channels).forEach(([name, data]) => {
+                state.channels[name].allocation = data.allocation;
+                state.channels[name].cac = data.cac;
+            });
+            
+            // Update UI
+            document.getElementById('budgetSlider').value = state.budget;
+            document.getElementById('budgetDisplay').textContent = formatCurrency(state.budget);
+            document.getElementById('ltvInput').value = state.ltv;
+            document.getElementById('arpu').value = state.arpu;
+            
+            Object.entries(state.channels).forEach(([name, data]) => {
+                const safeName = name.replace(/\s/g, '_');
+                document.getElementById(`alloc_${safeName}`).value = data.allocation;
+                document.getElementById(`allocVal_${safeName}`).textContent = data.allocation + '%';
+                document.getElementById(`cac_${safeName}`).value = data.cac;
+                document.getElementById(`cacVal_${safeName}`).textContent = '€' + data.cac;
+            });
+            
+            updateAll();
+        }
+
+        // ============================================
+        // MAIN UPDATE
+        // ============================================
+        function updateAll() {
+            state.ltv = parseFloat(document.getElementById('ltvInput').value) || 0;
+            state.arpu = parseFloat(document.getElementById('arpu').value) || 0;
+            
+            renderPreview();
+            updatePrompt();
+        }
+
+        function renderPreview() {
+            // Update Pie Chart
+            pieChart.data.datasets[0].data = Object.values(state.channels).map(c => c.allocation);
+            pieChart.update();
+            
+            // Calculate metrics
+            const metrics = calculateMetrics();
+            
+            // Update Acquisition Chart
+            acquisitionChart.data.datasets[0].data = metrics.monthlyUsers;
+            acquisitionChart.update();
+            
+            // Update ROI cards
+            document.getElementById('totalUsers').textContent = formatNumber(metrics.totalUsers);
+            document.getElementById('blendedCAC').textContent = formatCurrency(metrics.blendedCAC);
+            
+            const ltvCacRatio = metrics.blendedCAC > 0 ? (state.ltv / metrics.blendedCAC) : 0;
+            const ratioEl = document.getElementById('ltvCacRatio');
+            ratioEl.textContent = ltvCacRatio.toFixed(1) + 'x';
+            ratioEl.className = 'value ' + (ltvCacRatio >= 3 ? 'positive' : ltvCacRatio >= 1 ? 'neutral' : 'negative');
+            
+            document.getElementById('projectedRevenue').textContent = formatCurrency(metrics.projectedRevenue);
+            
+            const roiEl = document.getElementById('netROI');
+            roiEl.textContent = (metrics.roi >= 0 ? '+' : '') + metrics.roi.toFixed(0) + '%';
+            roiEl.className = 'value ' + (metrics.roi >= 100 ? 'positive' : metrics.roi >= 0 ? 'neutral' : 'negative');
+            
+            document.getElementById('paybackPeriod').textContent = metrics.paybackPeriod.toFixed(1) + ' mo';
+            
+            // Update acquisition table
+            const tbody = document.querySelector('#acquisitionTable tbody');
+            tbody.innerHTML = '';
+            
+            let totalBudget = 0, totalUsers = 0;
+            Object.entries(state.channels).forEach(([name, data]) => {
+                const channelBudget = state.budget * (data.allocation / 100);
+                const users = data.cac > 0 ? Math.floor(channelBudget / data.cac) : 0;
+                totalBudget += channelBudget;
+                totalUsers += users;
+                
+                tbody.innerHTML += `
+                    <tr>
+                        <td><span style="color: ${data.color}">●</span> ${name}</td>
+                        <td>${formatCurrency(channelBudget)}</td>
+                        <td>€${data.cac}</td>
+                        <td>${formatNumber(users)}</td>
+                    </tr>
+                `;
+            });
+            
+            tbody.innerHTML += `
+                <tr>
+                    <td><strong>TOTAL</strong></td>
+                    <td>${formatCurrency(totalBudget)}</td>
+                    <td>€${metrics.blendedCAC.toFixed(0)}</td>
+                    <td>${formatNumber(totalUsers)}</td>
+                </tr>
+            `;
+        }
+
+        function calculateMetrics() {
+            // Calculate total allocation for normalization
+            const totalAlloc = Object.values(state.channels).reduce((sum, c) => sum + c.allocation, 0);
+            
+            // Calculate users per channel
+            let totalUsers = 0;
+            let weightedCAC = 0;
+            
+            Object.values(state.channels).forEach(channel => {
+                const normalizedAlloc = totalAlloc > 0 ? channel.allocation / totalAlloc : 0;
+                const channelBudget = state.budget * normalizedAlloc;
+                const users = channel.cac > 0 ? channelBudget / channel.cac : 0;
+                totalUsers += users;
+                weightedCAC += channel.cac * normalizedAlloc;
+            });
+            
+            const blendedCAC = totalUsers > 0 ? state.budget / totalUsers : 0;
+            
+            // Monthly distribution based on phases
+            const monthlyUsers = [];
+            let runningTotal = 0;
+            
+            for (let m = 1; m <= 12; m++) {
+                const phase = state.phases.find(p => p.months.includes(m));
+                const monthShare = phase.multiplier / 12;
+                const monthUsers = Math.floor(totalUsers * monthShare);
+                runningTotal += monthUsers;
+                monthlyUsers.push(runningTotal);
+            }
+            
+            // Adjust to match total
+            if (monthlyUsers.length > 0) {
+                monthlyUsers[11] = Math.floor(totalUsers);
+            }
+            
+            // Revenue calculations
+            const avgLifetimeMonths = state.arpu > 0 ? state.ltv / state.arpu : 10;
+            const projectedRevenue = totalUsers * state.ltv;
+            
+            // ROI
+            const netProfit = projectedRevenue - state.budget;
+            const roi = state.budget > 0 ? (netProfit / state.budget) * 100 : 0;
+            
+            // Payback period
+            const paybackPeriod = state.arpu > 0 ? blendedCAC / state.arpu : 0;
+            
+            return {
+                totalUsers: Math.floor(totalUsers),
+                blendedCAC,
+                monthlyUsers,
+                projectedRevenue,
+                roi,
+                paybackPeriod
+            };
+        }
+
+        // ============================================
+        // PROMPT GENERATION
+        // ============================================
+        function updatePrompt() {
+            const metrics = calculateMetrics();
+            const totalAlloc = Object.values(state.channels).reduce((sum, c) => sum + c.allocation, 0);
+            
+            // Build channel breakdown
+            let channelBreakdown = '';
+            Object.entries(state.channels).forEach(([name, data]) => {
+                const normalizedAlloc = totalAlloc > 0 ? (data.allocation / totalAlloc * 100).toFixed(0) : 0;
+                const channelBudget = state.budget * (data.allocation / totalAlloc);
+                channelBreakdown += `  - ${name}: ${normalizedAlloc}% (€${formatNumber(channelBudget)}) @ €${data.cac} CAC\n`;
+            });
+            
+            // Determine strategy type
+            let strategyType = 'Bootstrapped/Organic';
+            if (state.budget >= 50000) strategyType = 'Growth-Funded';
+            if (state.budget >= 100000) strategyType = 'Aggressive Scaling';
+            
+            // LTV:CAC assessment
+            const ltvCacRatio = metrics.blendedCAC > 0 ? state.ltv / metrics.blendedCAC : 0;
+            let healthAssessment = '🔴 Unhealthy (< 1x) - Losing money per customer';
+            if (ltvCacRatio >= 1) healthAssessment = '🟡 Break-even (1-2x) - Marginal sustainability';
+            if (ltvCacRatio >= 2) healthAssessment = '🟢 Healthy (2-3x) - Good unit economics';
+            if (ltvCacRatio >= 3) healthAssessment = '🚀 Excellent (3x+) - Ready to scale';
+            
+            const prompt = `# Go-To-Market Strategy Analysis
+
+## Budget & Timeline
+- **Total Budget:** ${formatCurrency(state.budget)}
+- **Timeline:** 12 months
+- **Strategy Type:** ${strategyType}
+
+## Phases
+1. **Pre-launch (M1-2):** Foundation & preparation (20% budget)
+2. **Launch (M3-4):** Initial traction (30% budget)
+3. **Growth (M5-8):** Scaling channels (30% budget)
+4. **Scale (M9-12):** Optimization & expansion (20% budget)
+
+## Channel Mix
+${channelBreakdown}
+## Unit Economics
+- **Target LTV:** €${state.ltv}
+- **ARPU:** €${state.arpu}/month
+- **Blended CAC:** €${metrics.blendedCAC.toFixed(0)}
+- **LTV:CAC Ratio:** ${ltvCacRatio.toFixed(1)}x ${healthAssessment}
+- **Payback Period:** ${metrics.paybackPeriod.toFixed(1)} months
+
+## Projections (12 months)
+- **Total Users Acquired:** ${formatNumber(metrics.totalUsers)}
+- **Projected Revenue:** ${formatCurrency(metrics.projectedRevenue)}
+- **Net ROI:** ${metrics.roi >= 0 ? '+' : ''}${metrics.roi.toFixed(0)}%
+
+## Recommended Actions
+${generateRecommendations(metrics, ltvCacRatio)}
+
+---
+Generated by GTM Simulator | Genius Marketer`;
+
+            document.getElementById('promptOutput').textContent = prompt;
+        }
+
+        function generateRecommendations(metrics, ltvCacRatio) {
+            const recs = [];
+            
+            if (ltvCacRatio < 2) {
+                recs.push('⚠️ Improve LTV:CAC ratio before scaling - focus on retention');
+            }
+            
+            if (state.channels['Paid Ads'].allocation > 40) {
+                recs.push('📊 High paid ads dependency - diversify with organic channels');
+            }
+            
+            if (state.channels['Content Marketing'].allocation < 15 && state.budget > 20000) {
+                recs.push('📝 Consider increasing content marketing for compounding returns');
+            }
+            
+            if (metrics.paybackPeriod > 6) {
+                recs.push('⏱️ Long payback period - optimize CAC or increase ARPU');
+            }
+            
+            if (state.budget === 0) {
+                recs.push('🥾 Bootstrap mode: Focus on virality, community, and partnerships');
+                recs.push('🎯 Prioritize channels with €0 CAC: referrals, SEO, social organic');
+            }
+            
+            if (ltvCacRatio >= 3 && state.budget < 50000) {
+                recs.push('🚀 Strong unit economics - consider raising to accelerate growth');
+            }
+            
+            if (recs.length === 0) {
+                recs.push('✅ Metrics look balanced - execute and iterate based on data');
+            }
+            
+            return recs.map((r, i) => `${i + 1}. ${r}`).join('\n');
+        }
+
+        // ============================================
+        // UTILITIES
+        // ============================================
+        function formatCurrency(value) {
+            if (value >= 1000000) {
+                return '€' + (value / 1000000).toFixed(1) + 'M';
+            } else if (value >= 1000) {
+                return '€' + (value / 1000).toFixed(0) + 'K';
+            }
+            return '€' + value.toFixed(0);
+        }
+
+        function formatNumber(value) {
+            if (value >= 1000000) {
+                return (value / 1000000).toFixed(1) + 'M';
+            } else if (value >= 1000) {
+                return (value / 1000).toFixed(1) + 'K';
+            }
+            return Math.floor(value).toString();
+        }
+
+        function copyPrompt() {
+            const text = document.getElementById('promptOutput').textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.querySelector('.copy-btn');
+                const icon = document.getElementById('copyIcon');
+                const copyText = document.getElementById('copyText');
+                
+                btn.classList.add('copied');
+                icon.textContent = '✓';
+                copyText.textContent = 'Copied!';
+                
+                setTimeout(() => {
+                    btn.classList.remove('copied');
+                    icon.textContent = '📋';
+                    copyText.textContent = 'Copy';
+                }, 2000);
+            });
+        }
+
+        // ============================================
+        // INIT
+        // ============================================
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

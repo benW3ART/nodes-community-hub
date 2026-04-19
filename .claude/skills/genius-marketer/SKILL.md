@@ -1,6 +1,12 @@
 ---
 name: genius-marketer
-description: Go-to-market strategy skill that defines audience segments, positioning, acquisition channels, launch plans, and success metrics. Creates MARKETING-STRATEGY.xml and TRACKING-PLAN.xml. Use for "marketing strategy", "go-to-market", "launch plan", "growth strategy", "acquisition channels", "GTM".
+description: >-
+  Go-to-market strategy skill. Defines audience segments, positioning, acquisition
+  channels, launch plans, and success metrics. Creates MARKETING-STRATEGY.xml and
+  TRACKING-PLAN.xml. Use when user says "marketing strategy", "go-to-market", "GTM",
+  "launch plan", "growth strategy", "acquisition channels", "user acquisition",
+  "retention strategy". Do NOT use for content creation (genius-content), copywriting
+  (genius-copywriter), or product-market fit analysis (genius-product-market-analyst).
 ---
 
 ## ⚠️ MANDATORY ARTIFACT
@@ -19,7 +25,7 @@ description: Go-to-market strategy skill that defines audience segments, positio
 
 ---
 
-# Genius Marketer v9.0 — Growth Strategist
+# Genius Marketer v17.0 — Growth Strategist
 
 **From zero to traction with data-driven marketing.**
 
@@ -150,6 +156,16 @@ This validated output becomes the basis for MARKETING-STRATEGY.xml.
 
 ---
 
+## 🗂️ Post-Output: Refresh Dashboard (MANDATORY)
+
+After generating any `.genius/*.html` playground file:
+1. Follow `.claude/commands/genius-dashboard.md` instructions to regenerate `.genius/DASHBOARD.html`
+2. Open it immediately:
+   ```bash
+   open .genius/DASHBOARD.html 2>/dev/null || echo "📂 Open: $(pwd)/.genius/DASHBOARD.html"
+   ```
+   (On macOS/Linux this opens in the default browser. If it fails, the full path is printed as a clickable link.)
+
 ## Handoffs
 
 ### From: genius-designer
@@ -160,3 +176,30 @@ Provides: MARKETING-STRATEGY.xml, messaging framework, target personas
 
 ### To: genius-integration-guide
 Provides: TRACKING-PLAN.xml, analytics tool recommendations
+
+## Handoff to genius-content
+
+After defining the marketing strategy, hand off to **genius-content** for:
+- Blog posts aligned with the GTM strategy
+- Social media content calendar
+- Newsletter sequence for launch
+
+Hand off to **genius-analytics** post-launch to track acquisition channel performance.
+
+
+---
+
+## Next Step (Auto-Chain)
+
+When this skill completes its work:
+→ **Automatically suggest**: "Marketing strategy defined! Ready for copywriting? I'll hand off to **genius-copywriter**."
+→ If user approves: route to genius-copywriter
+→ Update state.json: `currentSkill = "genius-copywriter"`
+
+## Definition of Done
+
+- [ ] Target audience, positioning, and channels are defined
+- [ ] Success metrics or tracking implications are included
+- [ ] Strategy artifacts are ready for copywriting and analytics handoff
+- [ ] Recommendations are grounded in the stated product context
+- [ ] Next-step routing is explicit

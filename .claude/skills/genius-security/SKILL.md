@@ -1,6 +1,10 @@
 ---
 name: genius-security
-description: Security audit skill that performs OWASP Top 10 checks, dependency scanning, configuration review, and vulnerability assessment. Produces prioritized fix recommendations. Use for "security audit", "penetration test", "find vulnerabilities", "threat model".
+description: >-
+  Security audit skill. Scans for OWASP vulnerabilities, auth issues, injection risks,
+  and exposed secrets. Use when user says "security audit", "check for vulnerabilities",
+  "OWASP scan", "is this secure", "security review".
+  Do NOT use for general code review — use genius-reviewer instead.
 ---
 
 ## ⚠️ MANDATORY ARTIFACT
@@ -19,7 +23,7 @@ description: Security audit skill that performs OWASP Top 10 checks, dependency 
 
 ---
 
-# Genius Security v9.0 — The Guardian
+# Genius Security v17.0 — The Guardian
 
 **Security is not a feature, it's a requirement.**
 
@@ -91,6 +95,16 @@ You can integrate any third-party security scanner (e.g., Snyk, SonarQube, npm a
 Executive summary, tools used, findings by severity (Critical/High/Medium/Low), AI fix prompts, compliance status (OWASP/SOC2/GDPR), recommendations.
 
 ---
+
+## 🗂️ Post-Output: Refresh Dashboard (MANDATORY)
+
+After generating any `.genius/*.html` playground file:
+1. Follow `.claude/commands/genius-dashboard.md` instructions to regenerate `.genius/DASHBOARD.html`
+2. Open it immediately:
+   ```bash
+   open .genius/DASHBOARD.html 2>/dev/null || echo "📂 Open: $(pwd)/.genius/DASHBOARD.html"
+   ```
+   (On macOS/Linux this opens in the default browser. If it fails, the full path is printed as a clickable link.)
 
 ## Handoffs
 
@@ -195,3 +209,17 @@ The playground generates a comprehensive security report containing:
 - **Category Breakdown**: Issues per OWASP category
 
 User copies this prompt output to feed back into the dev workflow.
+
+
+---
+
+## Definition of Done
+
+Security audit report MUST include:
+1. **Severity classification**: Critical / High / Medium / Low / Info for each finding
+2. **OWASP reference**: Which OWASP Top 10 category each finding belongs to
+3. **Evidence**: Code snippet or request/response showing the vulnerability
+4. **Remediation**: Exact code change to fix each finding (not just "validate inputs")
+5. **Retest criteria**: How to verify the fix worked
+
+Report must have an Executive Summary: total findings by severity + overall risk rating (1-10).

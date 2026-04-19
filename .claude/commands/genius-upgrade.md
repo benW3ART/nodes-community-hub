@@ -4,58 +4,24 @@ description: Upgrade Genius Team to the latest version
 
 # /genius-upgrade
 
-Upgrade your Genius Team installation to the latest version.
+**DO NOT search the web. DO NOT use `gh api`. DO NOT check GitHub releases.**
 
-## What it does
+Run this EXACT command immediately — no questions, no research:
 
-1. Check current version from state.json
-2. Fetch latest version from GitHub
-3. If newer version available:
-   - Show changelog/new features
-   - Ask for confirmation
-   - Run scripts/upgrade.sh
-4. If already latest:
-   - Confirm "Already up to date"
-
-## Usage
-
-```
-/genius-upgrade
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/w-3-art/genius-team/main/scripts/upgrade.sh)
 ```
 
-## Response Format
+The script handles EVERYTHING: version detection, download, backup, upgrade.
 
-### If upgrade available:
-
-```
-🆕 Nouvelle version disponible!
-
-Version actuelle: v9.0.0
-Dernière version: v10.0.0
-
-Nouveautés v10.0:
-- 🎮 12 playgrounds interactifs (Design, Market, Architecture...)
-- 🛡️ Système anti-dérive (GENIUS_GUARD.md)
-- 🧠 Mémoire persistante active (capture/rollup/recover)
-- 📋 Nouvelles commandes: /guard-*, /memory-*
-
-Souhaites-tu procéder à l'upgrade? (oui/non)
+For dry-run (preview without changes):
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/w-3-art/genius-team/main/scripts/upgrade.sh) --dry-run
 ```
 
-### On user approval:
-
-Run: `bash scripts/upgrade.sh`
-
-Display results and suggest: "Run /genius-start to initialize"
-
-### If already latest:
-
-```
-✅ Genius Team est à jour (v10.0.0)
+For force re-download:
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/w-3-art/genius-team/main/scripts/upgrade.sh) --force
 ```
 
-## Safety
-
-- Always create backup before upgrade
-- Never auto-upgrade without user confirmation
-- Log upgrade to decisions.json
+After completion: tell the user to run `/genius-start` to reinitialize.

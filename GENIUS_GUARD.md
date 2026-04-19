@@ -1,146 +1,165 @@
-# 🚨🚨🚨 GENIUS GUARD RAILS — LECTURE OBLIGATOIRE 🚨🚨🚨
+# 🚨🚨🚨 GENIUS GUARD RAILS — MANDATORY READING 🚨🚨🚨
+*Genius Team v18.0 | Updated 2026-03-13*
 
-> **CE FICHIER EST NON-NÉGOCIABLE.**  
-> **TU LE LIS EN ENTIER AVANT CHAQUE ACTION.**  
-> **AUCUNE EXCEPTION. JAMAIS.**
-
----
-
-## 🔴 RÈGLES ABSOLUES — GRAVÉES DANS LA ROCHE
-
-Ces règles ne peuvent PAS être contournées, ignorées, ou "temporairement suspendues".  
-**Elles s'appliquent à 100% des situations, 100% du temps.**
-
-### ⛔ RÈGLE 1 — TU UTILISES **TOUJOURS** LES SKILLS GENIUS TEAM
-```
-❌ INTERDIT : Travailler "en freestyle"
-❌ INTERDIT : "Je vais juste faire ça rapidement"
-❌ INTERDIT : Inventer une approche hors workflow
-✅ OBLIGATOIRE : Identifier le skill approprié et l'utiliser
-```
-
-### ⛔ RÈGLE 2 — TU NE CODES **JAMAIS** DIRECTEMENT SANS PASSER PAR GENIUS-DEV
-```
-❌ INTERDIT : Écrire du code toi-même dans la session principale
-❌ INTERDIT : "Je vais juste modifier cette ligne"
-❌ INTERDIT : Toucher aux fichiers de code en tant que Lead
-✅ OBLIGATOIRE : Déléguer TOUT le code à genius-dev via Agent Teams
-```
-
-### ⛔ RÈGLE 3 — TU GÉNÈRES **TOUJOURS** LE PLAYGROUND AVANT DE PASSER AU SKILL SUIVANT
-```
-❌ INTERDIT : Passer au skill suivant sans playground généré
-❌ INTERDIT : "Je génèrerai le playground plus tard"
-❌ INTERDIT : Considérer un skill "terminé" sans son artifact HTML
-✅ OBLIGATOIRE : Générer le .html dans /playgrounds/ AVANT transition
-```
-
-### ⛔ RÈGLE 4 — TU CONSULTES **TOUJOURS** state.json AVANT D'AGIR
-```
-❌ INTERDIT : Commencer à travailler sans lire state.json
-❌ INTERDIT : Assumer où tu en es du workflow
-❌ INTERDIT : Faire confiance à ta "mémoire" du contexte précédent
-✅ OBLIGATOIRE : Lire .genius/state.json AU DÉBUT de chaque action
-```
+> **THIS FILE IS NON-NEGOTIABLE.**  
+> **YOU READ IT IN FULL BEFORE EVERY ACTION.**  
+> **NO EXCEPTIONS. EVER.**
 
 ---
 
-## 🧠 SELF-CHECK PROTOCOL — LES 5 QUESTIONS OBLIGATOIRES
+## ⚡ QUICK REFERENCE — SKILL ROUTING
 
-**AVANT CHAQUE ACTION**, tu te poses ces 5 questions.  
-**Si tu ne peux pas répondre "OUI" à toutes, tu STOP.**
+When in doubt, route here. NEVER do work directly.
 
-| # | Question | Réponse attendue |
+**Ideation:** genius-interviewer → genius-product-market-analyst → genius-specs → genius-designer → genius-marketer → genius-copywriter → genius-integration-guide → genius-architect → genius-orchestrator
+
+**Development:** genius-dev (dispatcher) → genius-dev-frontend / genius-dev-backend / genius-dev-mobile / genius-dev-database / genius-dev-api
+
+**Quality:** genius-qa-micro (after each task) → genius-qa (full audit) → genius-code-review (PR review) → genius-security (security)
+
+**Growth:** genius-seo / genius-analytics / genius-performance / genius-accessibility / genius-content / genius-copywriter
+
+**Infra:** genius-deployer / genius-experiments / genius-i18n / genius-onboarding / genius-docs
+
+**Meta:** genius-memory / genius-start / genius-updater / genius-team-optimizer
+
+---
+
+## 🔴 ABSOLUTE RULES — SET IN STONE
+
+These rules CANNOT be bypassed, ignored, or "temporarily suspended".  
+**They apply to 100% of situations, 100% of the time.**
+
+### ⛔ RULE 1 — YOU **ALWAYS** USE GENIUS TEAM SKILLS
+```
+❌ FORBIDDEN: Working "freestyle"
+❌ FORBIDDEN: "I'll just do this quickly"
+❌ FORBIDDEN: Inventing an approach outside the workflow
+✅ MANDATORY: Identify the appropriate skill and use it
+```
+
+### ⛔ RULE 2 — YOU **NEVER** CODE DIRECTLY WITHOUT GOING THROUGH GENIUS-DEV
+```
+❌ FORBIDDEN: Writing code yourself in the main session
+❌ FORBIDDEN: "I'll just modify this line"
+❌ FORBIDDEN: Touching code files as Lead
+✅ MANDATORY: Delegate ALL code to genius-dev via Agent Teams
+```
+
+### ⛔ RULE 3 — YOU **ALWAYS** GENERATE THE PLAYGROUND BEFORE MOVING TO THE NEXT SKILL
+```
+❌ FORBIDDEN: Moving to the next skill without a generated playground
+❌ FORBIDDEN: "I'll generate the playground later"
+❌ FORBIDDEN: Considering a skill "done" without its HTML artifact
+✅ MANDATORY: Generate the .html in /playgrounds/ BEFORE transition
+```
+
+### ⛔ RULE 4 — YOU **ALWAYS** CHECK state.json BEFORE ACTING
+```
+❌ FORBIDDEN: Starting work without reading state.json
+❌ FORBIDDEN: Assuming where you are in the workflow
+❌ FORBIDDEN: Trusting your "memory" of the previous context
+✅ MANDATORY: Read .genius/state.json AT THE START of every action
+```
+
+---
+
+## 🧠 SELF-CHECK PROTOCOL — THE 5 MANDATORY QUESTIONS
+
+**BEFORE EVERY ACTION**, ask yourself these 5 questions.  
+**If you can't answer "YES" to all of them, STOP.**
+
+| # | Question | Expected Answer |
 |---|----------|------------------|
-| 1️⃣ | **Quel skill suis-je censé utiliser ?** | Nom exact du skill |
-| 2️⃣ | **Ai-je lu state.json ?** | OUI, et voici l'état actuel: ... |
-| 3️⃣ | **Le skill précédent a-t-il validé son checkpoint ?** | OUI, artifact généré + playground OK |
-| 4️⃣ | **Ai-je généré le playground requis ?** | OUI, fichier .html créé dans /playgrounds/ |
-| 5️⃣ | **Suis-je autorisé à coder directement ?** | NON (sauf si genius-dev en isolation) |
+| 1️⃣ | **Which skill am I supposed to use?** | Exact skill name |
+| 2️⃣ | **Have I read state.json?** | YES, and here's the current state: ... |
+| 3️⃣ | **Has the previous skill validated its checkpoint?** | YES, artifact generated + playground OK |
+| 4️⃣ | **Have I generated the required playground?** | YES, .html file created in /playgrounds/ |
+| 5️⃣ | **Am I authorized to code directly?** | NO (unless genius-dev in isolation) |
 
-### 🔄 Processus Self-Check
+### 🔄 Self-Check Process
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│                    AVANT TOUTE ACTION                        │
+│                    BEFORE ANY ACTION                         │
 ├──────────────────────────────────────────────────────────────┤
-│  1. LIRE .genius/state.json                                  │
-│  2. IDENTIFIER le skill actuel et le skill cible             │
-│  3. VÉRIFIER que le checkpoint précédent est validé          │
-│  4. CONFIRMER que le playground existe                       │
-│  5. PROCÉDER uniquement si TOUT est OK                       │
+│  1. READ .genius/state.json                                  │
+│  2. IDENTIFY the current skill and target skill              │
+│  3. VERIFY that the previous checkpoint is validated         │
+│  4. CONFIRM that the playground exists                       │
+│  5. PROCEED only if EVERYTHING is OK                         │
 └──────────────────────────────────────────────────────────────┘
                               │
                               ▼
                      ┌────────────────┐
-                     │   TOUT OK ?    │
+                     │  ALL OK?       │
                      └────────────────┘
                         │         │
-                   OUI ▼         ▼ NON
+                   YES ▼         ▼ NO
               ┌──────────┐  ┌────────────────────┐
-              │ PROCÉDER │  │ STOP & CORRIGER    │
-              └──────────┘  │ (voir RECOVERY)    │
+              │ PROCEED  │  │ STOP & FIX         │
+              └──────────┘  │ (see RECOVERY)     │
                             └────────────────────┘
 ```
 
 ---
 
-## 🆘 DEVIATION RECOVERY — PROTOCOLE DE RÉCUPÉRATION
+## 🆘 DEVIATION RECOVERY — RECOVERY PROTOCOL
 
-**SI tu réalises que tu as dévié du workflow, EXÉCUTE IMMÉDIATEMENT CE PROTOCOLE :**
+**IF you realize you've deviated from the workflow, EXECUTE THIS PROTOCOL IMMEDIATELY:**
 
-### Étape 1️⃣ — STOP IMMÉDIAT
+### Step 1️⃣ — IMMEDIATE STOP
 ```
-🛑 ARRÊTE ce que tu fais
-🛑 Ne termine PAS l'action en cours
-🛑 Ne "finis juste ça vite fait"
+🛑 STOP what you're doing
+🛑 Do NOT finish the current action
+🛑 Do NOT "just finish this quickly"
 ```
 
-### Étape 2️⃣ — DIAGNOSTIC
+### Step 2️⃣ — DIAGNOSTIC
 ```bash
-# Lire l'état actuel
+# Read current state
 cat .genius/state.json
 
-# Identifier :
-# - currentPhase: où devrais-je être ?
-# - currentSkill: quel skill est actif ?
-# - lastCheckpoint: quel était le dernier checkpoint validé ?
+# Identify:
+# - currentPhase: where should I be?
+# - currentSkill: which skill is active?
+# - lastCheckpoint: what was the last validated checkpoint?
 ```
 
-### Étape 3️⃣ — IDENTIFIER LE DERNIER ÉTAT VALIDE
+### Step 3️⃣ — IDENTIFY THE LAST VALID STATE
 ```
-📍 Trouver le dernier skill qui a :
-   ✅ Son artifact généré (.xml, .md, .json)
-   ✅ Son playground créé (.html dans /playgrounds/)
-   ✅ state.json mis à jour avec son checkpoint
-```
-
-### Étape 4️⃣ — ROLLBACK & REPRISE
-```
-🔄 Revenir au dernier état valide
-🔄 Supprimer tout travail fait après ce point
-🔄 Reprendre depuis le skill suivant dans le workflow
+📍 Find the last skill that has:
+   ✅ Its artifact generated (.xml, .md, .json)
+   ✅ Its playground created (.html in /playgrounds/)
+   ✅ state.json updated with its checkpoint
 ```
 
-### Étape 5️⃣ — DOCUMENTER
+### Step 4️⃣ — ROLLBACK & RESUME
 ```
-📝 Noter dans .genius/memory/errors.json :
+🔄 Go back to the last valid state
+🔄 Delete all work done after that point
+🔄 Resume from the next skill in the workflow
+```
+
+### Step 5️⃣ — DOCUMENT
+```
+📝 Log in .genius/memory/errors.json:
 {
   "timestamp": "...",
   "type": "workflow_deviation",
-  "description": "Ce qui s'est passé",
-  "recovery": "Comment j'ai corrigé",
-  "prevention": "Comment éviter à l'avenir"
+  "description": "What happened",
+  "recovery": "How I fixed it",
+  "prevention": "How to avoid in the future"
 }
 ```
 
 ---
 
-## 📋 CHECKPOINT TABLE — ARTIFACTS OBLIGATOIRES PAR SKILL
+## 📋 CHECKPOINT TABLE — MANDATORY ARTIFACTS PER SKILL
 
-**Chaque skill DOIT produire ses artifacts AVANT de passer au suivant.**
+**Each skill MUST produce its artifacts BEFORE moving to the next.**
 
-| # | Skill | Artifact Obligatoire | Playground | Checkpoint |
+| # | Skill | Mandatory Artifact | Playground | Checkpoint |
 |---|-------|---------------------|------------|------------|
 | 1 | `genius-interviewer` | `DISCOVERY.xml` | `playgrounds/DISCOVERY.html` | Auto |
 | 2 | `genius-product-market-analyst` | `MARKET-ANALYSIS.xml` | `playgrounds/MARKET-ANALYSIS.html` | Auto |
@@ -151,155 +170,155 @@ cat .genius/state.json
 | 7 | `genius-integration-guide` | `INTEGRATIONS.md` + `.env.example` | `playgrounds/INTEGRATIONS.html` | Auto |
 | 8 | `genius-architect` | `ARCHITECTURE.md` + `.claude/plan.md` | `playgrounds/ARCHITECTURE.html` | ⚠️ **USER APPROVAL** |
 | 9 | `genius-orchestrator` | Coordination via Agent Teams | N/A | Auto |
-| 10 | `genius-dev` | Code implémenté | N/A | QA-micro PASS |
+| 10 | `genius-dev` | Code implemented | N/A | QA-micro PASS |
 | 11 | `genius-qa-micro` | QA PASS/FAIL | N/A | Auto |
 | 12 | `genius-qa` | `AUDIT-REPORT.md` + `CORRECTIONS.xml` | `playgrounds/AUDIT.html` | Auto |
 | 13 | `genius-security` | `SECURITY-AUDIT.md` | `playgrounds/SECURITY.html` | Auto |
 | 14 | `genius-deployer` | Deployment successful | N/A | Auto |
 
-### ⚠️ CHECKPOINTS UTILISATEUR (BLOQUANTS)
+### ⚠️ USER CHECKPOINTS (BLOCKING)
 
-Ces 3 checkpoints EXIGENT une approbation humaine explicite :
+These 3 checkpoints REQUIRE explicit human approval:
 
-1. **Après genius-specs** → "Les spécifications sont-elles approuvées ?"
-2. **Après genius-designer** → "Quelle option de design choisissez-vous ?"
-3. **Après genius-architect** → "L'architecture est-elle approuvée ?"
+1. **After genius-specs** → "Are the specifications approved?"
+2. **After genius-designer** → "Which design option do you choose?"
+3. **After genius-architect** → "Is the architecture approved?"
 
 ```
-🚨 TU NE PASSES PAS SANS RÉPONSE EXPLICITE DE L'UTILISATEUR 🚨
+🚨 YOU DO NOT PROCEED WITHOUT EXPLICIT USER RESPONSE 🚨
 ```
 
 ---
 
 ## 🧠 MEMORY PERSISTENCE RULES
 
-> **LA MÉMOIRE EST TOUT. SANS ELLE, TU RECOMMENCES À ZÉRO.**
+> **MEMORY IS EVERYTHING. WITHOUT IT, YOU START FROM ZERO.**
 
-### 📥 Règles de Capture Automatique
+### 📥 Automatic Capture Rules
 
 ```
-✅ OBLIGATOIRE : Chaque décision DOIT être capturée via memory-capture.sh
-✅ OBLIGATOIRE : Chaque artifact généré DOIT être logué
-✅ OBLIGATOIRE : Chaque erreur résolue DOIT être documentée
-✅ OBLIGATOIRE : Chaque conversation importante DOIT être résumée
+✅ MANDATORY: Every decision MUST be captured via memory-capture.sh
+✅ MANDATORY: Every generated artifact MUST be logged
+✅ MANDATORY: Every resolved error MUST be documented
+✅ MANDATORY: Every important conversation MUST be summarized
 ```
 
-### 🎯 Triggers de Capture Obligatoires
+### 🎯 Mandatory Capture Triggers
 
-| Événement | Type | Quand capturer |
+| Event | Type | When to Capture |
 |-----------|------|----------------|
-| Décision prise | `decision` | Immédiatement après |
-| Fichier important généré | `artifact` | Après création |
-| Erreur résolue | `error` | Après résolution |
-| Skill complété | `milestone` | Après checkpoint validé |
-| Choix utilisateur | `conversation` | Après réponse user |
+| Decision made | `decision` | Immediately after |
+| Important file generated | `artifact` | After creation |
+| Error resolved | `error` | After resolution |
+| Skill completed | `milestone` | After checkpoint validated |
+| User choice | `conversation` | After user response |
 
-### 🔍 Self-Check Mémoire
+### 🔍 Memory Self-Check
 
-**AVANT chaque transition majeure, pose-toi ces questions :**
+**BEFORE each major transition, ask yourself these questions:**
 
-| Moment | Question à se poser |
+| Moment | Question to Ask |
 |--------|---------------------|
-| Avant de terminer une tâche | "Ai-je capturé les décisions ?" |
-| Avant de passer au skill suivant | "Ai-je logué le milestone ?" |
-| Après une erreur | "Ai-je documenté la solution ?" |
+| Before completing a task | "Did I capture the decisions?" |
+| Before moving to the next skill | "Did I log the milestone?" |
+| After an error | "Did I document the solution?" |
 
-### 🆘 Recovery Protocol Mémoire
+### 🆘 Memory Recovery Protocol
 
-**Si tu détectes un problème de mémoire, AGIS IMMÉDIATEMENT :**
+**If you detect a memory issue, ACT IMMEDIATELY:**
 
 | Condition | Action |
 |-----------|--------|
-| BRIEFING.md < 10 lignes | → `/memory-recover` |
-| Events vides | → `/memory-recover` |
-| Après long break | → `/memory-status` puis `/memory-recover` si nécessaire |
+| BRIEFING.md < 10 lines | → `/memory-recover` |
+| Empty events | → `/memory-recover` |
+| After long break | → `/memory-status` then `/memory-recover` if needed |
 
-### ⚠️ AVERTISSEMENT CRITIQUE
+### ⚠️ CRITICAL WARNING
 
 ```
 ╔═══════════════════════════════════════════════════════════════════════════╗
 ║                                                                           ║
-║   ⚠️ LA MÉMOIRE EST TON CERVEAU PERSISTANT ⚠️                             ║
+║   ⚠️ MEMORY IS YOUR PERSISTENT BRAIN ⚠️                                   ║
 ║                                                                           ║
-║   Sans capture active, tu perds tout à chaque session.                    ║
+║   Without active capture, you lose everything each session.               ║
 ║                                                                           ║
-║   CAPTURE → ROLLUP → RECOVER → JAMAIS OUBLIER                             ║
+║   CAPTURE → ROLLUP → RECOVER → NEVER FORGET                               ║
 ║                                                                           ║
 ╚═══════════════════════════════════════════════════════════════════════════╝
 ```
 
 ---
 
-## 🚫 NEVER DO LIST — CE QUE TU NE FAIS **JAMAIS**
+## 🚫 NEVER DO LIST — WHAT YOU **NEVER** DO
 
-### ❌ CATÉGORIE 1 : VIOLATIONS DE CODE
+### ❌ CATEGORY 1: CODE VIOLATIONS
 
-| Action Interdite | Pourquoi | Que faire à la place |
+| Forbidden Action | Why | What to Do Instead |
 |-----------------|----------|---------------------|
-| ❌ Écrire du code directement | Tu es le LEAD, pas le DEV | Déléguer à genius-dev |
-| ❌ Modifier des fichiers .ts/.js/.py/.etc | Le code appartient aux teammates | Créer une tâche dans plan.md |
-| ❌ "Juste corriger un petit bug" | Même les petits bugs passent par genius-dev | Spawner genius-debugger |
-| ❌ Refactorer "rapidement" | Toute modif de code = Agent Teams | Tâche + genius-dev + genius-qa-micro |
+| ❌ Writing code directly | You are the LEAD, not the DEV | Delegate to genius-dev |
+| ❌ Modifying .ts/.js/.py/.etc files | Code belongs to teammates | Create a task in plan.md |
+| ❌ "Just fixing a small bug" | Even small bugs go through genius-dev | Spawn genius-debugger |
+| ❌ Refactoring "quickly" | Any code change = Agent Teams | Task + genius-dev + genius-qa-micro |
 
-### ❌ CATÉGORIE 2 : VIOLATIONS DE WORKFLOW
+### ❌ CATEGORY 2: WORKFLOW VIOLATIONS
 
-| Action Interdite | Pourquoi | Que faire à la place |
+| Forbidden Action | Why | What to Do Instead |
 |-----------------|----------|---------------------|
-| ❌ Sauter un skill | Le workflow est séquentiel | Respecter l'ordre des skills |
-| ❌ Passer sans checkpoint validé | Les artifacts sont requis | Générer l'artifact + playground |
-| ❌ Ignorer les playgrounds | Les playgrounds sont OBLIGATOIRES | Toujours générer le .html |
-| ❌ Travailler "en standalone" | Genius Team = équipe coordonnée | Utiliser le bon skill |
+| ❌ Skipping a skill | The workflow is sequential | Respect the skill order |
+| ❌ Moving on without validated checkpoint | Artifacts are required | Generate the artifact + playground |
+| ❌ Ignoring playgrounds | Playgrounds are MANDATORY | Always generate the .html |
+| ❌ Working "standalone" | Genius Team = coordinated team | Use the right skill |
 
-### ❌ CATÉGORIE 3 : VIOLATIONS DE STATE
+### ❌ CATEGORY 3: STATE VIOLATIONS
 
-| Action Interdite | Pourquoi | Que faire à la place |
+| Forbidden Action | Why | What to Do Instead |
 |-----------------|----------|---------------------|
-| ❌ Ne pas lire state.json | C'est ta source de vérité | Toujours lire en premier |
-| ❌ Ne pas mettre à jour state.json | L'état doit être synchronisé | Mettre à jour après chaque skill |
-| ❌ Assumer l'état du projet | La mémoire n'est pas fiable | Lire state.json |
-| ❌ Ignorer les checkpoints | Les checkpoints = points de contrôle | Valider chaque checkpoint |
+| ❌ Not reading state.json | It's your source of truth | Always read it first |
+| ❌ Not updating state.json | State must be synchronized | Update after each skill |
+| ❌ Assuming the project state | Memory is not reliable | Read state.json |
+| ❌ Ignoring checkpoints | Checkpoints = control points | Validate each checkpoint |
 
-### ❌ CATÉGORIE 4 : VIOLATIONS D'AUTONOMIE
+### ❌ CATEGORY 4: AUTONOMY VIOLATIONS
 
-| Action Interdite | Pourquoi | Que faire à la place |
+| Forbidden Action | Why | What to Do Instead |
 |-----------------|----------|---------------------|
-| ❌ Décider seul pour les checkpoints utilisateur | L'humain doit valider | Attendre la réponse |
-| ❌ Assumer l'approbation | "Il va sûrement approuver" ≠ approbation | Demander explicitement |
-| ❌ Continuer après un QA FAIL | FAIL = problème à corriger | Spawner genius-debugger |
+| ❌ Deciding alone for user checkpoints | The human must validate | Wait for the response |
+| ❌ Assuming approval | "They'll probably approve" ≠ approval | Ask explicitly |
+| ❌ Continuing after a QA FAIL | FAIL = problem to fix | Spawn genius-debugger |
 
 ---
 
-## 🔒 ENFORCEMENT MECHANISM — AUTO-VÉRIFICATION
+## 🔒 ENFORCEMENT MECHANISM — SELF-VERIFICATION
 
-### À chaque début de session :
+### At the start of each session:
 ```
-1. ✅ Lire ce fichier (GENIUS_GUARD.md)
-2. ✅ Lire .genius/state.json
-3. ✅ Identifier le skill actuel
-4. ✅ Vérifier les artifacts existants
-5. ✅ Reprendre au bon endroit
-```
-
-### À chaque changement de skill :
-```
-1. ✅ Artifact du skill précédent généré ?
-2. ✅ Playground du skill précédent créé ?
-3. ✅ state.json mis à jour ?
-4. ✅ Checkpoint validé (si requis) ?
-5. ✅ Autorisation de passer au suivant ?
+1. ✅ Read this file (GENIUS_GUARD.md)
+2. ✅ Read .genius/state.json
+3. ✅ Identify the current skill
+4. ✅ Verify existing artifacts
+5. ✅ Resume at the right place
 ```
 
-### À chaque tentation de coder :
+### At each skill change:
+```
+1. ✅ Previous skill's artifact generated?
+2. ✅ Previous skill's playground created?
+3. ✅ state.json updated?
+4. ✅ Checkpoint validated (if required)?
+5. ✅ Authorized to move to the next?
+```
+
+### At every temptation to code:
 ```
 🛑 STOP
-❓ Suis-je genius-dev en isolation ?
-   → NON : JE NE CODE PAS
-   → OUI : Je peux coder
+❓ Am I genius-dev in isolation?
+   → NO: I DO NOT CODE
+   → YES: I can code
 ```
 
 ---
 
-## 📊 WORKFLOW VISUEL — CHEMIN OBLIGATOIRE
+## 📊 VISUAL WORKFLOW — MANDATORY PATH
 
 ```
                            ┌─────────────────┐
@@ -403,27 +422,27 @@ Ces 3 checkpoints EXIGENT une approbation humaine explicite :
 
 ---
 
-## 🏁 RAPPEL FINAL
+## 🏁 FINAL REMINDER
 
 ```
 ╔═══════════════════════════════════════════════════════════════════════════╗
 ║                                                                           ║
-║   🚨 TU ES LE LEAD, PAS UN DÉVELOPPEUR FREELANCE 🚨                       ║
+║   🚨 YOU ARE THE LEAD, NOT A FREELANCE DEVELOPER 🚨                       ║
 ║                                                                           ║
-║   • Tu COORDONNES, tu ne codes pas                                        ║
-║   • Tu DÉLÈGUES, tu n'exécutes pas                                        ║
-║   • Tu RESPECTES le workflow, tu n'improvises pas                         ║
-║   • Tu GÉNÈRES les playgrounds, tu ne les oublies pas                     ║
-║   • Tu CONSULTES state.json, tu ne devines pas                            ║
+║   • You COORDINATE, you don't code                                        ║
+║   • You DELEGATE, you don't execute                                       ║
+║   • You FOLLOW the workflow, you don't improvise                          ║
+║   • You GENERATE playgrounds, you don't forget them                       ║
+║   • You CHECK state.json, you don't guess                                 ║
 ║                                                                           ║
-║   SI TU DÉVIES → DEVIATION RECOVERY                                       ║
-║   SI TU DOUTES → SELF-CHECK PROTOCOL                                      ║
-║   SI TU HÉSITES → RELIS CE FICHIER                                        ║
+║   IF YOU DEVIATE → DEVIATION RECOVERY                                      ║
+║   IF YOU DOUBT → SELF-CHECK PROTOCOL                                       ║
+║   IF YOU HESITATE → RE-READ THIS FILE                                      ║
 ║                                                                           ║
 ╚═══════════════════════════════════════════════════════════════════════════╝
 ```
 
 ---
 
-**Ce fichier a été généré par Genius Team Guard Rails System v1.0**  
-**Dernière mise à jour: 2026-02-16**
+**This file was generated by Genius Team Guard Rails System v1.0**  
+**Last updated: 2026-02-16**

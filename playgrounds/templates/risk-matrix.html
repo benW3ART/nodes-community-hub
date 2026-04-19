@@ -1,0 +1,1492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Risk Matrix - Security Playground</title>
+    <link rel="stylesheet" href="./design-tokens.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        :root {
+            --border: var(--border-color);
+            --accent: var(--accent-blue);
+            --success: var(--accent-green);
+            --warning: var(--accent-orange);
+            --danger: var(--accent-red);
+            --critical: var(--surface-red-light);
+            --high: var(--surface-amber);
+            --medium: #ffd93d;
+            --low: #6bcf6b;
+            --info: var(--accent-blue);
+        }
+
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.5;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            grid-template-rows: auto 1fr auto;
+            gap: 16px;
+            padding: 16px;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        header {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 20px;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--danger), var(--warning));
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .logo h1 {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .logo span {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 8px 16px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn:hover {
+            background: var(--border);
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: var(--text-inverse);
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-blue-strong);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            border-color: var(--danger);
+        }
+
+        .btn-danger:hover {
+            background: var(--surface-red-dark);
+        }
+
+        .btn-sm {
+            padding: 4px 10px;
+            font-size: 0.75rem;
+        }
+
+        /* Main Content */
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* Presets & Filters */
+        .controls-bar {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .preset-select, .filter-select {
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            cursor: pointer;
+        }
+
+        .filter-chips {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .chip {
+            padding: 4px 10px;
+            border-radius: 16px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            border: 1px solid var(--border);
+            background: var(--bg-tertiary);
+            transition: all 0.2s;
+        }
+
+        .chip.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: var(--text-inverse);
+        }
+
+        .chip:hover:not(.active) {
+            background: var(--border);
+        }
+
+        /* Matrix Container */
+        .matrix-section {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            padding: 20px;
+            flex: 1;
+        }
+
+        .matrix-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .matrix-header h2 {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .risk-score {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+        }
+
+        .risk-score-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .risk-score-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        /* Matrix Grid */
+        .matrix-wrapper {
+            display: flex;
+            gap: 8px;
+        }
+
+        .y-axis-labels {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 0 8px;
+            height: 350px;
+        }
+
+        .y-axis-labels span {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-align: right;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+        }
+
+        .y-axis-title {
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            transform: rotate(180deg);
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-right: 4px;
+        }
+
+        .matrix-container {
+            flex: 1;
+        }
+
+        .matrix-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            grid-template-rows: repeat(5, 1fr);
+            gap: 2px;
+            height: 350px;
+            background: var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .matrix-cell {
+            position: relative;
+            display: flex;
+            flex-wrap: wrap;
+            align-content: flex-start;
+            gap: 4px;
+            padding: 4px;
+            transition: background 0.2s;
+        }
+
+        .matrix-cell.drag-over {
+            outline: 2px dashed var(--accent);
+            outline-offset: -2px;
+        }
+
+        /* Cell colors based on risk level */
+        .risk-critical { background: var(--tone-red-30); }
+        .risk-high { background: rgba(255, 165, 2, 0.3); }
+        .risk-medium { background: rgba(255, 217, 61, 0.2); }
+        .risk-low { background: rgba(107, 207, 107, 0.2); }
+
+        .x-axis-labels {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            margin-left: 50px;
+        }
+
+        .x-axis-labels span {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            width: 70px;
+            text-align: center;
+        }
+
+        .x-axis-title {
+            text-align: center;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-left: 50px;
+        }
+
+        /* Vulnerability Dots */
+        .vuln-dot {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            cursor: grab;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.65rem;
+            font-weight: 600;
+            color: var(--text-inverse);
+            border: 2px solid var(--tone-white-30);
+            transition: transform 0.2s, box-shadow 0.2s;
+            user-select: none;
+        }
+
+        .vuln-dot:hover {
+            transform: scale(1.15);
+            box-shadow: 0 0 12px currentColor;
+            z-index: 10;
+        }
+
+        .vuln-dot.selected {
+            outline: 3px solid var(--accent);
+            outline-offset: 2px;
+        }
+
+        .vuln-dot.dragging {
+            opacity: 0.5;
+            cursor: grabbing;
+        }
+
+        .vuln-dot[data-category="injection"] { background: #e74c3c; }
+        .vuln-dot[data-category="broken-auth"] { background: #9b59b6; }
+        .vuln-dot[data-category="xss"] { background: #e67e22; }
+        .vuln-dot[data-category="xxe"] { background: #1abc9c; }
+        .vuln-dot[data-category="broken-access"] { background: #3498db; }
+        .vuln-dot[data-category="misconfig"] { background: #f39c12; }
+        .vuln-dot[data-category="sensitive-data"] { background: #e91e63; }
+        .vuln-dot[data-category="insecure-deserial"] { background: #00bcd4; }
+        .vuln-dot[data-category="components"] { background: #8bc34a; }
+        .vuln-dot[data-category="logging"] { background: #607d8b; }
+
+        /* Sidebar */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .panel {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        .panel-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+            font-size: 0.875rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .panel-content {
+            padding: 12px 16px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        /* Vulnerability Detail */
+        .vuln-detail-empty {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .vuln-detail h3 {
+            font-size: 1rem;
+            margin-bottom: 8px;
+        }
+
+        .vuln-meta {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .vuln-badge {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .vuln-badge.critical { background: var(--critical); }
+        .vuln-badge.high { background: var(--high); color: var(--text-dark); }
+        .vuln-badge.medium { background: var(--medium); color: var(--text-dark); }
+        .vuln-badge.low { background: var(--low); color: var(--text-dark); }
+
+        .vuln-field {
+            margin-bottom: 12px;
+        }
+
+        .vuln-field label {
+            display: block;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .vuln-field p, .vuln-field textarea, .vuln-field input {
+            font-size: 0.875rem;
+            color: var(--text-primary);
+        }
+
+        .vuln-field textarea, .vuln-field input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            font-family: inherit;
+            resize: vertical;
+        }
+
+        .vuln-field textarea:focus, .vuln-field input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        /* OWASP Checklist */
+        .checklist-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.8rem;
+        }
+
+        .checklist-item:last-child {
+            border-bottom: none;
+        }
+
+        .checklist-status {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            cursor: pointer;
+        }
+
+        .checklist-status.pass { background: var(--success); }
+        .checklist-status.fail { background: var(--danger); }
+        .checklist-status.warning { background: var(--warning); }
+        .checklist-status.unknown { background: var(--bg-tertiary); border: 1px solid var(--border); }
+
+        .checklist-label {
+            flex: 1;
+        }
+
+        .checklist-count {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        /* Timeline */
+        .timeline-item {
+            display: flex;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .timeline-item:last-child {
+            border-bottom: none;
+        }
+
+        .timeline-priority {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-top: 6px;
+            flex-shrink: 0;
+        }
+
+        .timeline-priority.critical { background: var(--critical); }
+        .timeline-priority.high { background: var(--high); }
+        .timeline-priority.medium { background: var(--medium); }
+        .timeline-priority.low { background: var(--low); }
+
+        .timeline-content h4 {
+            font-size: 0.8rem;
+            font-weight: 500;
+            margin-bottom: 2px;
+        }
+
+        .timeline-content p {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+        }
+
+        /* Prompt Output */
+        .prompt-section {
+            grid-column: 1 / -1;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .prompt-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .prompt-header h3 {
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .prompt-content {
+            padding: 16px;
+            font-family: 'SF Mono', Monaco, Consolas, monospace;
+            font-size: 0.8rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+            color: var(--text-secondary);
+        }
+
+        /* Add Vulnerability Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: var(--overlay-black-70);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            width: 400px;
+            max-width: 90vw;
+        }
+
+        .modal-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.25rem;
+            cursor: pointer;
+        }
+
+        .modal-body {
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .modal-footer {
+            padding: 16px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .form-group label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .form-group input, .form-group select, .form-group textarea {
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.875rem;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 12px;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            background: var(--success);
+            color: var(--text-inverse);
+            border-radius: 8px;
+            font-size: 0.875rem;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s;
+            z-index: 2000;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+    
+/* ===== MOBILE RESPONSIVE (v13) ===== */
+@media (max-width: 768px) {
+  body { padding: 1rem !important; }
+
+  /* Single-column grids */
+  [style*="grid-template-columns"],
+  .grid, .cards-grid, .two-col, .three-col,
+  [class*="grid-"] { grid-template-columns: 1fr !important; }
+
+  /* Stack flex rows */
+  .flex-row, .row, [class*="-row"] { flex-direction: column !important; }
+
+  /* Full-width elements */
+  .card, .panel, .box, .section,
+  [class*="card"], [class*="panel"] { width: 100% !important; max-width: 100% !important; }
+
+  /* Touch-friendly inputs and buttons */
+  input, select, textarea, button, .btn,
+  [class*="btn"], [class*="button"] {
+    min-height: 44px !important;
+    font-size: 16px !important;
+  }
+
+  /* Prevent horizontal scroll */
+  .container, .wrapper, main, section { overflow-x: hidden; }
+
+  /* Readable font sizes */
+  h1 { font-size: 1.6rem !important; }
+  h2 { font-size: 1.3rem !important; }
+  h3 { font-size: 1.1rem !important; }
+
+  /* Reduce whitespace */
+  .container, .wrapper, main {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+
+  /* Table responsiveness */
+  table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* Navigation */
+  nav, .nav, .navbar { flex-wrap: wrap; gap: .5rem; }
+}
+
+@media (max-width: 480px) {
+  body { padding: .75rem !important; }
+  h1 { font-size: 1.3rem !important; }
+  .header, header { padding: .75rem 1rem !important; }
+}
+
+</style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <div class="logo">
+                <div class="logo-icon">🛡️</div>
+                <div>
+                    <h1>Risk Matrix</h1>
+                    <span>Security Vulnerability Assessment</span>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="btn" onclick="resetMatrix()">🔄 Reset</button>
+                <button class="btn btn-primary" onclick="openAddModal()">+ Add Vulnerability</button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Controls Bar -->
+            <div class="controls-bar">
+                <select class="preset-select" onchange="loadPreset(this.value)">
+                    <option value="">Load Preset...</option>
+                    <option value="pre-launch">Pre-launch Audit</option>
+                    <option value="compliance">Compliance Check</option>
+                    <option value="pentest">Pentest Results</option>
+                </select>
+                
+                <div class="filter-chips" id="filterChips">
+                    <span class="chip active" data-filter="all" onclick="filterCategory('all')">All</span>
+                    <span class="chip" data-filter="injection" onclick="filterCategory('injection')">Injection</span>
+                    <span class="chip" data-filter="broken-auth" onclick="filterCategory('broken-auth')">Auth</span>
+                    <span class="chip" data-filter="xss" onclick="filterCategory('xss')">XSS</span>
+                    <span class="chip" data-filter="sensitive-data" onclick="filterCategory('sensitive-data')">Data</span>
+                    <span class="chip" data-filter="misconfig" onclick="filterCategory('misconfig')">Config</span>
+                    <span class="chip" data-filter="components" onclick="filterCategory('components')">Components</span>
+                </div>
+            </div>
+
+            <!-- Matrix Section -->
+            <div class="matrix-section">
+                <div class="matrix-header">
+                    <h2>Impact × Probability Matrix</h2>
+                    <div class="risk-score">
+                        <div>
+                            <div class="risk-score-value" id="globalRiskScore">0</div>
+                            <div class="risk-score-label">Global Risk Score</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="matrix-wrapper">
+                    <div class="y-axis-title">IMPACT →</div>
+                    <div class="y-axis-labels">
+                        <span>5 - Critical</span>
+                        <span>4 - High</span>
+                        <span>3 - Medium</span>
+                        <span>2 - Low</span>
+                        <span>1 - Minimal</span>
+                    </div>
+                    <div class="matrix-container">
+                        <div class="matrix-grid" id="matrixGrid">
+                            <!-- Generated by JS -->
+                        </div>
+                        <div class="x-axis-labels">
+                            <span>1 - Rare</span>
+                            <span>2 - Unlikely</span>
+                            <span>3 - Possible</span>
+                            <span>4 - Likely</span>
+                            <span>5 - Certain</span>
+                        </div>
+                        <div class="x-axis-title">PROBABILITY →</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <!-- Vulnerability Detail -->
+            <div class="panel">
+                <div class="panel-header">
+                    Vulnerability Details
+                    <button class="btn btn-sm btn-danger" id="deleteVulnBtn" style="display:none" onclick="deleteSelectedVuln()">Delete</button>
+                </div>
+                <div class="panel-content" id="vulnDetailPanel">
+                    <div class="vuln-detail-empty">Click a vulnerability dot to view details</div>
+                </div>
+            </div>
+
+            <!-- OWASP Top 10 Checklist -->
+            <div class="panel">
+                <div class="panel-header">
+                    OWASP Top 10 Checklist
+                    <span id="checklistSummary" style="font-size:0.7rem;color:var(--text-muted)">0/10</span>
+                </div>
+                <div class="panel-content" id="owaspChecklist">
+                    <!-- Generated by JS -->
+                </div>
+            </div>
+
+            <!-- Remediation Timeline -->
+            <div class="panel">
+                <div class="panel-header">Remediation Timeline</div>
+                <div class="panel-content" id="remediationTimeline">
+                    <div class="vuln-detail-empty">Add vulnerabilities to see remediation priority</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Prompt Output -->
+        <div class="prompt-section">
+            <div class="prompt-header">
+                <h3>📋 Security Assessment Prompt</h3>
+                <button class="btn btn-primary" onclick="copyPrompt()">📋 Copy</button>
+            </div>
+            <div class="prompt-content" id="promptOutput">
+Add vulnerabilities to the risk matrix to generate your security assessment prompt...
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Vulnerability Modal -->
+    <div class="modal-overlay" id="addModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Add Vulnerability</h3>
+                <button class="modal-close" onclick="closeAddModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Name</label>
+                    <input type="text" id="vulnName" placeholder="e.g., SQL Injection in Login">
+                </div>
+                <div class="form-group">
+                    <label>OWASP Category</label>
+                    <select id="vulnCategory">
+                        <option value="injection">A1 - Injection</option>
+                        <option value="broken-auth">A2 - Broken Authentication</option>
+                        <option value="sensitive-data">A3 - Sensitive Data Exposure</option>
+                        <option value="xxe">A4 - XML External Entities</option>
+                        <option value="broken-access">A5 - Broken Access Control</option>
+                        <option value="misconfig">A6 - Security Misconfiguration</option>
+                        <option value="xss">A7 - Cross-Site Scripting</option>
+                        <option value="insecure-deserial">A8 - Insecure Deserialization</option>
+                        <option value="components">A9 - Vulnerable Components</option>
+                        <option value="logging">A10 - Insufficient Logging</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Impact (1-5)</label>
+                        <select id="vulnImpact">
+                            <option value="1">1 - Minimal</option>
+                            <option value="2">2 - Low</option>
+                            <option value="3" selected>3 - Medium</option>
+                            <option value="4">4 - High</option>
+                            <option value="5">5 - Critical</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Probability (1-5)</label>
+                        <select id="vulnProbability">
+                            <option value="1">1 - Rare</option>
+                            <option value="2">2 - Unlikely</option>
+                            <option value="3" selected>3 - Possible</option>
+                            <option value="4">4 - Likely</option>
+                            <option value="5">5 - Certain</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="vulnDescription" placeholder="Describe the vulnerability..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Remediation</label>
+                    <textarea id="vulnRemediation" placeholder="How to fix this vulnerability..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="closeAddModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="addVulnerability()">Add Vulnerability</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast">Copied to clipboard!</div>
+
+    <script>
+        // ============================================
+        // STATE
+        // ============================================
+        const state = {
+            vulnerabilities: [],
+            selectedVulnId: null,
+            activeFilter: 'all',
+            owaspStatus: {
+                'injection': 'unknown',
+                'broken-auth': 'unknown',
+                'sensitive-data': 'unknown',
+                'xxe': 'unknown',
+                'broken-access': 'unknown',
+                'misconfig': 'unknown',
+                'xss': 'unknown',
+                'insecure-deserial': 'unknown',
+                'components': 'unknown',
+                'logging': 'unknown'
+            },
+            draggedVuln: null
+        };
+
+        const OWASP_LABELS = {
+            'injection': 'A1 - Injection',
+            'broken-auth': 'A2 - Broken Authentication',
+            'sensitive-data': 'A3 - Sensitive Data Exposure',
+            'xxe': 'A4 - XML External Entities',
+            'broken-access': 'A5 - Broken Access Control',
+            'misconfig': 'A6 - Security Misconfiguration',
+            'xss': 'A7 - Cross-Site Scripting',
+            'insecure-deserial': 'A8 - Insecure Deserialization',
+            'components': 'A9 - Vulnerable Components',
+            'logging': 'A10 - Insufficient Logging'
+        };
+
+        const PRESETS = {
+            'pre-launch': [
+                { name: 'SQL Injection Risk', category: 'injection', impact: 5, probability: 3, description: 'Potential SQL injection in user input forms', remediation: 'Use parameterized queries and input validation' },
+                { name: 'Weak Password Policy', category: 'broken-auth', impact: 4, probability: 4, description: 'No password complexity requirements', remediation: 'Implement strong password policy with complexity rules' },
+                { name: 'Missing HTTPS', category: 'sensitive-data', impact: 4, probability: 5, description: 'Some pages served over HTTP', remediation: 'Enable HTTPS everywhere, implement HSTS' },
+                { name: 'Outdated jQuery', category: 'components', impact: 3, probability: 3, description: 'Using jQuery 2.x with known vulnerabilities', remediation: 'Upgrade to latest jQuery version' },
+                { name: 'Verbose Error Messages', category: 'misconfig', impact: 2, probability: 4, description: 'Stack traces exposed in production', remediation: 'Configure custom error pages, disable debug mode' }
+            ],
+            'compliance': [
+                { name: 'Missing Access Logs', category: 'logging', impact: 3, probability: 5, description: 'No audit trail for user actions', remediation: 'Implement comprehensive logging with tamper protection' },
+                { name: 'Unencrypted PII', category: 'sensitive-data', impact: 5, probability: 2, description: 'Personal data stored without encryption', remediation: 'Encrypt PII at rest using AES-256' },
+                { name: 'No MFA Option', category: 'broken-auth', impact: 4, probability: 3, description: 'Single factor authentication only', remediation: 'Implement TOTP or WebAuthn MFA' },
+                { name: 'Missing RBAC', category: 'broken-access', impact: 4, probability: 3, description: 'Flat permission model', remediation: 'Implement role-based access control' },
+                { name: 'Session Fixation', category: 'broken-auth', impact: 4, probability: 2, description: 'Session ID not regenerated after login', remediation: 'Regenerate session ID on authentication' }
+            ],
+            'pentest': [
+                { name: 'Stored XSS in Comments', category: 'xss', impact: 4, probability: 5, description: 'User comments not sanitized, scripts execute', remediation: 'Sanitize all user input, use CSP headers' },
+                { name: 'IDOR in API', category: 'broken-access', impact: 5, probability: 4, description: 'Direct object references in /api/users/{id}', remediation: 'Implement authorization checks on all endpoints' },
+                { name: 'XXE in XML Parser', category: 'xxe', impact: 5, probability: 2, description: 'XML parser accepts external entities', remediation: 'Disable DTD processing, use defused XML' },
+                { name: 'Insecure Deserialization', category: 'insecure-deserial', impact: 5, probability: 2, description: 'Pickle used for session data', remediation: 'Use JSON serialization, sign/encrypt data' },
+                { name: 'Server Version Exposed', category: 'misconfig', impact: 2, probability: 5, description: 'Apache version in headers', remediation: 'Configure ServerTokens Prod' },
+                { name: 'Blind SQL Injection', category: 'injection', impact: 5, probability: 3, description: 'Time-based SQLi in search endpoint', remediation: 'Use ORM, parameterized queries' }
+            ]
+        };
+
+        // ============================================
+        // CORE FUNCTIONS
+        // ============================================
+        function updateAll() {
+            renderMatrix();
+            renderVulnDetail();
+            renderOwaspChecklist();
+            renderTimeline();
+            updatePrompt();
+            updateGlobalScore();
+        }
+
+        function generateId() {
+            return 'v' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+        }
+
+        function getRiskLevel(impact, probability) {
+            const score = impact * probability;
+            if (score >= 20) return 'critical';
+            if (score >= 12) return 'high';
+            if (score >= 6) return 'medium';
+            return 'low';
+        }
+
+        function getCellRiskClass(impact, probability) {
+            return 'risk-' + getRiskLevel(impact, probability);
+        }
+
+        function updateGlobalScore() {
+            if (state.vulnerabilities.length === 0) {
+                document.getElementById('globalRiskScore').textContent = '0';
+                document.getElementById('globalRiskScore').style.color = 'var(--text-primary)';
+                return;
+            }
+
+            const totalScore = state.vulnerabilities.reduce((sum, v) => sum + (v.impact * v.probability), 0);
+            const avgScore = totalScore / state.vulnerabilities.length;
+            const normalizedScore = Math.round((avgScore / 25) * 100);
+
+            const scoreEl = document.getElementById('globalRiskScore');
+            scoreEl.textContent = normalizedScore;
+
+            if (normalizedScore >= 70) scoreEl.style.color = 'var(--critical)';
+            else if (normalizedScore >= 50) scoreEl.style.color = 'var(--high)';
+            else if (normalizedScore >= 30) scoreEl.style.color = 'var(--medium)';
+            else scoreEl.style.color = 'var(--low)';
+        }
+
+        // ============================================
+        // MATRIX RENDERING
+        // ============================================
+        function renderMatrix() {
+            const grid = document.getElementById('matrixGrid');
+            grid.innerHTML = '';
+
+            // Create 5x5 grid (impact 5 at top, probability 1 at left)
+            for (let impact = 5; impact >= 1; impact--) {
+                for (let prob = 1; prob <= 5; prob++) {
+                    const cell = document.createElement('div');
+                    cell.className = `matrix-cell ${getCellRiskClass(impact, prob)}`;
+                    cell.dataset.impact = impact;
+                    cell.dataset.probability = prob;
+
+                    // Add drag-drop handlers
+                    cell.addEventListener('dragover', handleDragOver);
+                    cell.addEventListener('dragleave', handleDragLeave);
+                    cell.addEventListener('drop', handleDrop);
+
+                    // Add vulnerabilities to this cell
+                    const cellVulns = state.vulnerabilities.filter(v => 
+                        v.impact === impact && 
+                        v.probability === prob &&
+                        (state.activeFilter === 'all' || v.category === state.activeFilter)
+                    );
+
+                    cellVulns.forEach(vuln => {
+                        const dot = createVulnDot(vuln);
+                        cell.appendChild(dot);
+                    });
+
+                    grid.appendChild(cell);
+                }
+            }
+        }
+
+        function createVulnDot(vuln) {
+            const dot = document.createElement('div');
+            dot.className = 'vuln-dot' + (vuln.id === state.selectedVulnId ? ' selected' : '');
+            dot.dataset.id = vuln.id;
+            dot.dataset.category = vuln.category;
+            dot.draggable = true;
+            dot.textContent = vuln.name.substring(0, 2).toUpperCase();
+            dot.title = vuln.name;
+
+            dot.addEventListener('click', (e) => {
+                e.stopPropagation();
+                selectVulnerability(vuln.id);
+            });
+
+            dot.addEventListener('dragstart', handleDragStart);
+            dot.addEventListener('dragend', handleDragEnd);
+
+            return dot;
+        }
+
+        // ============================================
+        // DRAG & DROP
+        // ============================================
+        function handleDragStart(e) {
+            state.draggedVuln = e.target.dataset.id;
+            e.target.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        }
+
+        function handleDragEnd(e) {
+            e.target.classList.remove('dragging');
+            state.draggedVuln = null;
+            document.querySelectorAll('.matrix-cell').forEach(cell => cell.classList.remove('drag-over'));
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            e.currentTarget.classList.add('drag-over');
+        }
+
+        function handleDragLeave(e) {
+            e.currentTarget.classList.remove('drag-over');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('drag-over');
+
+            if (!state.draggedVuln) return;
+
+            const newImpact = parseInt(e.currentTarget.dataset.impact);
+            const newProb = parseInt(e.currentTarget.dataset.probability);
+
+            const vuln = state.vulnerabilities.find(v => v.id === state.draggedVuln);
+            if (vuln) {
+                vuln.impact = newImpact;
+                vuln.probability = newProb;
+                updateAll();
+            }
+        }
+
+        // ============================================
+        // VULNERABILITY MANAGEMENT
+        // ============================================
+        function selectVulnerability(id) {
+            state.selectedVulnId = state.selectedVulnId === id ? null : id;
+            updateAll();
+        }
+
+        function addVulnerability() {
+            const name = document.getElementById('vulnName').value.trim();
+            if (!name) {
+                alert('Please enter a vulnerability name');
+                return;
+            }
+
+            const vuln = {
+                id: generateId(),
+                name: name,
+                category: document.getElementById('vulnCategory').value,
+                impact: parseInt(document.getElementById('vulnImpact').value),
+                probability: parseInt(document.getElementById('vulnProbability').value),
+                description: document.getElementById('vulnDescription').value.trim(),
+                remediation: document.getElementById('vulnRemediation').value.trim()
+            };
+
+            state.vulnerabilities.push(vuln);
+            
+            // Update OWASP status
+            if (state.owaspStatus[vuln.category] === 'unknown') {
+                state.owaspStatus[vuln.category] = 'fail';
+            }
+
+            closeAddModal();
+            state.selectedVulnId = vuln.id;
+            updateAll();
+        }
+
+        function deleteSelectedVuln() {
+            if (!state.selectedVulnId) return;
+            state.vulnerabilities = state.vulnerabilities.filter(v => v.id !== state.selectedVulnId);
+            state.selectedVulnId = null;
+            updateAll();
+        }
+
+        function updateSelectedVuln(field, value) {
+            const vuln = state.vulnerabilities.find(v => v.id === state.selectedVulnId);
+            if (vuln) {
+                vuln[field] = value;
+                updateAll();
+            }
+        }
+
+        // ============================================
+        // DETAIL PANEL
+        // ============================================
+        function renderVulnDetail() {
+            const panel = document.getElementById('vulnDetailPanel');
+            const deleteBtn = document.getElementById('deleteVulnBtn');
+
+            if (!state.selectedVulnId) {
+                panel.innerHTML = '<div class="vuln-detail-empty">Click a vulnerability dot to view details</div>';
+                deleteBtn.style.display = 'none';
+                return;
+            }
+
+            const vuln = state.vulnerabilities.find(v => v.id === state.selectedVulnId);
+            if (!vuln) {
+                panel.innerHTML = '<div class="vuln-detail-empty">Vulnerability not found</div>';
+                deleteBtn.style.display = 'none';
+                return;
+            }
+
+            deleteBtn.style.display = 'block';
+            const riskLevel = getRiskLevel(vuln.impact, vuln.probability);
+
+            panel.innerHTML = `
+                <div class="vuln-detail">
+                    <h3>${vuln.name}</h3>
+                    <div class="vuln-meta">
+                        <span class="vuln-badge ${riskLevel}">${riskLevel}</span>
+                        <span class="vuln-badge" style="background:var(--bg-tertiary)">${OWASP_LABELS[vuln.category]}</span>
+                    </div>
+                    <div class="vuln-field">
+                        <label>Risk Score</label>
+                        <p><strong>${vuln.impact * vuln.probability}</strong> (Impact ${vuln.impact} × Probability ${vuln.probability})</p>
+                    </div>
+                    <div class="vuln-field">
+                        <label>Description</label>
+                        <textarea onchange="updateSelectedVuln('description', this.value)">${vuln.description || ''}</textarea>
+                    </div>
+                    <div class="vuln-field">
+                        <label>Remediation</label>
+                        <textarea onchange="updateSelectedVuln('remediation', this.value)">${vuln.remediation || ''}</textarea>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ============================================
+        // OWASP CHECKLIST
+        // ============================================
+        function renderOwaspChecklist() {
+            const container = document.getElementById('owaspChecklist');
+            const statusIcons = { pass: '✓', fail: '✗', warning: '⚠', unknown: '?' };
+            
+            let passCount = 0;
+            
+            container.innerHTML = Object.entries(OWASP_LABELS).map(([key, label]) => {
+                const status = state.owaspStatus[key];
+                if (status === 'pass') passCount++;
+                const vulnCount = state.vulnerabilities.filter(v => v.category === key).length;
+                
+                return `
+                    <div class="checklist-item">
+                        <div class="checklist-status ${status}" onclick="cycleOwaspStatus('${key}')" title="Click to change status">
+                            ${statusIcons[status]}
+                        </div>
+                        <span class="checklist-label">${label}</span>
+                        ${vulnCount > 0 ? `<span class="checklist-count">${vulnCount} issue${vulnCount > 1 ? 's' : ''}</span>` : ''}
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('checklistSummary').textContent = `${passCount}/10 passed`;
+        }
+
+        function cycleOwaspStatus(category) {
+            const order = ['unknown', 'pass', 'warning', 'fail'];
+            const current = state.owaspStatus[category];
+            const nextIndex = (order.indexOf(current) + 1) % order.length;
+            state.owaspStatus[category] = order[nextIndex];
+            updateAll();
+        }
+
+        // ============================================
+        // TIMELINE
+        // ============================================
+        function renderTimeline() {
+            const container = document.getElementById('remediationTimeline');
+
+            if (state.vulnerabilities.length === 0) {
+                container.innerHTML = '<div class="vuln-detail-empty">Add vulnerabilities to see remediation priority</div>';
+                return;
+            }
+
+            // Sort by risk score (descending)
+            const sorted = [...state.vulnerabilities].sort((a, b) => 
+                (b.impact * b.probability) - (a.impact * a.probability)
+            );
+
+            container.innerHTML = sorted.slice(0, 8).map((vuln, index) => {
+                const riskLevel = getRiskLevel(vuln.impact, vuln.probability);
+                const timeframe = riskLevel === 'critical' ? 'Immediate' : 
+                                  riskLevel === 'high' ? 'Within 1 week' :
+                                  riskLevel === 'medium' ? 'Within 1 month' : 'Backlog';
+                
+                return `
+                    <div class="timeline-item" onclick="selectVulnerability('${vuln.id}')" style="cursor:pointer">
+                        <div class="timeline-priority ${riskLevel}"></div>
+                        <div class="timeline-content">
+                            <h4>${index + 1}. ${vuln.name}</h4>
+                            <p>${timeframe} • Score: ${vuln.impact * vuln.probability}</p>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ============================================
+        // PROMPT OUTPUT
+        // ============================================
+        function updatePrompt() {
+            const output = document.getElementById('promptOutput');
+
+            if (state.vulnerabilities.length === 0) {
+                output.textContent = 'Add vulnerabilities to the risk matrix to generate your security assessment prompt...';
+                return;
+            }
+
+            // Sort by risk
+            const sorted = [...state.vulnerabilities].sort((a, b) => 
+                (b.impact * b.probability) - (a.impact * a.probability)
+            );
+
+            const top5 = sorted.slice(0, 5);
+            const totalScore = sorted.reduce((sum, v) => sum + (v.impact * v.probability), 0);
+            const avgScore = (totalScore / sorted.length).toFixed(1);
+
+            // Build category summary
+            const categoryCounts = {};
+            sorted.forEach(v => {
+                categoryCounts[v.category] = (categoryCounts[v.category] || 0) + 1;
+            });
+
+            // OWASP compliance
+            const passedChecks = Object.values(state.owaspStatus).filter(s => s === 'pass').length;
+            const failedChecks = Object.values(state.owaspStatus).filter(s => s === 'fail').length;
+
+            const prompt = `# Security Risk Assessment Report
+
+## Overview
+- **Total Vulnerabilities:** ${sorted.length}
+- **Average Risk Score:** ${avgScore}/25
+- **OWASP Compliance:** ${passedChecks}/10 checks passed, ${failedChecks} failed
+
+## Top 5 Critical Risks
+
+${top5.map((v, i) => `### ${i + 1}. ${v.name}
+- **Category:** ${OWASP_LABELS[v.category]}
+- **Risk Score:** ${v.impact * v.probability} (Impact: ${v.impact}, Probability: ${v.probability})
+- **Severity:** ${getRiskLevel(v.impact, v.probability).toUpperCase()}
+- **Description:** ${v.description || 'No description provided'}
+- **Remediation:** ${v.remediation || 'No remediation plan'}`).join('\n\n')}
+
+## Remediation Plan
+
+### Immediate Actions (Critical - Score ≥20)
+${sorted.filter(v => v.impact * v.probability >= 20).map(v => `- [ ] ${v.name}: ${v.remediation || 'Define remediation'}`).join('\n') || '- No critical issues'}
+
+### Short-term (High - Score 12-19, within 1 week)
+${sorted.filter(v => { const s = v.impact * v.probability; return s >= 12 && s < 20; }).map(v => `- [ ] ${v.name}: ${v.remediation || 'Define remediation'}`).join('\n') || '- No high priority issues'}
+
+### Medium-term (Medium - Score 6-11, within 1 month)
+${sorted.filter(v => { const s = v.impact * v.probability; return s >= 6 && s < 12; }).map(v => `- [ ] ${v.name}: ${v.remediation || 'Define remediation'}`).join('\n') || '- No medium priority issues'}
+
+### Backlog (Low - Score <6)
+${sorted.filter(v => v.impact * v.probability < 6).map(v => `- [ ] ${v.name}`).join('\n') || '- No low priority issues'}
+
+## Category Breakdown
+${Object.entries(categoryCounts).map(([cat, count]) => `- ${OWASP_LABELS[cat]}: ${count} issue${count > 1 ? 's' : ''}`).join('\n')}
+
+---
+Generated by Risk Matrix Security Playground`;
+
+            output.textContent = prompt;
+        }
+
+        // ============================================
+        // PRESETS & FILTERS
+        // ============================================
+        function loadPreset(presetName) {
+            if (!presetName || !PRESETS[presetName]) return;
+
+            // Reset
+            state.vulnerabilities = [];
+            state.selectedVulnId = null;
+            Object.keys(state.owaspStatus).forEach(k => state.owaspStatus[k] = 'unknown');
+
+            // Load preset vulnerabilities
+            PRESETS[presetName].forEach(v => {
+                const vuln = { ...v, id: generateId() };
+                state.vulnerabilities.push(vuln);
+                state.owaspStatus[vuln.category] = 'fail';
+            });
+
+            updateAll();
+
+            // Reset select
+            document.querySelector('.preset-select').value = '';
+        }
+
+        function filterCategory(category) {
+            state.activeFilter = category;
+
+            // Update chip UI
+            document.querySelectorAll('.chip').forEach(chip => {
+                chip.classList.toggle('active', chip.dataset.filter === category);
+            });
+
+            renderMatrix();
+        }
+
+        function resetMatrix() {
+            if (!confirm('Reset all vulnerabilities and start fresh?')) return;
+
+            state.vulnerabilities = [];
+            state.selectedVulnId = null;
+            state.activeFilter = 'all';
+            Object.keys(state.owaspStatus).forEach(k => state.owaspStatus[k] = 'unknown');
+
+            document.querySelectorAll('.chip').forEach(chip => {
+                chip.classList.toggle('active', chip.dataset.filter === 'all');
+            });
+
+            updateAll();
+        }
+
+        // ============================================
+        // MODAL
+        // ============================================
+        function openAddModal() {
+            document.getElementById('addModal').classList.add('active');
+            document.getElementById('vulnName').value = '';
+            document.getElementById('vulnDescription').value = '';
+            document.getElementById('vulnRemediation').value = '';
+            document.getElementById('vulnImpact').value = '3';
+            document.getElementById('vulnProbability').value = '3';
+            document.getElementById('vulnName').focus();
+        }
+
+        function closeAddModal() {
+            document.getElementById('addModal').classList.remove('active');
+        }
+
+        // ============================================
+        // COPY
+        // ============================================
+        function copyPrompt() {
+            const text = document.getElementById('promptOutput').textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('Copied to clipboard!');
+            });
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+        }
+
+        // ============================================
+        // KEYBOARD SHORTCUTS
+        // ============================================
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeAddModal();
+                state.selectedVulnId = null;
+                updateAll();
+            }
+            if (e.key === 'Delete' && state.selectedVulnId && !e.target.matches('input, textarea')) {
+                deleteSelectedVuln();
+            }
+        });
+
+        // Click outside to deselect
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.vuln-dot') && !e.target.closest('.panel') && !e.target.closest('.timeline-item')) {
+                state.selectedVulnId = null;
+                updateAll();
+            }
+        });
+
+        // ============================================
+        // INIT
+        // ============================================
+        updateAll();
+    </script>
+</body>
+</html>

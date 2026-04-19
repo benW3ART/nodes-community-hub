@@ -1,0 +1,1284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Copy A/B Tester | Genius Playground</title>
+    <link rel="stylesheet" href="./design-tokens.css">
+    <style>
+        :root {
+            --border: var(--border-color);
+            --accent: var(--accent-blue);
+            --accent-hover: var(--accent-blue-hover);
+            --success: var(--accent-green);
+            --warning: var(--accent-orange);
+            --danger: var(--accent-red);
+            --purple: var(--accent-purple);
+            --pink: var(--accent-pink);
+        }
+
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            font-size: 28px;
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        /* Presets */
+        .presets {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .preset-btn {
+            padding: 8px 16px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .preset-btn:hover {
+            background: var(--bg-secondary);
+            border-color: var(--accent);
+        }
+
+        .preset-btn.active {
+            background: var(--accent);
+            color: var(--text-dark);
+            border-color: var(--accent);
+        }
+
+        /* Main Layout */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        /* Tone Controls */
+        .tone-controls {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+
+        .tone-controls h2 {
+            font-size: 16px;
+            margin-bottom: 16px;
+            color: var(--accent);
+        }
+
+        .sliders-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+
+        .slider-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .slider-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .slider-labels span:first-child { color: var(--purple); }
+        .slider-labels span:last-child { color: var(--pink); }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: linear-gradient(90deg, var(--purple), var(--pink));
+            appearance: none;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--text-primary);
+            border: 2px solid var(--bg-primary);
+            cursor: pointer;
+        }
+
+        /* Variants Panel */
+        .panel {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-tertiary);
+        }
+
+        .panel-header h2 {
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .panel-body {
+            padding: 20px;
+        }
+
+        /* Variant Tabs */
+        .variant-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .variant-tab {
+            flex: 1;
+            padding: 12px 16px;
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .variant-tab:hover {
+            border-color: var(--accent);
+        }
+
+        .variant-tab.active {
+            background: var(--accent);
+            color: var(--text-dark);
+            border-color: var(--accent);
+        }
+
+        .variant-tab.variant-b { --tab-color: var(--success); }
+        .variant-tab.variant-c { --tab-color: var(--warning); }
+
+        .variant-tab.variant-b.active {
+            background: var(--success);
+            border-color: var(--success);
+        }
+
+        .variant-tab.variant-c.active {
+            background: var(--warning);
+            border-color: var(--warning);
+        }
+
+        /* Input Groups */
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        .input-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .input-label label {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .char-count {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        .char-count.warning { color: var(--warning); }
+        .char-count.danger { color: var(--danger); }
+
+        input[type="text"],
+        textarea {
+            width: 100%;
+            padding: 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+
+        input[type="text"]:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        /* Preview Panel */
+        .preview-formats {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .format-btn {
+            padding: 8px 14px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        .format-btn:hover {
+            border-color: var(--accent);
+        }
+
+        .format-btn.active {
+            background: var(--accent);
+            color: var(--text-dark);
+            border-color: var(--accent);
+        }
+
+        /* Preview Container */
+        .preview-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+        }
+
+        .preview-card {
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .preview-card:hover {
+            border-color: var(--text-secondary);
+        }
+
+        .preview-card.selected {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px var(--tone-blue-20);
+        }
+
+        .preview-card.variant-b.selected {
+            border-color: var(--success);
+            box-shadow: 0 0 0 2px var(--tone-green-20);
+        }
+
+        .preview-card.variant-c.selected {
+            border-color: var(--warning);
+            box-shadow: 0 0 0 2px var(--tone-orange-20);
+        }
+
+        .preview-card-header {
+            padding: 10px 14px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            font-size: 12px;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .preview-card.variant-a .preview-card-header { color: var(--accent); }
+        .preview-card.variant-b .preview-card-header { color: var(--success); }
+        .preview-card.variant-c .preview-card-header { color: var(--warning); }
+
+        .select-badge {
+            padding: 2px 8px;
+            background: currentColor;
+            border-radius: 4px;
+            font-size: 10px;
+            color: var(--text-dark);
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .preview-card.selected .select-badge {
+            opacity: 1;
+        }
+
+        .preview-content {
+            padding: 16px;
+            min-height: 180px;
+        }
+
+        /* Preview Format Styles */
+        .preview-landing .preview-headline {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            line-height: 1.2;
+        }
+
+        .preview-landing .preview-subheadline {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+        }
+
+        .preview-landing .preview-body {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+
+        .preview-landing .preview-cta {
+            display: inline-block;
+            padding: 10px 20px;
+            background: var(--accent);
+            color: var(--text-dark);
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        /* Email Preview */
+        .preview-email .preview-headline {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .preview-email .preview-subheadline {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+        }
+
+        .preview-email .preview-body {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 14px;
+        }
+
+        .preview-email .preview-cta {
+            color: var(--accent);
+            text-decoration: underline;
+            font-size: 13px;
+        }
+
+        /* Social Preview */
+        .preview-social {
+            background: var(--text-dark);
+            border-radius: 8px;
+            padding: 4px;
+        }
+
+        .preview-social .preview-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 6px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-height: 180px;
+        }
+
+        .preview-social .preview-headline {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .preview-social .preview-subheadline {
+            font-size: 12px;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+
+        .preview-social .preview-body {
+            display: none;
+        }
+
+        .preview-social .preview-cta {
+            display: inline-block;
+            padding: 8px 16px;
+            background: var(--tone-white-20);
+            border-radius: 20px;
+            font-size: 12px;
+            backdrop-filter: blur(4px);
+        }
+
+        /* Ad Preview */
+        .preview-ad .preview-content {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .preview-ad .preview-headline {
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .preview-ad .preview-subheadline {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .preview-ad .preview-body {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+        }
+
+        .preview-ad .preview-cta {
+            display: inline-block;
+            padding: 6px 14px;
+            background: var(--success);
+            color: var(--text-dark);
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+
+        /* Power Words Highlight */
+        .power-word {
+            background: linear-gradient(135deg, var(--accent) 0%, var(--purple) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 600;
+        }
+
+        /* Prompt Output */
+        .prompt-section {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .prompt-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .prompt-header h2 {
+            font-size: 16px;
+            color: var(--accent);
+        }
+
+        .copy-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            background: var(--accent);
+            color: var(--text-dark);
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .copy-btn:hover {
+            background: var(--accent-hover);
+        }
+
+        .copy-btn.copied {
+            background: var(--success);
+        }
+
+        .prompt-output {
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+            color: var(--text-secondary);
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .sliders-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 16px;
+            }
+            
+            header {
+                flex-direction: column;
+                gap: 16px;
+            }
+            
+            .presets {
+                justify-content: center;
+            }
+            
+            .preview-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    
+/* ===== MOBILE RESPONSIVE (v13) ===== */
+@media (max-width: 768px) {
+  body { padding: 1rem !important; }
+
+  /* Single-column grids */
+  [style*="grid-template-columns"],
+  .grid, .cards-grid, .two-col, .three-col,
+  [class*="grid-"] { grid-template-columns: 1fr !important; }
+
+  /* Stack flex rows */
+  .flex-row, .row, [class*="-row"] { flex-direction: column !important; }
+
+  /* Full-width elements */
+  .card, .panel, .box, .section,
+  [class*="card"], [class*="panel"] { width: 100% !important; max-width: 100% !important; }
+
+  /* Touch-friendly inputs and buttons */
+  input, select, textarea, button, .btn,
+  [class*="btn"], [class*="button"] {
+    min-height: 44px !important;
+    font-size: 16px !important;
+  }
+
+  /* Prevent horizontal scroll */
+  .container, .wrapper, main, section { overflow-x: hidden; }
+
+  /* Readable font sizes */
+  h1 { font-size: 1.6rem !important; }
+  h2 { font-size: 1.3rem !important; }
+  h3 { font-size: 1.1rem !important; }
+
+  /* Reduce whitespace */
+  .container, .wrapper, main {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+
+  /* Table responsiveness */
+  table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* Navigation */
+  nav, .nav, .navbar { flex-wrap: wrap; gap: .5rem; }
+}
+
+@media (max-width: 480px) {
+  body { padding: .75rem !important; }
+  h1 { font-size: 1.3rem !important; }
+  .header, header { padding: .75rem 1rem !important; }
+}
+
+</style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <span class="logo-icon">✍️</span>
+                <div>
+                    <h1>Copy A/B Tester</h1>
+                    <p class="subtitle">Compare copy variants side by side</p>
+                </div>
+            </div>
+            <div class="presets">
+                <button class="preset-btn" data-preset="corporate">🏢 Corporate</button>
+                <button class="preset-btn" data-preset="startup">🚀 Startup</button>
+                <button class="preset-btn" data-preset="friendly">😊 Friendly</button>
+                <button class="preset-btn" data-preset="urgent">⚡ Urgent</button>
+            </div>
+        </header>
+
+        <!-- Tone Controls -->
+        <div class="tone-controls">
+            <h2>🎛️ Tone of Voice</h2>
+            <div class="sliders-grid">
+                <div class="slider-group">
+                    <div class="slider-labels">
+                        <span>Formal</span>
+                        <span>Casual</span>
+                    </div>
+                    <input type="range" id="formalCasual" min="0" max="100" value="50">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-labels">
+                        <span>Serious</span>
+                        <span>Playful</span>
+                    </div>
+                    <input type="range" id="seriousPlayful" min="0" max="100" value="50">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-labels">
+                        <span>Technical</span>
+                        <span>Simple</span>
+                    </div>
+                    <input type="range" id="technicalSimple" min="0" max="100" value="50">
+                </div>
+            </div>
+        </div>
+
+        <div class="main-grid">
+            <!-- Input Panel -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>📝 Copy Variants</h2>
+                </div>
+                <div class="panel-body">
+                    <div class="variant-tabs">
+                        <button class="variant-tab variant-a active" data-variant="a">Variant A</button>
+                        <button class="variant-tab variant-b" data-variant="b">Variant B</button>
+                        <button class="variant-tab variant-c" data-variant="c">Variant C</button>
+                    </div>
+
+                    <div id="variantInputs">
+                        <!-- Variant A -->
+                        <div class="variant-inputs" data-variant="a">
+                            <div class="input-group">
+                                <div class="input-label">
+                                    <label>Headline</label>
+                                    <span class="char-count" id="charHeadlineA">0/60</span>
+                                </div>
+                                <input type="text" id="headlineA" placeholder="Enter headline..." maxlength="120">
+                            </div>
+                            <div class="input-group">
+                                <div class="input-label">
+                                    <label>Subheadline</label>
+                                    <span class="char-count" id="charSubheadlineA">0/90</span>
+                                </div>
+                                <input type="text" id="subheadlineA" placeholder="Enter subheadline..." maxlength="150">
+                            </div>
+                            <div class="input-group">
+                                <div class="input-label">
+                                    <label>Body Text</label>
+                                    <span class="char-count" id="charBodyA">0/280</span>
+                                </div>
+                                <textarea id="bodyA" placeholder="Enter body text..." maxlength="500"></textarea>
+                            </div>
+                            <div class="input-group">
+                                <div class="input-label">
+                                    <label>CTA</label>
+                                    <span class="char-count" id="charCtaA">0/25</span>
+                                </div>
+                                <input type="text" id="ctaA" placeholder="Enter call-to-action..." maxlength="50">
+                            </div>
+                        </div>
+
+                        <!-- Variant B -->
+                        <div class="variant-inputs" data-variant="b" style="display: none;">
+                            <div class="input-group">
+                                <div class="input-label">
+                                    <label>Headline</label>
+                                    <span class="char-count" id="charHeadlineB">0/60</span>
+                                </div>
+                                <input type="text" id="headlineB" placeholder="Enter headline..." maxlength="120">
+                            </div>
+                            <div class="input-group">
+                                <div class="input-label">
+                                    <label>Subheadline</label>
+                                    <span class="char-count" id="charSubheadlineB">0/90</span>
+                                </div>
+                                <input type="text" id="subheadlineB" placeholder="Enter subheadline..." maxlength="150">
+                            </div>
+                            <div class="input-group">
+                                <div class="input-label">
+                                    <label>Body Text</label>
+                                    <span class="char-count" id="charBodyB">0/280</span>
+                                </div>
+                                <textarea id="bodyB" placeholder="Enter body text..." maxlength="500"></textarea>
+                            </div>
+                            <div class="input-group">
+                                <div class="input-label">
+                                    <label>CTA</label>
+                                    <span class="char-count" id="charCtaB">0/25</span>
+                                </div>
+                                <input type="text" id="ctaB" placeholder="Enter call-to-action..." maxlength="50">
+                            </div>
+                        </div>
+
+                        <!-- Variant C -->
+                        <div class="variant-inputs" data-variant="c" style="display: none;">
+                            <div class="input-group">
+                                <div class="input-label">
+                                    <label>Headline</label>
+                                    <span class="char-count" id="charHeadlineC">0/60</span>
+                                </div>
+                                <input type="text" id="headlineC" placeholder="Enter headline..." maxlength="120">
+                            </div>
+                            <div class="input-group">
+                                <div class="input-label">
+                                    <label>Subheadline</label>
+                                    <span class="char-count" id="charSubheadlineC">0/90</span>
+                                </div>
+                                <input type="text" id="subheadlineC" placeholder="Enter subheadline..." maxlength="150">
+                            </div>
+                            <div class="input-group">
+                                <div class="input-label">
+                                    <label>Body Text</label>
+                                    <span class="char-count" id="charBodyC">0/280</span>
+                                </div>
+                                <textarea id="bodyC" placeholder="Enter body text..." maxlength="500"></textarea>
+                            </div>
+                            <div class="input-group">
+                                <div class="input-label">
+                                    <label>CTA</label>
+                                    <span class="char-count" id="charCtaC">0/25</span>
+                                </div>
+                                <input type="text" id="ctaC" placeholder="Enter call-to-action..." maxlength="50">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preview Panel -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>👁️ Preview</h2>
+                </div>
+                <div class="panel-body">
+                    <div class="preview-formats">
+                        <button class="format-btn active" data-format="landing">🖥️ Landing Page</button>
+                        <button class="format-btn" data-format="email">📧 Email</button>
+                        <button class="format-btn" data-format="social">📱 Social</button>
+                        <button class="format-btn" data-format="ad">📢 Ad</button>
+                    </div>
+
+                    <div class="preview-container" id="previewContainer">
+                        <!-- Previews will be rendered here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Prompt Output -->
+        <div class="prompt-section">
+            <div class="prompt-header">
+                <h2>📋 Generated Prompt</h2>
+                <button class="copy-btn" id="copyBtn">
+                    <span>📋</span> Copy Prompt
+                </button>
+            </div>
+            <div class="prompt-output" id="promptOutput">
+                Select a variant and enter your copy to generate a prompt...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Power words list
+        const POWER_WORDS = [
+            'free', 'new', 'proven', 'guaranteed', 'exclusive', 'instant', 'limited',
+            'save', 'discover', 'secret', 'now', 'today', 'easy', 'fast', 'simple',
+            'powerful', 'revolutionary', 'amazing', 'incredible', 'ultimate', 'best',
+            'premium', 'unlock', 'transform', 'boost', 'skyrocket', 'master', 'dominate',
+            'crush', 'explode', 'breakthrough', 'unleash', 'supercharge', 'turbocharge',
+            'maximize', 'optimize', 'accelerate', 'amplify', 'elevate', 'empower',
+            'urgent', 'critical', 'essential', 'vital', 'crucial', 'must-have',
+            'limited-time', 'act now', 'don\'t miss', 'last chance', 'hurry'
+        ];
+
+        // Presets configuration
+        const PRESETS = {
+            corporate: {
+                formalCasual: 15,
+                seriousPlayful: 20,
+                technicalSimple: 40,
+                variants: {
+                    a: {
+                        headline: 'Enterprise-Grade Solutions for Modern Business',
+                        subheadline: 'Trusted by Fortune 500 companies worldwide',
+                        body: 'Our comprehensive platform delivers measurable results with industry-leading security and compliance standards.',
+                        cta: 'Request a Demo'
+                    },
+                    b: {
+                        headline: 'Transform Your Business Operations Today',
+                        subheadline: 'Join 10,000+ industry leaders',
+                        body: 'Streamline workflows, reduce costs, and drive sustainable growth with our proven methodology.',
+                        cta: 'Schedule Consultation'
+                    },
+                    c: {
+                        headline: 'The Platform That Powers Growth',
+                        subheadline: 'Built for scale, designed for success',
+                        body: 'From startups to enterprises, organizations choose us for reliability, performance, and results.',
+                        cta: 'Learn More'
+                    }
+                }
+            },
+            startup: {
+                formalCasual: 70,
+                seriousPlayful: 60,
+                technicalSimple: 65,
+                variants: {
+                    a: {
+                        headline: 'Ship Faster. Scale Smarter. 🚀',
+                        subheadline: 'The tool your team actually wants to use',
+                        body: 'Stop wasting time on boring stuff. We automate the grunt work so you can focus on building something amazing.',
+                        cta: 'Start Free Trial'
+                    },
+                    b: {
+                        headline: 'Your Secret Weapon for 10x Growth',
+                        subheadline: 'Join 5,000+ fast-growing startups',
+                        body: 'Built by founders, for founders. We\'ve been there, done that, and made it simple for you.',
+                        cta: 'Get Started Free'
+                    },
+                    c: {
+                        headline: 'Stop Overthinking. Start Building.',
+                        subheadline: 'From idea to launch in days, not months',
+                        body: 'The all-in-one platform that lets you move fast without breaking things.',
+                        cta: 'Try It Now'
+                    }
+                }
+            },
+            friendly: {
+                formalCasual: 85,
+                seriousPlayful: 80,
+                technicalSimple: 90,
+                variants: {
+                    a: {
+                        headline: 'Hey there! Ready for something awesome? 👋',
+                        subheadline: 'We make the complicated stuff feel simple',
+                        body: 'No jargon, no fluff—just a friendly tool that helps you get things done with a smile.',
+                        cta: 'Let\'s Go!'
+                    },
+                    b: {
+                        headline: 'Your New Favorite Way to Work',
+                        subheadline: 'It\'s like having a helpful friend on your team',
+                        body: 'We\'re here to make your day easier, one click at a time. Seriously, it\'s that simple!',
+                        cta: 'Try It Free'
+                    },
+                    c: {
+                        headline: 'Work Smarter, Not Harder ✨',
+                        subheadline: 'Because life\'s too short for complicated tools',
+                        body: 'Join thousands of happy users who\'ve simplified their workflow. You\'ll wonder how you lived without it!',
+                        cta: 'Join the Fun'
+                    }
+                }
+            },
+            urgent: {
+                formalCasual: 50,
+                seriousPlayful: 25,
+                technicalSimple: 70,
+                variants: {
+                    a: {
+                        headline: '⚡ Limited Time: 50% Off Ends Tonight',
+                        subheadline: 'Don\'t miss your chance to save big',
+                        body: 'This exclusive offer expires at midnight. Join 10,000+ members who already upgraded. Act now!',
+                        cta: 'Claim Offer Now'
+                    },
+                    b: {
+                        headline: '🔥 Only 47 Spots Left!',
+                        subheadline: 'Early bird pricing closes in 24 hours',
+                        body: 'We\'re limiting access to ensure the best experience. Once spots fill up, they\'re gone. Secure yours today.',
+                        cta: 'Reserve My Spot'
+                    },
+                    c: {
+                        headline: 'Last Chance: Prices Increase Tomorrow',
+                        subheadline: 'Lock in today\'s rate before it\'s too late',
+                        body: 'Due to overwhelming demand, we\'re raising prices. Current members are grandfathered in. Don\'t wait.',
+                        cta: 'Get Access Now'
+                    }
+                }
+            }
+        };
+
+        // State
+        const state = {
+            activeVariant: 'a',
+            selectedVariant: 'a',
+            previewFormat: 'landing',
+            activePreset: null,
+            tone: {
+                formalCasual: 50,
+                seriousPlayful: 50,
+                technicalSimple: 50
+            },
+            variants: {
+                a: { headline: '', subheadline: '', body: '', cta: '' },
+                b: { headline: '', subheadline: '', body: '', cta: '' },
+                c: { headline: '', subheadline: '', body: '', cta: '' }
+            }
+        };
+
+        // Character limits
+        const CHAR_LIMITS = {
+            headline: 60,
+            subheadline: 90,
+            body: 280,
+            cta: 25
+        };
+
+        // DOM Elements
+        const elements = {
+            previewContainer: document.getElementById('previewContainer'),
+            promptOutput: document.getElementById('promptOutput'),
+            copyBtn: document.getElementById('copyBtn')
+        };
+
+        // Initialize
+        function init() {
+            bindEvents();
+            updateAll();
+        }
+
+        // Bind all events
+        function bindEvents() {
+            // Variant tabs
+            document.querySelectorAll('.variant-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    state.activeVariant = tab.dataset.variant;
+                    updateVariantTabs();
+                    updateAll();
+                });
+            });
+
+            // Preset buttons
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    applyPreset(btn.dataset.preset);
+                });
+            });
+
+            // Format buttons
+            document.querySelectorAll('.format-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    state.previewFormat = btn.dataset.format;
+                    updateFormatButtons();
+                    updateAll();
+                });
+            });
+
+            // Tone sliders
+            ['formalCasual', 'seriousPlayful', 'technicalSimple'].forEach(slider => {
+                document.getElementById(slider).addEventListener('input', (e) => {
+                    state.tone[slider] = parseInt(e.target.value);
+                    state.activePreset = null;
+                    updatePresetButtons();
+                    updateAll();
+                });
+            });
+
+            // Input fields
+            ['a', 'b', 'c'].forEach(variant => {
+                ['headline', 'subheadline', 'body', 'cta'].forEach(field => {
+                    const id = `${field}${variant.toUpperCase()}`;
+                    const input = document.getElementById(id);
+                    if (input) {
+                        input.addEventListener('input', (e) => {
+                            state.variants[variant][field] = e.target.value;
+                            updateCharCount(field, variant);
+                            updateAll();
+                        });
+                    }
+                });
+            });
+
+            // Copy button
+            elements.copyBtn.addEventListener('click', copyPrompt);
+        }
+
+        // Update variant tabs visibility
+        function updateVariantTabs() {
+            document.querySelectorAll('.variant-tab').forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.variant === state.activeVariant);
+            });
+            document.querySelectorAll('.variant-inputs').forEach(inputs => {
+                inputs.style.display = inputs.dataset.variant === state.activeVariant ? 'block' : 'none';
+            });
+        }
+
+        // Update format buttons
+        function updateFormatButtons() {
+            document.querySelectorAll('.format-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.format === state.previewFormat);
+            });
+        }
+
+        // Update preset buttons
+        function updatePresetButtons() {
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.preset === state.activePreset);
+            });
+        }
+
+        // Apply preset
+        function applyPreset(presetName) {
+            const preset = PRESETS[presetName];
+            if (!preset) return;
+
+            state.activePreset = presetName;
+
+            // Apply tone
+            Object.keys(preset).forEach(key => {
+                if (key !== 'variants' && state.tone.hasOwnProperty(key)) {
+                    state.tone[key] = preset[key];
+                    document.getElementById(key).value = preset[key];
+                }
+            });
+
+            // Apply variants
+            Object.keys(preset.variants).forEach(variant => {
+                Object.keys(preset.variants[variant]).forEach(field => {
+                    state.variants[variant][field] = preset.variants[variant][field];
+                    const id = `${field}${variant.toUpperCase()}`;
+                    const input = document.getElementById(id);
+                    if (input) {
+                        input.value = preset.variants[variant][field];
+                        updateCharCount(field, variant);
+                    }
+                });
+            });
+
+            updatePresetButtons();
+            updateAll();
+        }
+
+        // Update character count
+        function updateCharCount(field, variant) {
+            const value = state.variants[variant][field];
+            const limit = CHAR_LIMITS[field];
+            const charSpan = document.getElementById(`char${field.charAt(0).toUpperCase() + field.slice(1)}${variant.toUpperCase()}`);
+            
+            if (charSpan) {
+                charSpan.textContent = `${value.length}/${limit}`;
+                charSpan.classList.remove('warning', 'danger');
+                if (value.length > limit) {
+                    charSpan.classList.add('danger');
+                } else if (value.length > limit * 0.8) {
+                    charSpan.classList.add('warning');
+                }
+            }
+        }
+
+        // Highlight power words
+        function highlightPowerWords(text) {
+            if (!text) return '';
+            let result = text;
+            POWER_WORDS.forEach(word => {
+                const regex = new RegExp(`\\b(${word})\\b`, 'gi');
+                result = result.replace(regex, '<span class="power-word">$1</span>');
+            });
+            return result;
+        }
+
+        // Main update function
+        function updateAll() {
+            renderPreview();
+            updatePrompt();
+        }
+
+        // Render preview cards
+        function renderPreview() {
+            const format = state.previewFormat;
+            let html = '';
+
+            ['a', 'b', 'c'].forEach(variant => {
+                const v = state.variants[variant];
+                const isSelected = state.selectedVariant === variant;
+                const formatClass = `preview-${format}`;
+
+                html += `
+                    <div class="preview-card variant-${variant} ${formatClass} ${isSelected ? 'selected' : ''}" 
+                         onclick="selectVariant('${variant}')">
+                        <div class="preview-card-header">
+                            <span>Variant ${variant.toUpperCase()}</span>
+                            <span class="select-badge">✓ Selected</span>
+                        </div>
+                        <div class="preview-content">
+                            <div class="preview-headline">${highlightPowerWords(v.headline) || 'Headline...'}</div>
+                            <div class="preview-subheadline">${highlightPowerWords(v.subheadline) || 'Subheadline...'}</div>
+                            <div class="preview-body">${highlightPowerWords(v.body) || 'Body text...'}</div>
+                            <span class="preview-cta">${v.cta || 'CTA'}</span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            elements.previewContainer.innerHTML = html;
+        }
+
+        // Select variant
+        function selectVariant(variant) {
+            state.selectedVariant = variant;
+            updateAll();
+        }
+
+        // Get tone description
+        function getToneDescription() {
+            const { formalCasual, seriousPlayful, technicalSimple } = state.tone;
+            
+            const descriptions = [];
+            
+            if (formalCasual < 33) descriptions.push('formal');
+            else if (formalCasual > 66) descriptions.push('casual');
+            else descriptions.push('balanced formality');
+            
+            if (seriousPlayful < 33) descriptions.push('serious');
+            else if (seriousPlayful > 66) descriptions.push('playful');
+            else descriptions.push('moderate energy');
+            
+            if (technicalSimple < 33) descriptions.push('technical');
+            else if (technicalSimple > 66) descriptions.push('simple/accessible');
+            else descriptions.push('moderately technical');
+            
+            return descriptions.join(', ');
+        }
+
+        // Update prompt output
+        function updatePrompt() {
+            const v = state.variants[state.selectedVariant];
+            const hasContent = v.headline || v.subheadline || v.body || v.cta;
+            
+            if (!hasContent) {
+                elements.promptOutput.textContent = 'Enter copy content to generate a prompt...';
+                return;
+            }
+
+            const toneDesc = getToneDescription();
+            const formatNames = {
+                landing: 'Landing Page Hero',
+                email: 'Email Header',
+                social: 'Social Media Post',
+                ad: 'Advertisement'
+            };
+
+            const prompt = `Write ${formatNames[state.previewFormat]} copy with the following specifications:
+
+TONE OF VOICE:
+${toneDesc}
+
+SELECTED COPY (Variant ${state.selectedVariant.toUpperCase()}):
+
+Headline: ${v.headline || '[Not specified]'}
+Subheadline: ${v.subheadline || '[Not specified]'}
+Body: ${v.body || '[Not specified]'}
+CTA: ${v.cta || '[Not specified]'}
+
+TONE SETTINGS:
+- Formal ↔ Casual: ${state.tone.formalCasual}% (${state.tone.formalCasual < 50 ? 'leaning formal' : 'leaning casual'})
+- Serious ↔ Playful: ${state.tone.seriousPlayful}% (${state.tone.seriousPlayful < 50 ? 'leaning serious' : 'leaning playful'})
+- Technical ↔ Simple: ${state.tone.technicalSimple}% (${state.tone.technicalSimple < 50 ? 'leaning technical' : 'leaning simple'})
+
+FORMAT: ${formatNames[state.previewFormat]}
+
+Please refine this copy while maintaining the core message and adapting to the specified tone and format.`;
+
+            elements.promptOutput.textContent = prompt;
+        }
+
+        // Copy prompt to clipboard
+        async function copyPrompt() {
+            try {
+                await navigator.clipboard.writeText(elements.promptOutput.textContent);
+                elements.copyBtn.classList.add('copied');
+                elements.copyBtn.innerHTML = '<span>✓</span> Copied!';
+                setTimeout(() => {
+                    elements.copyBtn.classList.remove('copied');
+                    elements.copyBtn.innerHTML = '<span>📋</span> Copy Prompt';
+                }, 2000);
+            } catch (err) {
+                console.error('Failed to copy:', err);
+            }
+        }
+
+        // Make selectVariant available globally
+        window.selectVariant = selectVariant;
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

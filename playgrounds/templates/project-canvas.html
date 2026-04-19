@@ -1,0 +1,1367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Canvas - Discovery Mind Map</title>
+    <link rel="stylesheet" href="./design-tokens.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .header h1 {
+            font-size: 20px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header h1::before {
+            content: '🎯';
+        }
+
+        /* Live Status Indicator */
+        .live-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-secondary);
+            transition: background 0.3s;
+        }
+
+        .live-status.connected .live-dot {
+            background: var(--accent-green);
+            animation: pulse 2s infinite;
+        }
+
+        .live-status.polling .live-dot {
+            background: var(--accent-orange);
+            animation: pulse 0.5s infinite;
+        }
+
+        .live-status.offline .live-dot {
+            background: var(--accent-red);
+        }
+
+        .live-status.manual .live-dot {
+            background: var(--accent-blue);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .interview-phase {
+            padding: 4px 10px;
+            background: var(--accent-purple);
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            color: white;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .preset-bar {
+            display: flex;
+            gap: 8px;
+        }
+
+        .preset-btn {
+            padding: 8px 16px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .preset-btn:hover {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border-color: var(--accent-purple);
+        }
+
+        .preset-btn.active {
+            background: var(--accent-purple);
+            color: white;
+            border-color: var(--accent-purple);
+        }
+
+        .preset-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .main-container {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            min-height: calc(100vh - 65px);
+        }
+
+        .canvas-area {
+            position: relative;
+            background: 
+                radial-gradient(circle at 50% 50%, var(--tone-purple-03) 0%, transparent 50%),
+                linear-gradient(var(--bg-primary) 1px, transparent 1px),
+                linear-gradient(90deg, var(--bg-primary) 1px, transparent 1px),
+                var(--bg-secondary);
+            background-size: 100% 100%, 30px 30px, 30px 30px, 100% 100%;
+            overflow: hidden;
+        }
+
+        .canvas-svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .canvas-svg line {
+            stroke: var(--border-color);
+            stroke-width: 2;
+            stroke-dasharray: 5, 5;
+            opacity: 0.6;
+        }
+
+        .node {
+            position: absolute;
+            background: var(--bg-secondary);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 16px;
+            min-width: 200px;
+            max-width: 280px;
+            cursor: grab;
+            z-index: 10;
+            transition: box-shadow 0.2s, border-color 0.2s, transform 0.3s;
+        }
+
+        .node:hover {
+            box-shadow: 0 8px 32px var(--overlay-black-30);
+        }
+
+        .node.dragging {
+            cursor: grabbing;
+            z-index: 100;
+            box-shadow: 0 16px 48px var(--overlay-black-40);
+        }
+
+        .node.updated {
+            animation: nodeUpdate 0.5s ease;
+        }
+
+        @keyframes nodeUpdate {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); box-shadow: 0 0 20px var(--tone-purple-50); }
+        }
+
+        .node.center-node {
+            border-color: var(--accent-purple);
+            background: linear-gradient(135deg, var(--bg-secondary), var(--tone-purple-10));
+            min-width: 240px;
+        }
+
+        .node.problem { border-color: var(--accent-red); }
+        .node.solution { border-color: var(--accent-green); }
+        .node.users { border-color: var(--accent-blue); }
+        .node.value { border-color: var(--accent-orange); }
+        .node.features { border-color: var(--accent-pink); }
+
+        .node-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .node-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+
+        .node.problem .node-icon { background: var(--tone-red-20); }
+        .node.solution .node-icon { background: var(--tone-green-20); }
+        .node.users .node-icon { background: var(--tone-blue-20); }
+        .node.value .node-icon { background: var(--tone-orange-20); }
+        .node.features .node-icon { background: var(--tone-pink-20); }
+        .node.center-node .node-icon { background: var(--tone-purple-20); }
+
+        .node-content textarea {
+            width: 100%;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 10px;
+            color: var(--text-primary);
+            font-size: 13px;
+            resize: vertical;
+            min-height: 60px;
+            font-family: inherit;
+            transition: background 0.3s;
+        }
+
+        .node-content textarea:focus {
+            outline: none;
+            border-color: var(--accent-purple);
+        }
+
+        .node-content textarea::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .node-content textarea.live-readonly {
+            background: var(--bg-primary);
+            cursor: default;
+        }
+
+        .tags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 10px;
+        }
+
+        .tag {
+            padding: 4px 10px;
+            background: var(--bg-tertiary);
+            border-radius: 12px;
+            font-size: 11px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tag:hover {
+            background: var(--accent-purple);
+            color: white;
+        }
+
+        .tag.active {
+            background: var(--accent-purple);
+            color: white;
+        }
+
+        .sidebar {
+            background: var(--bg-secondary);
+            border-left: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 600;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .sidebar-header::before {
+            content: '📝';
+        }
+
+        .prompt-output {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .prompt-text {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            font-size: 13px;
+            line-height: 1.7;
+            color: var(--text-secondary);
+            min-height: 300px;
+            white-space: pre-wrap;
+        }
+
+        .prompt-text strong {
+            color: var(--text-primary);
+        }
+
+        .prompt-text .highlight {
+            color: var(--accent-purple);
+            font-weight: 500;
+        }
+
+        /* Interview Progress */
+        .interview-progress {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .interview-progress h4 {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .progress-phases {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .progress-phase {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .progress-phase.active {
+            color: var(--accent-purple);
+            font-weight: 500;
+        }
+
+        .progress-phase.completed {
+            color: var(--accent-green);
+        }
+
+        .progress-phase .phase-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--bg-primary);
+            border: 2px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+        }
+
+        .progress-phase.active .phase-icon {
+            border-color: var(--accent-purple);
+            background: var(--tone-purple-20);
+        }
+
+        .progress-phase.completed .phase-icon {
+            border-color: var(--accent-green);
+            background: var(--accent-green);
+        }
+
+        .sidebar-actions {
+            padding: 16px 20px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--accent-purple);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-purple);
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-primary);
+        }
+
+        .copy-feedback {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--accent-green);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+
+        .copy-feedback.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .notes-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .notes-section h3 {
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--text-secondary);
+        }
+
+        .notes-grid {
+            display: grid;
+            gap: 12px;
+        }
+
+        .note-card {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+        }
+
+        .note-card-header {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .note-card.problem .note-card-header { color: var(--accent-red); }
+        .note-card.solution .note-card-header { color: var(--accent-green); }
+        .note-card.users .note-card-header { color: var(--accent-blue); }
+        .note-card.value .note-card-header { color: var(--accent-orange); }
+        .note-card.features .note-card-header { color: var(--accent-pink); }
+
+        .note-card textarea {
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-size: 12px;
+            resize: none;
+            min-height: 50px;
+            font-family: inherit;
+        }
+
+        .note-card textarea:focus {
+            outline: none;
+        }
+
+        .note-card textarea::placeholder {
+            color: var(--text-secondary);
+        }
+
+        /* Last update timestamp */
+        .last-update {
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-align: center;
+            padding: 8px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        @media (max-width: 1200px) {
+            .main-container {
+                grid-template-columns: 1fr;
+                grid-template-rows: 1fr auto;
+            }
+
+            .canvas-area {
+                min-height: 500px;
+            }
+
+            .sidebar {
+                border-left: none;
+                border-top: 1px solid var(--border-color);
+            }
+        }
+    
+/* ===== MOBILE RESPONSIVE (v13) ===== */
+@media (max-width: 768px) {
+  body { padding: 1rem !important; }
+
+  /* Single-column grids */
+  [style*="grid-template-columns"],
+  .grid, .cards-grid, .two-col, .three-col,
+  [class*="grid-"] { grid-template-columns: 1fr !important; }
+
+  /* Stack flex rows */
+  .flex-row, .row, [class*="-row"] { flex-direction: column !important; }
+
+  /* Full-width elements */
+  .card, .panel, .box, .section,
+  [class*="card"], [class*="panel"] { width: 100% !important; max-width: 100% !important; }
+
+  /* Touch-friendly inputs and buttons */
+  input, select, textarea, button, .btn,
+  [class*="btn"], [class*="button"] {
+    min-height: 44px !important;
+    font-size: 16px !important;
+  }
+
+  /* Prevent horizontal scroll */
+  .container, .wrapper, main, section { overflow-x: hidden; }
+
+  /* Readable font sizes */
+  h1 { font-size: 1.6rem !important; }
+  h2 { font-size: 1.3rem !important; }
+  h3 { font-size: 1.1rem !important; }
+
+  /* Reduce whitespace */
+  .container, .wrapper, main {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+
+  /* Table responsiveness */
+  table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* Navigation */
+  nav, .nav, .navbar { flex-wrap: wrap; gap: .5rem; }
+}
+
+@media (max-width: 480px) {
+  body { padding: .75rem !important; }
+  h1 { font-size: 1.3rem !important; }
+  .header, header { padding: .75rem 1rem !important; }
+}
+
+</style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-left">
+            <h1>Project Canvas</h1>
+            <div class="live-status offline" id="liveStatus">
+                <span class="live-dot"></span>
+                <span id="statusText">Manual Mode</span>
+            </div>
+            <span class="interview-phase" id="interviewPhase" style="display: none;">Phase 1</span>
+        </div>
+        <div class="preset-bar" id="presetBar">
+            <button class="preset-btn" onclick="loadPreset('blank')">🆕 Blank</button>
+            <button class="preset-btn" onclick="loadPreset('b2b-saas')">💼 B2B SaaS</button>
+            <button class="preset-btn" onclick="loadPreset('marketplace')">🛒 Marketplace</button>
+            <button class="preset-btn" onclick="loadPreset('mobile-app')">📱 Mobile App</button>
+            <button class="preset-btn" onclick="loadPreset('ecommerce')">🏪 E-commerce</button>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <div class="canvas-area" id="canvas">
+            <svg class="canvas-svg" id="connections"></svg>
+            
+            <!-- Center Node - Project Name -->
+            <div class="node center-node" id="node-project" style="left: calc(50% - 120px); top: calc(50% - 60px);">
+                <div class="node-header">
+                    <span class="node-icon">🎯</span>
+                    <span>Project Name</span>
+                </div>
+                <div class="node-content">
+                    <textarea id="project-name" placeholder="Your project name..." oninput="updateAll()"></textarea>
+                </div>
+            </div>
+
+            <!-- Problem Node -->
+            <div class="node problem" id="node-problem" style="left: 60px; top: 80px;">
+                <div class="node-header">
+                    <span class="node-icon">🔥</span>
+                    <span>Problem</span>
+                </div>
+                <div class="node-content">
+                    <textarea id="problem" placeholder="What problem are you solving?" oninput="updateAll()"></textarea>
+                    <div class="tags-container">
+                        <span class="tag" onclick="toggleTag(this, 'problem')">Pain point</span>
+                        <span class="tag" onclick="toggleTag(this, 'problem')">Urgent</span>
+                        <span class="tag" onclick="toggleTag(this, 'problem')">Expensive</span>
+                        <span class="tag" onclick="toggleTag(this, 'problem')">Frequent</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Solution Node -->
+            <div class="node solution" id="node-solution" style="right: 60px; top: 80px;">
+                <div class="node-header">
+                    <span class="node-icon">💡</span>
+                    <span>Solution</span>
+                </div>
+                <div class="node-content">
+                    <textarea id="solution" placeholder="How do you solve it?" oninput="updateAll()"></textarea>
+                    <div class="tags-container">
+                        <span class="tag" onclick="toggleTag(this, 'solution')">Innovative</span>
+                        <span class="tag" onclick="toggleTag(this, 'solution')">Simple</span>
+                        <span class="tag" onclick="toggleTag(this, 'solution')">Automated</span>
+                        <span class="tag" onclick="toggleTag(this, 'solution')">AI-powered</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Target Users Node -->
+            <div class="node users" id="node-users" style="left: 60px; bottom: 120px;">
+                <div class="node-header">
+                    <span class="node-icon">👥</span>
+                    <span>Target Users</span>
+                </div>
+                <div class="node-content">
+                    <textarea id="users" placeholder="Who is this for?" oninput="updateAll()"></textarea>
+                    <div class="tags-container">
+                        <span class="tag" onclick="toggleTag(this, 'users')">B2B</span>
+                        <span class="tag" onclick="toggleTag(this, 'users')">B2C</span>
+                        <span class="tag" onclick="toggleTag(this, 'users')">Enterprise</span>
+                        <span class="tag" onclick="toggleTag(this, 'users')">SMB</span>
+                        <span class="tag" onclick="toggleTag(this, 'users')">Developers</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Value Prop Node -->
+            <div class="node value" id="node-value" style="right: 60px; bottom: 120px;">
+                <div class="node-header">
+                    <span class="node-icon">💎</span>
+                    <span>Value Proposition</span>
+                </div>
+                <div class="node-content">
+                    <textarea id="value" placeholder="What makes you unique?" oninput="updateAll()"></textarea>
+                    <div class="tags-container">
+                        <span class="tag" onclick="toggleTag(this, 'value')">Faster</span>
+                        <span class="tag" onclick="toggleTag(this, 'value')">Cheaper</span>
+                        <span class="tag" onclick="toggleTag(this, 'value')">Better UX</span>
+                        <span class="tag" onclick="toggleTag(this, 'value')">All-in-one</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Key Features Node -->
+            <div class="node features" id="node-features" style="left: calc(50% - 120px); bottom: 40px;">
+                <div class="node-header">
+                    <span class="node-icon">⚡</span>
+                    <span>Key Features</span>
+                </div>
+                <div class="node-content">
+                    <textarea id="features" placeholder="Top 3-5 features..." oninput="updateAll()"></textarea>
+                    <div class="tags-container">
+                        <span class="tag" onclick="toggleTag(this, 'features')">MVP</span>
+                        <span class="tag" onclick="toggleTag(this, 'features')">V2</span>
+                        <span class="tag" onclick="toggleTag(this, 'features')">Nice-to-have</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <aside class="sidebar">
+            <div class="sidebar-header">Project Summary</div>
+            <div class="prompt-output">
+                <!-- Interview Progress (shown in live mode) -->
+                <div class="interview-progress" id="interviewProgress" style="display: none;">
+                    <h4>📋 Interview Progress</h4>
+                    <div class="progress-phases">
+                        <div class="progress-phase" id="phase-vision">
+                            <span class="phase-icon">1</span>
+                            <span>Vision & Problem</span>
+                        </div>
+                        <div class="progress-phase" id="phase-users">
+                            <span class="phase-icon">2</span>
+                            <span>Target Users</span>
+                        </div>
+                        <div class="progress-phase" id="phase-features">
+                            <span class="phase-icon">3</span>
+                            <span>Core Features</span>
+                        </div>
+                        <div class="progress-phase" id="phase-constraints">
+                            <span class="phase-icon">4</span>
+                            <span>Constraints</span>
+                        </div>
+                        <div class="progress-phase" id="phase-business">
+                            <span class="phase-icon">5</span>
+                            <span>Business Model</span>
+                        </div>
+                        <div class="progress-phase" id="phase-risks">
+                            <span class="phase-icon">6</span>
+                            <span>Risks & Validation</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="prompt-text" id="prompt-output">
+                    <em style="color: var(--text-secondary);">Start filling in the canvas to generate a project summary...</em>
+                </div>
+
+                <div class="notes-section">
+                    <h3>📌 Additional Notes</h3>
+                    <div class="notes-grid">
+                        <div class="note-card problem">
+                            <div class="note-card-header">🔥 Problem Notes</div>
+                            <textarea id="note-problem" placeholder="Deep dive on the problem..." oninput="updateAll()"></textarea>
+                        </div>
+                        <div class="note-card solution">
+                            <div class="note-card-header">💡 Solution Notes</div>
+                            <textarea id="note-solution" placeholder="Technical approach..." oninput="updateAll()"></textarea>
+                        </div>
+                        <div class="note-card users">
+                            <div class="note-card-header">👥 User Research</div>
+                            <textarea id="note-users" placeholder="User insights..." oninput="updateAll()"></textarea>
+                        </div>
+                        <div class="note-card value">
+                            <div class="note-card-header">💎 Value Analysis</div>
+                            <textarea id="note-value" placeholder="Competitive advantage..." oninput="updateAll()"></textarea>
+                        </div>
+                        <div class="note-card features">
+                            <div class="note-card-header">⚡ Feature Priorities</div>
+                            <textarea id="note-features" placeholder="What to build first..." oninput="updateAll()"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="last-update" id="lastUpdate" style="display: none;">
+                Last update: --
+            </div>
+            <div class="sidebar-actions">
+                <button class="btn btn-secondary" onclick="resetCanvas()">🔄 Reset</button>
+                <button class="btn btn-primary" onclick="copyPrompt()">📋 Copy Summary</button>
+            </div>
+        </aside>
+    </div>
+
+    <div class="copy-feedback" id="copyFeedback">✅ Copied to clipboard!</div>
+
+    <script>
+        // ============ STATE ============
+        const state = {
+            projectName: '',
+            problem: '',
+            solution: '',
+            users: '',
+            value: '',
+            features: '',
+            notes: {
+                problem: '',
+                solution: '',
+                users: '',
+                value: '',
+                features: ''
+            },
+            tags: {
+                problem: [],
+                solution: [],
+                users: [],
+                value: [],
+                features: []
+            },
+            nodePositions: {},
+            // Live mode state
+            liveMode: false,
+            interviewPhase: null,
+            interviewComplete: false,
+            lastUpdateTime: null
+        };
+
+        // ============ LIVE POLLING ============
+        let pollInterval = null;
+        let lastStateHash = '';
+        let consecutiveFailures = 0;
+        const MAX_FAILURES = 5;
+
+        function startLivePolling() {
+            // Check if we're running on localhost (served by Python)
+            if (window.location.protocol === 'http:' && window.location.hostname === 'localhost') {
+                console.log('🔴 Starting live polling...');
+                pollInterval = setInterval(pollState, 2000);
+                pollState(); // Initial poll
+            } else {
+                // File:// or other - manual mode
+                setStatus('manual', 'Manual Mode');
+            }
+        }
+
+        async function pollState() {
+            setStatus('polling', 'Polling...');
+            
+            try {
+                const response = await fetch('/state.json?t=' + Date.now(), {
+                    cache: 'no-store'
+                });
+                
+                if (!response.ok) {
+                    throw new Error('State file not found');
+                }
+                
+                const newState = await response.json();
+                const newHash = JSON.stringify(newState);
+                
+                if (newHash !== lastStateHash) {
+                    console.log('📥 State updated!');
+                    applyLiveState(newState);
+                    lastStateHash = newHash;
+                }
+                
+                consecutiveFailures = 0;
+                setStatus('connected', 'Live');
+                
+            } catch (error) {
+                consecutiveFailures++;
+                console.log('⚠️ Poll failed:', consecutiveFailures, error.message);
+                
+                if (consecutiveFailures >= MAX_FAILURES) {
+                    // Stop polling, switch to manual mode
+                    stopLivePolling();
+                    setStatus('manual', 'Manual Mode');
+                    console.log('🔵 Switched to manual mode after failures');
+                } else {
+                    setStatus('offline', 'Connecting...');
+                }
+            }
+        }
+
+        function stopLivePolling() {
+            if (pollInterval) {
+                clearInterval(pollInterval);
+                pollInterval = null;
+            }
+        }
+
+        function setStatus(statusClass, text) {
+            const statusEl = document.getElementById('liveStatus');
+            const statusText = document.getElementById('statusText');
+            
+            statusEl.className = 'live-status ' + statusClass;
+            statusText.textContent = text;
+        }
+
+        function applyLiveState(newState) {
+            state.liveMode = true;
+            
+            // Apply values with animation
+            const fieldsToUpdate = [
+                { key: 'projectName', id: 'project-name', nodeId: 'node-project' },
+                { key: 'problem', id: 'problem', nodeId: 'node-problem' },
+                { key: 'solution', id: 'solution', nodeId: 'node-solution' },
+                { key: 'users', id: 'users', nodeId: 'node-users' },
+                { key: 'value', id: 'value', nodeId: 'node-value' },
+                { key: 'features', id: 'features', nodeId: 'node-features' }
+            ];
+            
+            fieldsToUpdate.forEach(field => {
+                const newValue = newState[field.key] || '';
+                const oldValue = state[field.key] || '';
+                
+                if (newValue !== oldValue) {
+                    state[field.key] = newValue;
+                    const textarea = document.getElementById(field.id);
+                    if (textarea) {
+                        textarea.value = newValue;
+                        // Trigger update animation on node
+                        const node = document.getElementById(field.nodeId);
+                        if (node) {
+                            node.classList.add('updated');
+                            setTimeout(() => node.classList.remove('updated'), 500);
+                        }
+                    }
+                }
+            });
+            
+            // Apply notes
+            if (newState.notes) {
+                Object.keys(newState.notes).forEach(key => {
+                    const newValue = newState.notes[key] || '';
+                    if (state.notes[key] !== newValue) {
+                        state.notes[key] = newValue;
+                        const textarea = document.getElementById('note-' + key);
+                        if (textarea) textarea.value = newValue;
+                    }
+                });
+            }
+            
+            // Apply tags
+            if (newState.tags) {
+                Object.keys(newState.tags).forEach(category => {
+                    state.tags[category] = newState.tags[category] || [];
+                    // Update tag UI
+                    const node = document.getElementById('node-' + (category === 'projectName' ? 'project' : category));
+                    if (node) {
+                        const tags = node.querySelectorAll('.tag');
+                        tags.forEach(tag => {
+                            const isActive = state.tags[category].includes(tag.textContent);
+                            tag.classList.toggle('active', isActive);
+                        });
+                    }
+                });
+            }
+            
+            // Update interview phase
+            if (newState.interviewPhase) {
+                updateInterviewPhase(newState.interviewPhase);
+            }
+            
+            // Update complete status
+            if (newState.interviewComplete) {
+                state.interviewComplete = true;
+                enableManualEditing();
+            }
+            
+            // Show last update time
+            state.lastUpdateTime = new Date();
+            const lastUpdateEl = document.getElementById('lastUpdate');
+            lastUpdateEl.style.display = 'block';
+            lastUpdateEl.textContent = 'Last update: ' + state.lastUpdateTime.toLocaleTimeString();
+            
+            // Show interview progress
+            document.getElementById('interviewProgress').style.display = 'block';
+            
+            // Disable presets during live mode
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.disabled = !state.interviewComplete;
+            });
+            
+            updateAll();
+        }
+
+        function updateInterviewPhase(phase) {
+            state.interviewPhase = phase;
+            
+            // Update phase badge
+            const phaseEl = document.getElementById('interviewPhase');
+            phaseEl.style.display = 'inline-block';
+            phaseEl.textContent = phase;
+            
+            // Update progress indicators
+            const phases = ['vision', 'users', 'features', 'constraints', 'business', 'risks'];
+            const phaseMap = {
+                'Phase 1: Vision': 0,
+                'Phase 2: Users': 1,
+                'Phase 3: Features': 2,
+                'Phase 4: Constraints': 3,
+                'Phase 5: Business': 4,
+                'Phase 6: Risks': 5,
+                'Validation': 6,
+                'Complete': 7
+            };
+            
+            const currentPhaseIndex = phaseMap[phase] ?? 0;
+            
+            phases.forEach((p, i) => {
+                const el = document.getElementById('phase-' + p);
+                if (!el) return;
+                
+                el.classList.remove('active', 'completed');
+                if (i < currentPhaseIndex) {
+                    el.classList.add('completed');
+                    el.querySelector('.phase-icon').textContent = '✓';
+                } else if (i === currentPhaseIndex) {
+                    el.classList.add('active');
+                    el.querySelector('.phase-icon').textContent = (i + 1).toString();
+                } else {
+                    el.querySelector('.phase-icon').textContent = (i + 1).toString();
+                }
+            });
+        }
+
+        function enableManualEditing() {
+            // Re-enable editing after interview complete
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.disabled = false;
+            });
+            setStatus('manual', 'Edit Mode');
+        }
+
+        // ============ PRESETS ============
+        const presets = {
+            'blank': {
+                projectName: '',
+                problem: '',
+                solution: '',
+                users: '',
+                value: '',
+                features: ''
+            },
+            'b2b-saas': {
+                projectName: 'Enterprise SaaS Platform',
+                problem: 'Teams waste hours on manual processes and disconnected tools, leading to errors and delays.',
+                solution: 'Unified platform that automates workflows and integrates with existing tools.',
+                users: 'Operations managers and team leads in mid-size companies (50-500 employees)',
+                value: '10x faster workflows, 50% cost reduction, single source of truth',
+                features: '• Dashboard & analytics\n• Workflow automation\n• API integrations\n• Team collaboration\n• Custom reports'
+            },
+            'marketplace': {
+                projectName: 'Niche Marketplace',
+                problem: 'Buyers struggle to find quality sellers, and sellers have no easy way to reach their target audience.',
+                solution: 'Curated two-sided marketplace with trust verification and smart matching.',
+                users: 'Quality-focused buyers and vetted professional sellers in [niche]',
+                value: 'Trust through verification, better matches, lower fees than competitors',
+                features: '• Seller verification\n• Smart search & filters\n• Secure payments\n• Reviews & ratings\n• Messaging system'
+            },
+            'mobile-app': {
+                projectName: 'Mobile-First App',
+                problem: 'Users need to accomplish [task] but existing solutions are desktop-focused or clunky on mobile.',
+                solution: 'Beautiful, intuitive mobile app designed for on-the-go use.',
+                users: 'Mobile-native users aged 18-35 who need quick access',
+                value: 'Native experience, offline support, faster than web alternatives',
+                features: '• One-tap actions\n• Push notifications\n• Offline mode\n• Widget support\n• Biometric login'
+            },
+            'ecommerce': {
+                projectName: 'E-commerce Store',
+                problem: 'Customers can\'t easily find or buy [product type] that meets their specific needs.',
+                solution: 'Specialized online store with expert curation and personalized recommendations.',
+                users: 'Enthusiasts and first-time buyers looking for quality [products]',
+                value: 'Expert selection, easy discovery, exceptional customer service',
+                features: '• Product filtering\n• Personalized recs\n• Easy checkout\n• Order tracking\n• Customer support chat'
+            }
+        };
+
+        // ============ INITIALIZATION ============
+        function init() {
+            initDragAndDrop();
+            drawConnections();
+            updateAll();
+            startLivePolling();
+            
+            window.addEventListener('resize', drawConnections);
+        }
+
+        // ============ DRAG AND DROP ============
+        function initDragAndDrop() {
+            const nodes = document.querySelectorAll('.node');
+            
+            nodes.forEach(node => {
+                let isDragging = false;
+                let startX, startY, nodeX, nodeY;
+
+                node.addEventListener('mousedown', (e) => {
+                    if (e.target.tagName === 'TEXTAREA') return;
+                    
+                    isDragging = true;
+                    node.classList.add('dragging');
+                    
+                    startX = e.clientX;
+                    startY = e.clientY;
+                    nodeX = node.offsetLeft;
+                    nodeY = node.offsetTop;
+                    
+                    e.preventDefault();
+                });
+
+                document.addEventListener('mousemove', (e) => {
+                    if (!isDragging) return;
+                    
+                    const dx = e.clientX - startX;
+                    const dy = e.clientY - startY;
+                    
+                    node.style.left = (nodeX + dx) + 'px';
+                    node.style.top = (nodeY + dy) + 'px';
+                    node.style.right = 'auto';
+                    node.style.bottom = 'auto';
+                    
+                    drawConnections();
+                });
+
+                document.addEventListener('mouseup', () => {
+                    if (isDragging) {
+                        isDragging = false;
+                        node.classList.remove('dragging');
+                        saveNodePositions();
+                    }
+                });
+            });
+        }
+
+        function saveNodePositions() {
+            const nodes = document.querySelectorAll('.node');
+            nodes.forEach(node => {
+                state.nodePositions[node.id] = {
+                    left: node.offsetLeft,
+                    top: node.offsetTop
+                };
+            });
+        }
+
+        // ============ CONNECTIONS ============
+        function drawConnections() {
+            const svg = document.getElementById('connections');
+            const canvas = document.getElementById('canvas');
+            const centerNode = document.getElementById('node-project');
+            
+            svg.innerHTML = '';
+            
+            const canvasRect = canvas.getBoundingClientRect();
+            svg.setAttribute('viewBox', `0 0 ${canvasRect.width} ${canvasRect.height}`);
+            
+            const centerRect = centerNode.getBoundingClientRect();
+            const centerX = centerRect.left - canvasRect.left + centerRect.width / 2;
+            const centerY = centerRect.top - canvasRect.top + centerRect.height / 2;
+            
+            const connections = [
+                { id: 'node-problem', color: '#f85149' },
+                { id: 'node-solution', color: '#3fb950' },
+                { id: 'node-users', color: '#58a6ff' },
+                { id: 'node-value', color: '#d29922' },
+                { id: 'node-features', color: '#db61a2' }
+            ];
+            
+            connections.forEach(conn => {
+                const node = document.getElementById(conn.id);
+                const rect = node.getBoundingClientRect();
+                const nodeX = rect.left - canvasRect.left + rect.width / 2;
+                const nodeY = rect.top - canvasRect.top + rect.height / 2;
+                
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', centerX);
+                line.setAttribute('y1', centerY);
+                line.setAttribute('x2', nodeX);
+                line.setAttribute('y2', nodeY);
+                line.style.stroke = conn.color;
+                
+                svg.appendChild(line);
+            });
+        }
+
+        // ============ TAGS ============
+        function toggleTag(element, category) {
+            element.classList.toggle('active');
+            
+            const tagText = element.textContent;
+            const index = state.tags[category].indexOf(tagText);
+            
+            if (index === -1) {
+                state.tags[category].push(tagText);
+            } else {
+                state.tags[category].splice(index, 1);
+            }
+            
+            updateAll();
+        }
+
+        // ============ PRESETS ============
+        function loadPreset(presetName) {
+            const preset = presets[presetName];
+            if (!preset) return;
+            
+            // Update buttons
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.textContent.toLowerCase().includes(presetName.replace('-', ' ').split(' ')[0])) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            // Load values
+            document.getElementById('project-name').value = preset.projectName;
+            document.getElementById('problem').value = preset.problem;
+            document.getElementById('solution').value = preset.solution;
+            document.getElementById('users').value = preset.users;
+            document.getElementById('value').value = preset.value;
+            document.getElementById('features').value = preset.features;
+            
+            // Clear tags
+            document.querySelectorAll('.tag').forEach(tag => tag.classList.remove('active'));
+            state.tags = { problem: [], solution: [], users: [], value: [], features: [] };
+            
+            updateAll();
+        }
+
+        // ============ RESET ============
+        function resetCanvas() {
+            loadPreset('blank');
+            
+            // Clear notes
+            document.querySelectorAll('.note-card textarea').forEach(ta => ta.value = '');
+            state.notes = { problem: '', solution: '', users: '', value: '', features: '' };
+            
+            updateAll();
+        }
+
+        // ============ UPDATE ALL ============
+        function updateAll() {
+            // Sync state with inputs
+            state.projectName = document.getElementById('project-name').value;
+            state.problem = document.getElementById('problem').value;
+            state.solution = document.getElementById('solution').value;
+            state.users = document.getElementById('users').value;
+            state.value = document.getElementById('value').value;
+            state.features = document.getElementById('features').value;
+            
+            state.notes.problem = document.getElementById('note-problem').value;
+            state.notes.solution = document.getElementById('note-solution').value;
+            state.notes.users = document.getElementById('note-users').value;
+            state.notes.value = document.getElementById('note-value').value;
+            state.notes.features = document.getElementById('note-features').value;
+            
+            renderPreview();
+            updatePrompt();
+        }
+
+        function renderPreview() {
+            drawConnections();
+        }
+
+        function updatePrompt() {
+            const output = document.getElementById('prompt-output');
+            
+            const hasContent = state.projectName || state.problem || state.solution || 
+                              state.users || state.value || state.features;
+            
+            if (!hasContent) {
+                output.innerHTML = '<em style="color: var(--text-secondary);">Start filling in the canvas to generate a project summary...</em>';
+                return;
+            }
+            
+            let summary = '';
+            
+            if (state.projectName) {
+                summary += `<strong>🎯 Project:</strong> <span class="highlight">${escapeHtml(state.projectName)}</span>\n\n`;
+            }
+            
+            if (state.problem) {
+                summary += `<strong>🔥 Problem:</strong>\n${escapeHtml(state.problem)}`;
+                if (state.tags.problem.length > 0) {
+                    summary += `\n<em style="color: var(--accent-red);">[${state.tags.problem.join(', ')}]</em>`;
+                }
+                summary += '\n\n';
+            }
+            
+            if (state.solution) {
+                summary += `<strong>💡 Solution:</strong>\n${escapeHtml(state.solution)}`;
+                if (state.tags.solution.length > 0) {
+                    summary += `\n<em style="color: var(--accent-green);">[${state.tags.solution.join(', ')}]</em>`;
+                }
+                summary += '\n\n';
+            }
+            
+            if (state.users) {
+                summary += `<strong>👥 Target Users:</strong>\n${escapeHtml(state.users)}`;
+                if (state.tags.users.length > 0) {
+                    summary += `\n<em style="color: var(--accent-blue);">[${state.tags.users.join(', ')}]</em>`;
+                }
+                summary += '\n\n';
+            }
+            
+            if (state.value) {
+                summary += `<strong>💎 Value Proposition:</strong>\n${escapeHtml(state.value)}`;
+                if (state.tags.value.length > 0) {
+                    summary += `\n<em style="color: var(--accent-orange);">[${state.tags.value.join(', ')}]</em>`;
+                }
+                summary += '\n\n';
+            }
+            
+            if (state.features) {
+                summary += `<strong>⚡ Key Features:</strong>\n${escapeHtml(state.features)}`;
+                if (state.tags.features.length > 0) {
+                    summary += `\n<em style="color: var(--accent-pink);">[${state.tags.features.join(', ')}]</em>`;
+                }
+                summary += '\n\n';
+            }
+            
+            // Add notes if any exist
+            const hasNotes = Object.values(state.notes).some(n => n.trim());
+            if (hasNotes) {
+                summary += '<strong>📌 Additional Notes:</strong>\n';
+                if (state.notes.problem) summary += `• Problem: ${escapeHtml(state.notes.problem)}\n`;
+                if (state.notes.solution) summary += `• Solution: ${escapeHtml(state.notes.solution)}\n`;
+                if (state.notes.users) summary += `• Users: ${escapeHtml(state.notes.users)}\n`;
+                if (state.notes.value) summary += `• Value: ${escapeHtml(state.notes.value)}\n`;
+                if (state.notes.features) summary += `• Features: ${escapeHtml(state.notes.features)}\n`;
+            }
+            
+            output.innerHTML = summary;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // ============ COPY ============
+        function copyPrompt() {
+            const output = document.getElementById('prompt-output');
+            const text = output.innerText;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                const feedback = document.getElementById('copyFeedback');
+                feedback.classList.add('show');
+                
+                setTimeout(() => {
+                    feedback.classList.remove('show');
+                }, 2000);
+            });
+        }
+
+        // ============ START ============
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

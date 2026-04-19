@@ -1,9 +1,12 @@
 ---
 name: genius-test-assistant
-description: Real-time testing companion that monitors server logs and browser activity during manual testing sessions. Correlates errors, identifies root causes, and generates fix prompts. Use for "help me test", "testing session", "watch while I test", "monitor testing".
+description: >-
+  Manual testing guide. Provides structured test scripts for human testers. Use when user says
+  "write test plan", "manual testing", "test script", "what should I test", "testing checklist".
+  Do NOT use for automated QA — use genius-qa or genius-qa-micro.
 ---
 
-# Genius Test Assistant v9.0 — Live Testing Companion
+# Genius Test Assistant v17.0 — Live Testing Companion
 
 **Your pair tester who never misses an error.**
 
@@ -63,3 +66,11 @@ Provides: Specific error details, full context, fix prompt
 
 ### To genius-dev
 Provides: Bug details, reproduction steps, fix suggestions
+
+## Definition of Done
+
+- [ ] Test script covers the requested user journey or risk area
+- [ ] Steps are executable by a human without extra interpretation
+- [ ] Expected results and evidence to capture are explicit
+- [ ] Issues are packaged for QA, debugger, or dev handoff
+- [ ] Session summary makes next actions obvious

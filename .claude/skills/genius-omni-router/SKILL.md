@@ -1,6 +1,10 @@
 ---
 name: genius-omni-router
-description: Multi-provider orchestration router. Routes tasks to the best AI provider (Claude Code, Codex CLI, Kimi CLI, Gemini CLI) based on task type, with automatic fallback to Claude Code.
+description: >-
+  Multi-provider routing for Omni mode. Routes tasks to secondary providers (Codex, Kimi, Gemini)
+  based on task type. Use automatically in Omni mode to route specialized tasks to the best
+  available provider. Do NOT invoke manually. Do NOT use for implementation, QA, or
+  architecture decisions outside Omni routing; use the destination Genius skill instead.
 skills:
   - genius-orchestrator
   - genius-team
@@ -20,7 +24,7 @@ hooks:
       command: "bash -c 'echo \"[$(date +%H:%M:%S)] OMNI-ROUTER: $TOOL_NAME\" >> .genius/omni-router.log 2>/dev/null || true'"
 ---
 
-# Genius Omni Router v9.0 — Multi-Provider Orchestration
+# Genius Omni Router v17.0 — Multi-Provider Orchestration
 
 **Route tasks to the best AI provider. Claude Code leads. Others assist. Graceful fallback always.**
 
@@ -41,16 +45,7 @@ Claude Code (Opus 4.6) is the **lead orchestrator** and the **always-available f
 
 ### Authentication
 
-**All providers** use **subscription-based auth** (OAuth/login), NOT API keys. This is the key cost advantage — you pay a flat monthly fee ($20-200/mo) instead of per-token API pricing.
-
-| Provider | Auth Method | Setup Command | Subscription |
-|----------|------------|---------------|-------------|
-| Claude Code | OAuth login | `claude login` | Claude Max/Pro ($20-200/mo) |
-| Codex CLI | OAuth login | `codex login` | ChatGPT Pro/Plus ($20-200/mo) |
-| Kimi CLI | OAuth login | `kimi auth login` | Kimi subscription |
-| Gemini CLI | Google OAuth | `gemini login` | Gemini Advanced ($20/mo) |
-
-**No API keys needed for secondary providers.** Just log in with your subscription account.
+Use each provider's normal CLI login flow. If the CLI is missing or unauthenticated, fall back to Claude Code.
 
 ---
 
@@ -178,13 +173,9 @@ There is no cascading between secondary providers. If Codex is unavailable for a
 
 ### Graceful Degradation Levels
 
-| Level | Available Providers | Capability |
-|-------|-------------------|------------|
-| **Full Omni** | All 4 providers | Maximum efficiency, cost optimization |
-| **Partial Omni** | Claude Code + 1-2 others | Selective routing for available providers |
-| **Solo Mode** | Claude Code only | Full capability, no cost optimization |
-
-**Solo Mode is perfectly fine.** Claude Code can handle everything. Omni mode is an optimization, not a requirement.
+- **Full Omni**: All providers available
+- **Partial Omni**: Claude plus some secondary providers
+- **Solo Mode**: Claude only; routing is skipped
 
 ---
 
@@ -196,19 +187,6 @@ Log provider usage for cost awareness:
 # Append to routing log after each provider call
 echo "[$(date +%H:%M:%S)] ROUTED: task_type=$TASK_TYPE provider=$PROVIDER" >> .genius/omni-router.log
 ```
-
-### Relative Cost Guidelines
-
-| Task Type | Codex Cost | Kimi Cost | Gemini Cost | Claude Code Cost |
-|-----------|-----------|-----------|-------------|-----------------|
-| Code Implementation | $$ ⭐ | N/A | $$$ | $$$ |
-| Documentation | N/A | $ ⭐ | $$ | $$$ |
-| Research | N/A | $ | $$ ⭐ | $$$ |
-| Architecture | N/A | N/A | N/A | $$$ ⭐ |
-| Code Review | N/A | N/A | N/A | $$$ ⭐ |
-| QA & Testing | N/A | N/A | N/A | $$$ ⭐ |
-
-⭐ = recommended provider for that task type
 
 ### When Cost Optimization Matters
 - For large projects with many implementation tasks → route boilerplate to Codex
@@ -240,3 +218,21 @@ On every Omni Mode session:
 3. ✅ Report available providers and fallback status
 4. ✅ Load BRIEFING.md and plan.md as usual
 5. ✅ Proceed with routing-aware task execution
+
+## Handoff
+
+- → **genius-orchestrator**: Return provider choice, fallback status, and command
+- → **genius-dev / specialist skills**: Execute the routed task once the provider is selected
+- → **genius-start**: Report available providers during session bootstrap
+
+## Next Step
+
+Choose the provider, run the delegated task, then hand the output back to Claude for review and integration.
+
+## Definition of Done
+
+- [ ] Provider choice is justified by task type, cost, or latency
+- [ ] Health checks or fallback status are surfaced before execution
+- [ ] Output from secondary providers is reviewed before integration
+- [ ] Routing preserves Genius Team ownership of the final result
+- [ ] Failure path names the fallback provider or local execution plan

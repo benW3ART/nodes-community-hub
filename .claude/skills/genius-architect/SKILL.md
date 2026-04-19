@@ -1,6 +1,12 @@
 ---
 name: genius-architect
-description: Technical architecture and task planning skill. Creates project structure, technology decisions, and task list in .claude/plan.md (SINGLE SOURCE OF TRUTH). Use for "architecture", "plan the build", "create tasks", "technical design", "system design", "break it down".
+description: >-
+  Designs technical architecture and stack decisions. Routes to specialized genius-dev-* sub-skills
+  based on project type. Use when user says "plan architecture", "choose the stack",
+  "technical design", "system design", "what tech should we use", "define the architecture",
+  "stack, database schema, API structure", "database schema", "API structure", "technical stack".
+  SPECIFICATIONS.xml is preferred but not required — if user explicitly requests architecture, proceed.
+  Do NOT use for building code (genius-dev-backend/frontend) or writing feature specs (genius-specs).
 ---
 
 ## ⚠️ MANDATORY ARTIFACT
@@ -19,7 +25,7 @@ description: Technical architecture and task planning skill. Creates project str
 
 ---
 
-# Genius Architect v9.0 — The Master Blueprint
+# Genius Architect v17.0 — The Master Blueprint
 
 **Breaking down the vision into executable tasks for Agent Teams.**
 
@@ -189,6 +195,16 @@ When creating tasks for the orchestrator:
 
 ---
 
+## 🗂️ Post-Output: Refresh Dashboard (MANDATORY)
+
+After generating any `.genius/*.html` playground file:
+1. Follow `.claude/commands/genius-dashboard.md` instructions to regenerate `.genius/DASHBOARD.html`
+2. Open it immediately:
+   ```bash
+   open .genius/DASHBOARD.html 2>/dev/null || echo "📂 Open: $(pwd)/.genius/DASHBOARD.html"
+   ```
+   (On macOS/Linux this opens in the default browser. If it fails, the full path is printed as a clickable link.)
+
 ## Handoffs
 
 ### From: genius-integration-guide + genius-specs
@@ -206,3 +222,33 @@ Provides: .claude/plan.md (SINGLE SOURCE OF TRUTH), ARCHITECTURE.md
 3. Dependencies are explicit
 4. Verification is mandatory for every task
 5. Compatible with Agent Teams parallel execution
+
+---
+
+## Sub-Skill Routing Recommendations
+
+Based on the architecture, recommend the appropriate genius-dev sub-skills:
+- Frontend-heavy project → mention genius-dev-frontend in the plan
+- API/backend project → mention genius-dev-backend
+- Mobile app → mention genius-dev-mobile
+- Database-intensive → mention genius-dev-database
+- Third-party integrations → mention genius-dev-api
+- Web3/crypto project → suggest genius-crypto for analysis phase
+- Post-launch → suggest genius-seo, genius-analytics, genius-performance
+
+
+---
+
+## Next Step (Auto-Chain)
+
+When this skill completes its work:
+→ **Automatically suggest**: "Architecture approved! Ready to start building? (CHECKPOINT: approve architecture first) I'll hand off to **genius-orchestrator**."
+→ If user approves: route to genius-orchestrator
+→ Update state.json: `currentSkill = "genius-orchestrator"`
+## Definition of Done
+
+- [ ] Architecture diagram exists (mermaid or ASCII) in `.genius/ARCHITECTURE.md`
+- [ ] All major decisions logged in `.genius/memory/decisions.json`
+- [ ] Tech stack justified with trade-offs documented
+- [ ] plan.md created with tasks broken into < 2 hour chunks
+- [ ] User approved architecture at checkpoint

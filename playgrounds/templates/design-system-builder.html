@@ -1,0 +1,1384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Design System Builder | Genius Playground</title>
+    <link rel="stylesheet" href="./design-tokens.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        :root {
+            --ui-bg: var(--surface-dark-0);
+            --ui-surface: var(--surface-dark-2);
+            --ui-surface-2: var(--surface-dark-5);
+            --ui-border: var(--surface-dark-6);
+            --ui-text: var(--text-primary);
+            --ui-text-muted: var(--text-secondary);
+            --ui-accent: var(--surface-violet);
+            --ui-accent-hover: var(--surface-violet-light);
+        }
+
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--ui-bg);
+            color: var(--ui-text);
+            min-height: 100vh;
+            line-height: 1.5;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 380px 1fr 400px;
+            min-height: 100vh;
+        }
+
+        /* Sidebar - Controls */
+        .sidebar {
+            background: var(--ui-surface);
+            border-right: 1px solid var(--ui-border);
+            overflow-y: auto;
+            padding: 24px;
+        }
+
+        .sidebar h1 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .sidebar h1::before {
+            content: "🎨";
+        }
+
+        .subtitle {
+            color: var(--ui-text-muted);
+            font-size: 0.875rem;
+            margin-bottom: 24px;
+        }
+
+        .section {
+            margin-bottom: 28px;
+        }
+
+        .section-title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--ui-text-muted);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-title::before {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: var(--ui-border);
+        }
+
+        .section-title::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: var(--ui-border);
+        }
+
+        /* Color Inputs */
+        .color-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .color-row label {
+            flex: 1;
+            font-size: 0.875rem;
+        }
+
+        .color-input-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        input[type="color"] {
+            width: 40px;
+            height: 32px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            background: transparent;
+        }
+
+        input[type="color"]::-webkit-color-swatch-wrapper {
+            padding: 2px;
+        }
+
+        input[type="color"]::-webkit-color-swatch {
+            border-radius: 4px;
+            border: 1px solid var(--ui-border);
+        }
+
+        .color-hex {
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 0.75rem;
+            color: var(--ui-text-muted);
+            width: 70px;
+            text-align: right;
+        }
+
+        /* Range Sliders */
+        .slider-row {
+            margin-bottom: 16px;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.875rem;
+            margin-bottom: 8px;
+        }
+
+        .slider-value {
+            font-family: 'SF Mono', Monaco, monospace;
+            color: var(--ui-accent);
+            font-size: 0.8rem;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--ui-surface-2);
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--ui-accent);
+            cursor: pointer;
+            transition: transform 0.15s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        /* Select */
+        select {
+            width: 100%;
+            padding: 10px 12px;
+            background: var(--ui-surface-2);
+            border: 1px solid var(--ui-border);
+            border-radius: 8px;
+            color: var(--ui-text);
+            font-size: 0.875rem;
+            cursor: pointer;
+            outline: none;
+        }
+
+        select:focus {
+            border-color: var(--ui-accent);
+        }
+
+        /* Checkbox Group */
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .checkbox-pill {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: var(--ui-surface-2);
+            border: 1px solid var(--ui-border);
+            border-radius: 20px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .checkbox-pill:hover {
+            border-color: var(--ui-accent);
+        }
+
+        .checkbox-pill.active {
+            background: var(--ui-accent);
+            border-color: var(--ui-accent);
+        }
+
+        .checkbox-pill input {
+            display: none;
+        }
+
+        /* Presets */
+        .presets-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .preset-btn {
+            padding: 12px;
+            background: var(--ui-surface-2);
+            border: 1px solid var(--ui-border);
+            border-radius: 8px;
+            color: var(--ui-text);
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .preset-btn:hover {
+            border-color: var(--ui-accent);
+            background: var(--ui-accent);
+        }
+
+        /* Preview Area */
+        .preview-area {
+            padding: 32px;
+            overflow-y: auto;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+
+        .preview-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .mode-toggle {
+            display: flex;
+            background: var(--ui-surface-2);
+            border-radius: 8px;
+            padding: 4px;
+        }
+
+        .mode-btn {
+            padding: 8px 16px;
+            border: none;
+            background: transparent;
+            color: var(--ui-text-muted);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: all 0.15s;
+        }
+
+        .mode-btn.active {
+            background: var(--ui-accent);
+            color: white;
+        }
+
+        /* Preview Container */
+        .preview-container {
+            background: var(--preview-bg, #ffffff);
+            color: var(--preview-text, #1a1a1a);
+            border-radius: 16px;
+            padding: 32px;
+            transition: all 0.3s;
+        }
+
+        .preview-section {
+            margin-bottom: 40px;
+        }
+
+        .preview-section-title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            opacity: 0.5;
+            margin-bottom: 16px;
+        }
+
+        /* Color Palette Preview */
+        .color-palette-preview {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .color-swatch {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .color-swatch-box {
+            width: 64px;
+            height: 64px;
+            border-radius: var(--ds-radius, 8px);
+            box-shadow: var(--ds-shadow-md);
+        }
+
+        .color-swatch-label {
+            font-size: 0.7rem;
+            opacity: 0.6;
+        }
+
+        /* Typography Preview */
+        .typography-preview {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .type-sample {
+            display: flex;
+            align-items: baseline;
+            gap: 16px;
+        }
+
+        .type-size-label {
+            font-size: 0.7rem;
+            opacity: 0.5;
+            width: 40px;
+        }
+
+        /* Spacing Preview */
+        .spacing-preview {
+            display: flex;
+            align-items: flex-end;
+            gap: 12px;
+        }
+
+        .spacing-block {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .spacing-visual {
+            background: var(--ds-primary, #6366f1);
+            opacity: 0.3;
+            border-radius: 4px;
+        }
+
+        .spacing-label {
+            font-size: 0.65rem;
+            opacity: 0.5;
+        }
+
+        /* Shadow Preview */
+        .shadow-preview {
+            display: flex;
+            gap: 24px;
+        }
+
+        .shadow-box {
+            width: 80px;
+            height: 80px;
+            background: var(--preview-bg, #ffffff);
+            border-radius: var(--ds-radius, 8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            opacity: 0.7;
+        }
+
+        /* Component Previews */
+        .components-preview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            align-items: flex-start;
+        }
+
+        .preview-button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: var(--ds-radius, 8px);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s;
+            font-family: inherit;
+        }
+
+        .preview-button.primary {
+            background: var(--ds-primary, #6366f1);
+            color: white;
+        }
+
+        .preview-button.secondary {
+            background: var(--ds-secondary, #64748b);
+            color: white;
+        }
+
+        .preview-button.outline {
+            background: transparent;
+            border: 2px solid var(--ds-primary, #6366f1);
+            color: var(--ds-primary, #6366f1);
+        }
+
+        .preview-input {
+            padding: 12px 16px;
+            border: 2px solid var(--preview-border, #e2e8f0);
+            border-radius: var(--ds-radius, 8px);
+            background: var(--preview-bg, #ffffff);
+            color: var(--preview-text, #1a1a1a);
+            font-size: 0.9rem;
+            outline: none;
+            font-family: inherit;
+            width: 200px;
+        }
+
+        .preview-input:focus {
+            border-color: var(--ds-primary, #6366f1);
+        }
+
+        .preview-badge {
+            display: inline-flex;
+            padding: 4px 12px;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .preview-badge.primary {
+            background: var(--ds-primary, #6366f1);
+            color: white;
+        }
+
+        .preview-badge.accent {
+            background: var(--ds-accent, #f59e0b);
+            color: white;
+        }
+
+        .preview-card {
+            background: var(--preview-bg, #ffffff);
+            border: 1px solid var(--preview-border, #e2e8f0);
+            border-radius: var(--ds-radius, 8px);
+            padding: 20px;
+            width: 220px;
+            box-shadow: var(--ds-shadow-sm);
+        }
+
+        .preview-card-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .preview-card-text {
+            font-size: 0.875rem;
+            opacity: 0.7;
+            margin-bottom: 16px;
+        }
+
+        /* Output Panel */
+        .output-panel {
+            background: var(--ui-surface);
+            border-left: 1px solid var(--ui-border);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .output-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--ui-border);
+        }
+
+        .output-tabs {
+            display: flex;
+            gap: 4px;
+            background: var(--ui-surface-2);
+            padding: 4px;
+            border-radius: 8px;
+        }
+
+        .output-tab {
+            flex: 1;
+            padding: 8px 12px;
+            border: none;
+            background: transparent;
+            color: var(--ui-text-muted);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 500;
+            transition: all 0.15s;
+        }
+
+        .output-tab.active {
+            background: var(--ui-accent);
+            color: white;
+        }
+
+        .output-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .output-code {
+            background: var(--surface-dark-0);
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+            font-size: 0.75rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-break: break-all;
+            color: var(--surface-violet-light);
+            max-height: 100%;
+            overflow-y: auto;
+        }
+
+        .output-actions {
+            padding: 16px 20px;
+            border-top: 1px solid var(--ui-border);
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: all 0.15s;
+        }
+
+        .action-btn.primary {
+            background: var(--ui-accent);
+            color: white;
+        }
+
+        .action-btn.primary:hover {
+            background: var(--ui-accent-hover);
+        }
+
+        .action-btn.secondary {
+            background: var(--ui-surface-2);
+            color: var(--ui-text);
+            border: 1px solid var(--ui-border);
+        }
+
+        .action-btn.secondary:hover {
+            border-color: var(--ui-accent);
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--ui-accent);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar, .output-panel {
+                border: none;
+            }
+        }
+    
+/* ===== MOBILE RESPONSIVE (v13) ===== */
+@media (max-width: 768px) {
+  body { padding: 1rem !important; }
+
+  /* Single-column grids */
+  [style*="grid-template-columns"],
+  .grid, .cards-grid, .two-col, .three-col,
+  [class*="grid-"] { grid-template-columns: 1fr !important; }
+
+  /* Stack flex rows */
+  .flex-row, .row, [class*="-row"] { flex-direction: column !important; }
+
+  /* Full-width elements */
+  .card, .panel, .box, .section,
+  [class*="card"], [class*="panel"] { width: 100% !important; max-width: 100% !important; }
+
+  /* Touch-friendly inputs and buttons */
+  input, select, textarea, button, .btn,
+  [class*="btn"], [class*="button"] {
+    min-height: 44px !important;
+    font-size: 16px !important;
+  }
+
+  /* Prevent horizontal scroll */
+  .container, .wrapper, main, section { overflow-x: hidden; }
+
+  /* Readable font sizes */
+  h1 { font-size: 1.6rem !important; }
+  h2 { font-size: 1.3rem !important; }
+  h3 { font-size: 1.1rem !important; }
+
+  /* Reduce whitespace */
+  .container, .wrapper, main {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+
+  /* Table responsiveness */
+  table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* Navigation */
+  nav, .nav, .navbar { flex-wrap: wrap; gap: .5rem; }
+}
+
+@media (max-width: 480px) {
+  body { padding: .75rem !important; }
+  h1 { font-size: 1.3rem !important; }
+  .header, header { padding: .75rem 1rem !important; }
+}
+
+</style>
+</head>
+<body>
+    <div class="container">
+        <!-- Controls Sidebar -->
+        <aside class="sidebar">
+            <h1>Design System Builder</h1>
+            <p class="subtitle">Build your design tokens interactively</p>
+
+            <!-- Presets -->
+            <div class="section">
+                <div class="section-title">Presets</div>
+                <div class="presets-grid">
+                    <button class="preset-btn" onclick="applyPreset('minimal')">✨ Minimal</button>
+                    <button class="preset-btn" onclick="applyPreset('playful')">🎮 Playful</button>
+                    <button class="preset-btn" onclick="applyPreset('corporate')">💼 Corporate</button>
+                    <button class="preset-btn" onclick="applyPreset('bold')">🔥 Bold</button>
+                </div>
+            </div>
+
+            <!-- Colors -->
+            <div class="section">
+                <div class="section-title">Colors</div>
+                
+                <div class="color-row">
+                    <label>Primary</label>
+                    <div class="color-input-wrapper">
+                        <input type="color" id="colorPrimary" value="#6366f1" onchange="updateColor('primary', this.value)">
+                        <span class="color-hex" id="hexPrimary">#6366f1</span>
+                    </div>
+                </div>
+                
+                <div class="color-row">
+                    <label>Secondary</label>
+                    <div class="color-input-wrapper">
+                        <input type="color" id="colorSecondary" value="#64748b" onchange="updateColor('secondary', this.value)">
+                        <span class="color-hex" id="hexSecondary">#64748b</span>
+                    </div>
+                </div>
+                
+                <div class="color-row">
+                    <label>Accent</label>
+                    <div class="color-input-wrapper">
+                        <input type="color" id="colorAccent" value="#f59e0b" onchange="updateColor('accent', this.value)">
+                        <span class="color-hex" id="hexAccent">#f59e0b</span>
+                    </div>
+                </div>
+                
+                <div class="color-row">
+                    <label>Neutral Light</label>
+                    <div class="color-input-wrapper">
+                        <input type="color" id="colorNeutralLight" value="#f8fafc" onchange="updateColor('neutralLight', this.value)">
+                        <span class="color-hex" id="hexNeutralLight">#f8fafc</span>
+                    </div>
+                </div>
+                
+                <div class="color-row">
+                    <label>Neutral Dark</label>
+                    <div class="color-input-wrapper">
+                        <input type="color" id="colorNeutralDark" value="#1e293b" onchange="updateColor('neutralDark', this.value)">
+                        <span class="color-hex" id="hexNeutralDark">#1e293b</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Typography -->
+            <div class="section">
+                <div class="section-title">Typography</div>
+                
+                <div class="slider-row">
+                    <label class="slider-label">
+                        Font Family
+                    </label>
+                    <select id="fontFamily" onchange="updateState('fontFamily', this.value)">
+                        <option value="Inter">Inter</option>
+                        <option value="Poppins">Poppins</option>
+                        <option value="Roboto">Roboto</option>
+                        <option value="Space Grotesk">Space Grotesk</option>
+                        <option value="DM Sans">DM Sans</option>
+                        <option value="system-ui">System UI</option>
+                    </select>
+                </div>
+                
+                <div class="slider-row">
+                    <div class="slider-label">
+                        <span>Base Font Size</span>
+                        <span class="slider-value" id="fontSizeValue">16px</span>
+                    </div>
+                    <input type="range" id="fontSize" min="12" max="20" value="16" oninput="updateState('fontSize', this.value)">
+                </div>
+                
+                <div class="slider-row">
+                    <div class="slider-label">
+                        <span>Scale Ratio</span>
+                        <span class="slider-value" id="scaleRatioValue">1.25</span>
+                    </div>
+                    <input type="range" id="scaleRatio" min="1.1" max="1.5" step="0.05" value="1.25" oninput="updateState('scaleRatio', this.value)">
+                </div>
+
+                <div class="slider-row">
+                    <label class="slider-label">Font Weights</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-pill active" onclick="toggleWeight(this, 300)">
+                            <input type="checkbox" checked> Light
+                        </label>
+                        <label class="checkbox-pill active" onclick="toggleWeight(this, 400)">
+                            <input type="checkbox" checked> Regular
+                        </label>
+                        <label class="checkbox-pill active" onclick="toggleWeight(this, 500)">
+                            <input type="checkbox" checked> Medium
+                        </label>
+                        <label class="checkbox-pill active" onclick="toggleWeight(this, 600)">
+                            <input type="checkbox" checked> Semi
+                        </label>
+                        <label class="checkbox-pill active" onclick="toggleWeight(this, 700)">
+                            <input type="checkbox" checked> Bold
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Spacing -->
+            <div class="section">
+                <div class="section-title">Spacing</div>
+                
+                <div class="slider-row">
+                    <div class="slider-label">
+                        <span>Base Unit</span>
+                        <span class="slider-value" id="spacingBaseValue">4px</span>
+                    </div>
+                    <input type="range" id="spacingBase" min="2" max="8" value="4" oninput="updateState('spacingBase', this.value)">
+                </div>
+            </div>
+
+            <!-- Border Radius -->
+            <div class="section">
+                <div class="section-title">Border Radius</div>
+                
+                <div class="slider-row">
+                    <div class="slider-label">
+                        <span>Radius</span>
+                        <span class="slider-value" id="borderRadiusValue">8px</span>
+                    </div>
+                    <input type="range" id="borderRadius" min="0" max="24" value="8" oninput="updateState('borderRadius', this.value)">
+                </div>
+            </div>
+
+            <!-- Shadows -->
+            <div class="section">
+                <div class="section-title">Shadows</div>
+                
+                <div class="slider-row">
+                    <div class="slider-label">
+                        <span>Shadow Intensity</span>
+                        <span class="slider-value" id="shadowIntensityValue">0.1</span>
+                    </div>
+                    <input type="range" id="shadowIntensity" min="0" max="0.3" step="0.02" value="0.1" oninput="updateState('shadowIntensity', this.value)">
+                </div>
+                
+                <div class="slider-row">
+                    <div class="slider-label">
+                        <span>Shadow Blur</span>
+                        <span class="slider-value" id="shadowBlurValue">16px</span>
+                    </div>
+                    <input type="range" id="shadowBlur" min="4" max="48" value="16" oninput="updateState('shadowBlur', this.value)">
+                </div>
+            </div>
+        </aside>
+
+        <!-- Preview Area -->
+        <main class="preview-area" id="previewArea">
+            <div class="preview-header">
+                <h2 class="preview-title">Preview</h2>
+                <div class="mode-toggle">
+                    <button class="mode-btn active" id="lightModeBtn" onclick="setMode('light')">☀️ Light</button>
+                    <button class="mode-btn" id="darkModeBtn" onclick="setMode('dark')">🌙 Dark</button>
+                </div>
+            </div>
+
+            <div class="preview-container" id="previewContainer">
+                <!-- Color Palette -->
+                <div class="preview-section">
+                    <div class="preview-section-title">Color Palette</div>
+                    <div class="color-palette-preview" id="colorPalettePreview"></div>
+                </div>
+
+                <!-- Typography -->
+                <div class="preview-section">
+                    <div class="preview-section-title">Typography Scale</div>
+                    <div class="typography-preview" id="typographyPreview"></div>
+                </div>
+
+                <!-- Spacing -->
+                <div class="preview-section">
+                    <div class="preview-section-title">Spacing Scale</div>
+                    <div class="spacing-preview" id="spacingPreview"></div>
+                </div>
+
+                <!-- Shadows -->
+                <div class="preview-section">
+                    <div class="preview-section-title">Shadow Levels</div>
+                    <div class="shadow-preview" id="shadowPreview"></div>
+                </div>
+
+                <!-- Components -->
+                <div class="preview-section">
+                    <div class="preview-section-title">Components</div>
+                    <div class="components-preview" id="componentsPreview"></div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Output Panel -->
+        <aside class="output-panel">
+            <div class="output-header">
+                <div class="output-tabs">
+                    <button class="output-tab active" id="tabPrompt" onclick="setOutputTab('prompt')">Prompt</button>
+                    <button class="output-tab" id="tabCSS" onclick="setOutputTab('css')">CSS Vars</button>
+                    <button class="output-tab" id="tabTailwind" onclick="setOutputTab('tailwind')">Tailwind</button>
+                </div>
+            </div>
+            <div class="output-content">
+                <pre class="output-code" id="outputCode"></pre>
+            </div>
+            <div class="output-actions">
+                <button class="action-btn secondary" onclick="resetToDefaults()">↺ Reset</button>
+                <button class="action-btn primary" onclick="copyOutput()">📋 Copy</button>
+            </div>
+        </aside>
+    </div>
+
+    <div class="toast" id="toast">Copied to clipboard!</div>
+
+    <script>
+        // ==========================================
+        // STATE
+        // ==========================================
+        const state = {
+            // Colors
+            primary: '#6366f1',
+            secondary: '#64748b',
+            accent: '#f59e0b',
+            neutralLight: '#f8fafc',
+            neutralDark: '#1e293b',
+            
+            // Typography
+            fontFamily: 'Inter',
+            fontSize: 16,
+            scaleRatio: 1.25,
+            weights: [300, 400, 500, 600, 700],
+            
+            // Spacing
+            spacingBase: 4,
+            
+            // Border Radius
+            borderRadius: 8,
+            
+            // Shadows
+            shadowIntensity: 0.1,
+            shadowBlur: 16,
+            
+            // Mode
+            mode: 'light',
+            
+            // Output
+            outputTab: 'prompt'
+        };
+
+        // ==========================================
+        // PRESETS
+        // ==========================================
+        const presets = {
+            minimal: {
+                primary: '#18181b',
+                secondary: '#71717a',
+                accent: '#3b82f6',
+                neutralLight: '#fafafa',
+                neutralDark: '#18181b',
+                fontFamily: 'Inter',
+                fontSize: 16,
+                scaleRatio: 1.2,
+                spacingBase: 4,
+                borderRadius: 4,
+                shadowIntensity: 0.05,
+                shadowBlur: 8
+            },
+            playful: {
+                primary: '#8b5cf6',
+                secondary: '#ec4899',
+                accent: '#fbbf24',
+                neutralLight: '#fef3c7',
+                neutralDark: '#4c1d95',
+                fontFamily: 'Poppins',
+                fontSize: 16,
+                scaleRatio: 1.333,
+                spacingBase: 4,
+                borderRadius: 16,
+                shadowIntensity: 0.15,
+                shadowBlur: 24
+            },
+            corporate: {
+                primary: '#1e40af',
+                secondary: '#475569',
+                accent: '#059669',
+                neutralLight: '#f1f5f9',
+                neutralDark: '#0f172a',
+                fontFamily: 'Roboto',
+                fontSize: 15,
+                scaleRatio: 1.2,
+                spacingBase: 4,
+                borderRadius: 6,
+                shadowIntensity: 0.08,
+                shadowBlur: 12
+            },
+            bold: {
+                primary: '#dc2626',
+                secondary: '#0ea5e9',
+                accent: '#facc15',
+                neutralLight: '#ffffff',
+                neutralDark: '#0a0a0a',
+                fontFamily: 'Space Grotesk',
+                fontSize: 18,
+                scaleRatio: 1.414,
+                spacingBase: 6,
+                borderRadius: 12,
+                shadowIntensity: 0.2,
+                shadowBlur: 32
+            }
+        };
+
+        // ==========================================
+        // UPDATE FUNCTIONS
+        // ==========================================
+        function updateColor(key, value) {
+            state[key] = value;
+            document.getElementById(`hex${key.charAt(0).toUpperCase() + key.slice(1)}`).textContent = value;
+            updateAll();
+        }
+
+        function updateState(key, value) {
+            state[key] = parseFloat(value) || value;
+            
+            // Update display values
+            const valueEl = document.getElementById(`${key}Value`);
+            if (valueEl) {
+                if (key === 'fontSize' || key === 'spacingBase' || key === 'borderRadius' || key === 'shadowBlur') {
+                    valueEl.textContent = value + 'px';
+                } else {
+                    valueEl.textContent = value;
+                }
+            }
+            
+            updateAll();
+        }
+
+        function toggleWeight(el, weight) {
+            el.classList.toggle('active');
+            if (el.classList.contains('active')) {
+                if (!state.weights.includes(weight)) state.weights.push(weight);
+            } else {
+                state.weights = state.weights.filter(w => w !== weight);
+            }
+            state.weights.sort((a, b) => a - b);
+            updateAll();
+        }
+
+        function setMode(mode) {
+            state.mode = mode;
+            document.getElementById('lightModeBtn').classList.toggle('active', mode === 'light');
+            document.getElementById('darkModeBtn').classList.toggle('active', mode === 'dark');
+            updateAll();
+        }
+
+        function setOutputTab(tab) {
+            state.outputTab = tab;
+            document.querySelectorAll('.output-tab').forEach(t => t.classList.remove('active'));
+            document.getElementById(`tab${tab.charAt(0).toUpperCase() + tab.slice(1)}`).classList.add('active');
+            updatePrompt();
+        }
+
+        function applyPreset(presetName) {
+            const preset = presets[presetName];
+            Object.assign(state, preset);
+            syncInputsFromState();
+            updateAll();
+        }
+
+        function resetToDefaults() {
+            applyPreset('minimal');
+            state.primary = '#6366f1';
+            state.secondary = '#64748b';
+            state.accent = '#f59e0b';
+            state.neutralLight = '#f8fafc';
+            state.neutralDark = '#1e293b';
+            state.fontFamily = 'Inter';
+            state.fontSize = 16;
+            state.scaleRatio = 1.25;
+            state.spacingBase = 4;
+            state.borderRadius = 8;
+            state.shadowIntensity = 0.1;
+            state.shadowBlur = 16;
+            syncInputsFromState();
+            updateAll();
+        }
+
+        function syncInputsFromState() {
+            // Colors
+            document.getElementById('colorPrimary').value = state.primary;
+            document.getElementById('hexPrimary').textContent = state.primary;
+            document.getElementById('colorSecondary').value = state.secondary;
+            document.getElementById('hexSecondary').textContent = state.secondary;
+            document.getElementById('colorAccent').value = state.accent;
+            document.getElementById('hexAccent').textContent = state.accent;
+            document.getElementById('colorNeutralLight').value = state.neutralLight;
+            document.getElementById('hexNeutralLight').textContent = state.neutralLight;
+            document.getElementById('colorNeutralDark').value = state.neutralDark;
+            document.getElementById('hexNeutralDark').textContent = state.neutralDark;
+            
+            // Typography
+            document.getElementById('fontFamily').value = state.fontFamily;
+            document.getElementById('fontSize').value = state.fontSize;
+            document.getElementById('fontSizeValue').textContent = state.fontSize + 'px';
+            document.getElementById('scaleRatio').value = state.scaleRatio;
+            document.getElementById('scaleRatioValue').textContent = state.scaleRatio;
+            
+            // Spacing
+            document.getElementById('spacingBase').value = state.spacingBase;
+            document.getElementById('spacingBaseValue').textContent = state.spacingBase + 'px';
+            
+            // Border Radius
+            document.getElementById('borderRadius').value = state.borderRadius;
+            document.getElementById('borderRadiusValue').textContent = state.borderRadius + 'px';
+            
+            // Shadows
+            document.getElementById('shadowIntensity').value = state.shadowIntensity;
+            document.getElementById('shadowIntensityValue').textContent = state.shadowIntensity;
+            document.getElementById('shadowBlur').value = state.shadowBlur;
+            document.getElementById('shadowBlurValue').textContent = state.shadowBlur + 'px';
+        }
+
+        // ==========================================
+        // RENDER FUNCTIONS
+        // ==========================================
+        function updateAll() {
+            renderPreview();
+            updatePrompt();
+        }
+
+        function renderPreview() {
+            const container = document.getElementById('previewContainer');
+            const isLight = state.mode === 'light';
+            
+            container.style.setProperty('--preview-bg', isLight ? '#ffffff' : state.neutralDark);
+            container.style.setProperty('--preview-text', isLight ? state.neutralDark : '#ffffff');
+            container.style.setProperty('--preview-border', isLight ? '#e2e8f0' : '#374151');
+            container.style.setProperty('--ds-primary', state.primary);
+            container.style.setProperty('--ds-secondary', state.secondary);
+            container.style.setProperty('--ds-accent', state.accent);
+            container.style.setProperty('--ds-radius', state.borderRadius + 'px');
+            container.style.fontFamily = `'${state.fontFamily}', sans-serif`;
+            
+            // Shadows
+            const shadowSm = `0 1px ${state.shadowBlur * 0.25}px rgba(0,0,0,${state.shadowIntensity * 0.5})`;
+            const shadowMd = `0 4px ${state.shadowBlur}px rgba(0,0,0,${state.shadowIntensity})`;
+            const shadowLg = `0 8px ${state.shadowBlur * 2}px rgba(0,0,0,${state.shadowIntensity * 1.5})`;
+            
+            container.style.setProperty('--ds-shadow-sm', shadowSm);
+            container.style.setProperty('--ds-shadow-md', shadowMd);
+            container.style.setProperty('--ds-shadow-lg', shadowLg);
+
+            // Color Palette
+            document.getElementById('colorPalettePreview').innerHTML = `
+                <div class="color-swatch">
+                    <div class="color-swatch-box" style="background: ${state.primary}"></div>
+                    <span class="color-swatch-label">Primary</span>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-swatch-box" style="background: ${state.secondary}"></div>
+                    <span class="color-swatch-label">Secondary</span>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-swatch-box" style="background: ${state.accent}"></div>
+                    <span class="color-swatch-label">Accent</span>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-swatch-box" style="background: ${state.neutralLight}; border: 1px solid #e2e8f0"></div>
+                    <span class="color-swatch-label">Light</span>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-swatch-box" style="background: ${state.neutralDark}"></div>
+                    <span class="color-swatch-label">Dark</span>
+                </div>
+            `;
+
+            // Typography Scale
+            const sizes = ['xs', 'sm', 'base', 'lg', 'xl', '2xl', '3xl'];
+            const sizeValues = sizes.map((_, i) => {
+                const power = i - 2;
+                return Math.round(state.fontSize * Math.pow(state.scaleRatio, power));
+            });
+            
+            document.getElementById('typographyPreview').innerHTML = sizes.map((name, i) => `
+                <div class="type-sample">
+                    <span class="type-size-label">${sizeValues[i]}px</span>
+                    <span style="font-size: ${sizeValues[i]}px; font-weight: ${state.weights.includes(600) ? 600 : 400}">
+                        ${name.toUpperCase()} - The quick brown fox
+                    </span>
+                </div>
+            `).join('');
+
+            // Spacing Scale
+            const spacingMultiples = [1, 2, 3, 4, 6, 8, 12, 16];
+            document.getElementById('spacingPreview').innerHTML = spacingMultiples.map(m => {
+                const size = state.spacingBase * m;
+                return `
+                    <div class="spacing-block">
+                        <div class="spacing-visual" style="width: ${size}px; height: ${size}px"></div>
+                        <span class="spacing-label">${size}px</span>
+                    </div>
+                `;
+            }).join('');
+
+            // Shadow Preview
+            document.getElementById('shadowPreview').innerHTML = `
+                <div class="shadow-box" style="box-shadow: ${shadowSm}">sm</div>
+                <div class="shadow-box" style="box-shadow: ${shadowMd}">md</div>
+                <div class="shadow-box" style="box-shadow: ${shadowLg}">lg</div>
+            `;
+
+            // Components Preview
+            document.getElementById('componentsPreview').innerHTML = `
+                <button class="preview-button primary" style="font-family: '${state.fontFamily}', sans-serif">Primary Button</button>
+                <button class="preview-button secondary" style="font-family: '${state.fontFamily}', sans-serif">Secondary</button>
+                <button class="preview-button outline" style="font-family: '${state.fontFamily}', sans-serif">Outline</button>
+                <span class="preview-badge primary">Badge</span>
+                <span class="preview-badge accent">Accent</span>
+                <input type="text" class="preview-input" placeholder="Input field..." style="font-family: '${state.fontFamily}', sans-serif">
+                <div class="preview-card" style="font-family: '${state.fontFamily}', sans-serif; background: ${isLight ? '#ffffff' : state.neutralDark}; border-color: ${isLight ? '#e2e8f0' : '#374151'}">
+                    <div class="preview-card-title">Card Title</div>
+                    <div class="preview-card-text">This is a sample card component with your design system applied.</div>
+                    <button class="preview-button primary" style="font-family: '${state.fontFamily}', sans-serif; padding: 8px 16px; font-size: 0.875rem">Action</button>
+                </div>
+            `;
+        }
+
+        function updatePrompt() {
+            const output = document.getElementById('outputCode');
+            
+            if (state.outputTab === 'prompt') {
+                output.textContent = generatePrompt();
+            } else if (state.outputTab === 'css') {
+                output.textContent = generateCSS();
+            } else {
+                output.textContent = generateTailwind();
+            }
+        }
+
+        function generatePrompt() {
+            const spacingScale = [1, 2, 3, 4, 6, 8, 12, 16].map(m => `${state.spacingBase * m}px`).join(', ');
+            const typeScale = ['xs', 'sm', 'base', 'lg', 'xl', '2xl', '3xl'].map((name, i) => {
+                const power = i - 2;
+                return `${name}: ${Math.round(state.fontSize * Math.pow(state.scaleRatio, power))}px`;
+            }).join(', ');
+
+            return `# Design System Specification
+
+## Colors
+- Primary: ${state.primary}
+- Secondary: ${state.secondary}
+- Accent: ${state.accent}
+- Neutral Light: ${state.neutralLight}
+- Neutral Dark: ${state.neutralDark}
+
+## Typography
+- Font Family: ${state.fontFamily}
+- Base Size: ${state.fontSize}px
+- Scale Ratio: ${state.scaleRatio}
+- Type Scale: ${typeScale}
+- Weights: ${state.weights.join(', ')}
+
+## Spacing
+- Base Unit: ${state.spacingBase}px
+- Scale: ${spacingScale}
+
+## Border Radius
+- Default: ${state.borderRadius}px
+
+## Shadows
+- Intensity: ${state.shadowIntensity}
+- Blur Base: ${state.shadowBlur}px
+- Small: 0 1px ${Math.round(state.shadowBlur * 0.25)}px rgba(0,0,0,${(state.shadowIntensity * 0.5).toFixed(2)})
+- Medium: 0 4px ${state.shadowBlur}px rgba(0,0,0,${state.shadowIntensity})
+- Large: 0 8px ${state.shadowBlur * 2}px rgba(0,0,0,${(state.shadowIntensity * 1.5).toFixed(2)})
+
+## Usage Instructions
+Apply this design system consistently across all UI components. Use the primary color for main CTAs, secondary for less prominent actions, and accent for highlights and notifications.`;
+        }
+
+        function generateCSS() {
+            const spacingVars = [1, 2, 3, 4, 6, 8, 12, 16].map(m => 
+                `  --spacing-${m}: ${state.spacingBase * m}px;`
+            ).join('\n');
+            
+            const typeVars = ['xs', 'sm', 'base', 'lg', 'xl', '2xl', '3xl'].map((name, i) => {
+                const power = i - 2;
+                return `  --font-size-${name}: ${Math.round(state.fontSize * Math.pow(state.scaleRatio, power))}px;`;
+            }).join('\n');
+
+            return `:root {
+  /* Colors */
+  --color-primary: ${state.primary};
+  --color-secondary: ${state.secondary};
+  --color-accent: ${state.accent};
+  --color-neutral-light: ${state.neutralLight};
+  --color-neutral-dark: ${state.neutralDark};
+
+  /* Typography */
+  --font-family: '${state.fontFamily}', sans-serif;
+${typeVars}
+
+  /* Spacing */
+${spacingVars}
+
+  /* Border Radius */
+  --radius-default: ${state.borderRadius}px;
+  --radius-sm: ${Math.round(state.borderRadius * 0.5)}px;
+  --radius-lg: ${Math.round(state.borderRadius * 1.5)}px;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px ${Math.round(state.shadowBlur * 0.25)}px rgba(0,0,0,${(state.shadowIntensity * 0.5).toFixed(2)});
+  --shadow-md: 0 4px ${state.shadowBlur}px rgba(0,0,0,${state.shadowIntensity});
+  --shadow-lg: 0 8px ${state.shadowBlur * 2}px rgba(0,0,0,${(state.shadowIntensity * 1.5).toFixed(2)});
+}`;
+        }
+
+        function generateTailwind() {
+            const spacingObj = {};
+            [1, 2, 3, 4, 6, 8, 12, 16].forEach(m => {
+                spacingObj[m] = `${state.spacingBase * m}px`;
+            });
+
+            const fontSizeObj = {};
+            ['xs', 'sm', 'base', 'lg', 'xl', '2xl', '3xl'].forEach((name, i) => {
+                const power = i - 2;
+                fontSizeObj[name] = `${Math.round(state.fontSize * Math.pow(state.scaleRatio, power))}px`;
+            });
+
+            return `// tailwind.config.js
+module.exports = {
+  theme: {
+    extend: {
+      colors: {
+        primary: '${state.primary}',
+        secondary: '${state.secondary}',
+        accent: '${state.accent}',
+        neutral: {
+          light: '${state.neutralLight}',
+          dark: '${state.neutralDark}',
+        },
+      },
+      fontFamily: {
+        sans: ['${state.fontFamily}', 'sans-serif'],
+      },
+      fontSize: ${JSON.stringify(fontSizeObj, null, 8).replace(/"/g, "'")},
+      spacing: ${JSON.stringify(spacingObj, null, 8).replace(/"/g, "'")},
+      borderRadius: {
+        DEFAULT: '${state.borderRadius}px',
+        sm: '${Math.round(state.borderRadius * 0.5)}px',
+        lg: '${Math.round(state.borderRadius * 1.5)}px',
+      },
+      boxShadow: {
+        sm: '0 1px ${Math.round(state.shadowBlur * 0.25)}px rgba(0,0,0,${(state.shadowIntensity * 0.5).toFixed(2)})',
+        DEFAULT: '0 4px ${state.shadowBlur}px rgba(0,0,0,${state.shadowIntensity})',
+        lg: '0 8px ${state.shadowBlur * 2}px rgba(0,0,0,${(state.shadowIntensity * 1.5).toFixed(2)})',
+      },
+    },
+  },
+}`;
+        }
+
+        // ==========================================
+        // CLIPBOARD
+        // ==========================================
+        function copyOutput() {
+            const output = document.getElementById('outputCode').textContent;
+            navigator.clipboard.writeText(output).then(() => {
+                showToast('Copied to clipboard!');
+            });
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+        }
+
+        // ==========================================
+        // INIT
+        // ==========================================
+        document.addEventListener('DOMContentLoaded', () => {
+            updateAll();
+        });
+    </script>
+</body>
+</html>

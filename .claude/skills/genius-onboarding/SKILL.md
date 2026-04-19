@@ -1,9 +1,12 @@
 ---
 name: genius-onboarding
-description: First-time user experience and setup wizard for Genius Team. Use when a new user starts their first project, says "hello", "get started", or when no user profile exists in .claude/user-profile.json.
+description: >-
+  First-time setup wizard for new Genius Team installations. Use when the .genius/ directory
+  doesn't exist, or user says "setup genius", "initialize", "first time setup",
+  "configure genius team". Do NOT use on projects already initialized — use genius-start instead.
 ---
 
-# Genius Onboarding v9.0 — Welcome Experience
+# Genius Onboarding v17.0 — Welcome Experience
 
 **Making every first interaction memorable and productive.**
 
@@ -49,7 +52,7 @@ Activate when:
     "stack": { "frontend": "...", "backend": "...", "styling": "...", "deployment": "..." }
   },
   "onboarded_at": "ISO-date",
-  "genius_team_version": "9.0.0"
+  "genius_team_version": "14.0.0"
 }
 ```
 
@@ -71,3 +74,17 @@ Provides: User profile, initial project idea
 
 ### To genius-memory
 Provides: User preferences to store
+
+
+---
+
+## Definition of Done
+
+Onboarding flow MUST be:
+1. **Complete journey**: From sign-up to first meaningful action fully mapped
+2. **Tested end-to-end**: Manually walked through as a new user (cold start)
+3. **Skip options**: Every step has a skip/dismiss path
+4. **Progress indicator**: User always knows where they are in the flow
+5. **Exit recovery**: If user abandons midway, they can resume where they left off
+
+Report must include: average time to complete, key drop-off points, and recommendations.

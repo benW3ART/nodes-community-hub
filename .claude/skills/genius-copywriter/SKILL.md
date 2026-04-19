@@ -1,6 +1,11 @@
 ---
 name: genius-copywriter
-description: Creates all written content including landing pages, emails, CTAs, UI text, and error messages. Use for "write copy", "landing page", "headlines", "email copy", "button text", "CTA", "marketing copy", "UX writing", "tagline".
+description: >-
+  Marketing copy creation skill. Writes landing page copy, emails, CTAs, UI text,
+  error messages, and taglines. Use when user says "write copy", "landing page",
+  "headlines", "email copy", "button text", "CTA", "marketing copy", "UX writing",
+  "tagline", "value proposition". Do NOT use for long-form blog posts or newsletters
+  (genius-content), technical documentation (genius-docs), or i18n translations (genius-i18n).
 ---
 
 ## ⚠️ MANDATORY ARTIFACT
@@ -19,7 +24,7 @@ description: Creates all written content including landing pages, emails, CTAs, 
 
 ---
 
-# Genius Copywriter v9.0 — Words That Convert
+# Genius Copywriter v17.0 — Words That Convert
 
 **Every word either sells or it doesn't.**
 
@@ -142,6 +147,16 @@ The playground allows users to:
 
 ---
 
+## 🗂️ Post-Output: Refresh Dashboard (MANDATORY)
+
+After generating any `.genius/*.html` playground file:
+1. Follow `.claude/commands/genius-dashboard.md` instructions to regenerate `.genius/DASHBOARD.html`
+2. Open it immediately:
+   ```bash
+   open .genius/DASHBOARD.html 2>/dev/null || echo "📂 Open: $(pwd)/.genius/DASHBOARD.html"
+   ```
+   (On macOS/Linux this opens in the default browser. If it fails, the full path is printed as a clickable link.)
+
 ## Handoffs
 
 ### From: genius-marketer
@@ -152,3 +167,27 @@ Provides: COPY.md with component-mapped copy, all UI text strings
 
 ### To: genius-integration-guide (parallel)
 Coordinates: CTA tracking, email service setup
+
+
+---
+
+## Next Step (Auto-Chain)
+
+When this skill completes its work:
+→ **Automatically suggest**: "Copy complete! Ready to set up service integrations? I'll hand off to **genius-integration-guide**."
+→ If user approves: route to genius-integration-guide
+→ Update state.json: `currentSkill = "genius-integration-guide"`
+
+
+---
+
+## Definition of Done
+
+Copy MUST be:
+1. **Immediately usable**: Copy-paste ready, no placeholders like [YOUR PRODUCT NAME]
+2. **Complete**: All sections filled (hero, features, CTA, footer)
+3. **Consistent voice**: Same tone throughout
+4. **Specific benefits**: "Save 2 hours/day" not "saves time"
+5. **Clear CTAs**: Specific action + specific outcome (e.g., "Start free trial — no credit card")
+
+If you don't have specific product details → ask before guessing. Generic copy is worse than no copy.

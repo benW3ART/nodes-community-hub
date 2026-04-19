@@ -1,0 +1,187 @@
+{
+  "includeGitInstructions": false,
+  "permissions": {
+    "allow": [
+      "Bash(npm *)",
+      "Bash(npx *)",
+      "Bash(pnpm *)",
+      "Bash(yarn *)",
+      "Bash(bun *)",
+      "Bash(node *)",
+      "Bash(git *)",
+      "Bash(vercel *)",
+      "Bash(railway *)",
+      "Bash(supabase *)",
+      "Bash(playwright *)",
+      "Bash(prisma *)",
+      "Bash(uv *)",
+      "Bash(tsc *)",
+      "Bash(eslint *)",
+      "Bash(docker *)",
+      "Bash(cat *)",
+      "Bash(ls *)",
+      "Bash(mkdir *)",
+      "Bash(cp *)",
+      "Bash(mv *)",
+      "Bash(touch *)",
+      "Bash(echo *)",
+      "Bash(grep *)",
+      "Bash(find *)",
+      "Bash(head *)",
+      "Bash(tail *)",
+      "Bash(wc *)",
+      "Bash(sort *)",
+      "Bash(sed *)",
+      "Bash(awk *)",
+      "Bash(date *)",
+      "Bash(jq *)",
+      "Bash(curl *)",
+      "Bash(claude *)",
+      "Bash(*--help)",
+      "Bash(*--version)",
+      "Bash(./scripts/*)",
+      "Bash(bash *)",
+      "Read(*)",
+      "Write(*)",
+      "Edit(*)",
+      "Glob(*)",
+      "Grep(*)",
+      "Task(*)",
+      "WebFetch(domain:*)",
+      "WebSearch"
+    ],
+    "deny": [
+      "Bash(rm -rf /)",
+      "Bash(rm -rf ~)",
+      "Bash(sudo *)",
+      "Bash(su *)",
+      "Bash(*--no-verify)",
+      "Bash(git push --force*)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'echo \"<genius_team_context>\"; echo \"Version: 21.0 | 54 skills | 4 modes (IDE Mode)\"; echo \"\"; bash scripts/memory-briefing.sh 2>/dev/null; echo \"\"; if [ -f .genius/memory/BRIEFING.md ]; then echo \"<briefing>\"; cat .genius/memory/BRIEFING.md; echo \"</briefing>\"; fi; echo \"\"; if [ -f .genius/state.json ]; then echo \"<state>\"; jq -r \".phase, .currentSkill\" .genius/state.json 2>/dev/null; echo \"</state>\"; fi; echo \"\"; STORED_VER=$(cat .genius/claude-code-version.txt 2>/dev/null || echo unknown); CURRENT_VER=$(claude --version 2>/dev/null | head -1 || echo unknown); if [ \"$STORED_VER\" != \"$CURRENT_VER\" ] && [ \"$CURRENT_VER\" != \"unknown\" ]; then echo \"<version_change>Claude Code updated: $STORED_VER -> $CURRENT_VER. Consider running /update-check.</version_change>\"; fi; if [ -f .claude/plan.md ]; then echo \"<tasks>\"; total=$(grep -c \"^- \\\\[\" .claude/plan.md 2>/dev/null || echo 0); completed=$(grep -c \"^- \\\\[x\\\\]\" .claude/plan.md 2>/dev/null || echo 0); pending=$(grep -c \"^- \\\\[ \\\\]\" .claude/plan.md 2>/dev/null || echo 0); in_progress=$(grep -c \"^- \\\\[~\\\\]\" .claude/plan.md 2>/dev/null || echo 0); echo \"TASKS: $completed/$total complete ($pending pending, $in_progress in-progress)\"; next=$(grep -m1 \"^- \\\\[ \\\\]\" .claude/plan.md 2>/dev/null | sed \"s/^- \\\\[ \\\\] //\"); if [ -n \"$next\" ]; then echo \"NEXT: $next\"; fi; echo \"</tasks>\"; fi; echo \"</genius_team_context>\"'"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'if [ -f .genius/memory/learned-rules.md ]; then RULES=$(grep -c \"^- \" .genius/memory/learned-rules.md 2>/dev/null || echo 0); echo \"<evolution_sweep>\"; echo \"LEARNED_RULES: $RULES rules loaded\"; echo \"READ .genius/memory/learned-rules.md and RUN VERIFICATION SWEEP on all rules with verify: lines.\"; if [ -f .genius/memory/sessions.jsonl ]; then echo \"RECENT_SESSIONS: $(tail -3 .genius/memory/sessions.jsonl 2>/dev/null)\"; fi; echo \"</evolution_sweep>\"; fi'"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c '\n# Generate critical context before compaction\necho \"<critical_context_snapshot>\"\necho \"## Snapshot at: $(date)\"\necho \"\"\n\n# Current state\nif [ -f .genius/state.json ]; then\n  echo \"## Current State\"\n  jq -r '\"Phase: \\(.phase) | Skill: \\(.currentSkill // \"none\") | Task: \\(.currentTask // \"none\")\"' .genius/state.json 2>/dev/null || true\n  if [ -f .genius/mode.json ]; then echo \"Mode: $(jq -r '.mode // \"builder\"' .genius/mode.json 2>/dev/null)\"; fi\n  echo \"\"\nfi\n\n# BRIEFING\nif [ -f .genius/memory/BRIEFING.md ]; then\n  echo \"## Project Briefing\"\n  head -80 .genius/memory/BRIEFING.md\n  echo \"\"\nfi\n\n# Last 5 completed tasks from plan\nif [ -f .claude/plan.md ]; then\n  echo \"## Recently Completed\"\n  grep -E \"^- \\[x\\]\" .claude/plan.md | tail -5 2>/dev/null || true\n  echo \"## Next Up\"\n  grep -E \"^- \\[ \\]\" .claude/plan.md | head -5 2>/dev/null || true\n  echo \"\"\nfi\n\necho \"</critical_context_snapshot>\"\n\n# Also run the memory extract\nbash scripts/memory-extract.sh \"$(cat PROGRESS.md 2>/dev/null | head -30; echo ---; grep -E \"^- \\[\" .claude/plan.md 2>/dev/null | head -20)\" 2>/dev/null || true\n'"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'if [ -f .claude/plan.md ] && [ -f .genius/state.json ]; then total=$(grep -c \"^- \\\\[\" .claude/plan.md 2>/dev/null || echo 0); completed=$(grep -c \"^- \\\\[x\\\\]\" .claude/plan.md 2>/dev/null || echo 0); jq --arg t \"$total\" --arg c \"$completed\" --arg now \"$(date -Iseconds 2>/dev/null || date)\" \".tasks.total = ($t | tonumber) | .tasks.completed = ($c | tonumber) | .updated_at = \\\"$now\\\"\" .genius/state.json > .genius/state.json.tmp && mv .genius/state.json.tmp .genius/state.json; fi 2>/dev/null || true'"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'if [ -n \"$GENIUS_WEBHOOK_URL\" ]; then SKILL=$(jq -r \".currentSkill // \\\"none\\\"\" .genius/state.json 2>/dev/null || echo \"none\"); PHASE=$(jq -r \".phase // \\\"unknown\\\"\" .genius/state.json 2>/dev/null || echo \"unknown\"); curl -s -X POST \"$GENIUS_WEBHOOK_URL\" -H \"Content-Type: application/json\" -d \"{\\\"event\\\":\\\"session_stop\\\",\\\"skill\\\":\\\"$SKILL\\\",\\\"phase\\\":\\\"$PHASE\\\",\\\"agent\\\":\\\"$TOOL_NAME\\\",\\\"timestamp\\\":\\\"$(date -Iseconds)\\\"}\" > /dev/null 2>&1 || true; fi'"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'if [ -f scripts/update-dual-bridge.sh ]; then bash scripts/update-dual-bridge.sh claude \"${GENIUS_CURRENT_TASK:-session}\"; fi 2>/dev/null || true'",
+            "once": true
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'if [ -d .genius/memory ]; then CORR=$(wc -l < .genius/memory/corrections.jsonl 2>/dev/null || echo 0); OBS=$(wc -l < .genius/memory/observations.jsonl 2>/dev/null || echo 0); RULES=$(grep -c \"^- \" .genius/memory/learned-rules.md 2>/dev/null || echo 0); echo \"{\\\"date\\\":\\\"$(date -Iseconds)\\\",\\\"rules_checked\\\":$RULES,\\\"corrections_received\\\":$CORR,\\\"observations_made\\\":$OBS}\" >> .genius/memory/sessions.jsonl 2>/dev/null; fi || true'"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'if [ -d .genius ]; then SKILL=$(jq -r \".currentSkill // \\\"none\\\"\" .genius/state.json 2>/dev/null || echo \"none\"); PHASE=$(jq -r \".phase // \\\"unknown\\\"\" .genius/state.json 2>/dev/null || echo \"unknown\"); echo \"{\\\"ts\\\":\\\"$(date -Iseconds)\\\",\\\"tool\\\":\\\"$TOOL_NAME\\\",\\\"skill\\\":\\\"$SKILL\\\",\\\"phase\\\":\\\"$PHASE\\\"}\" >> .genius/session-log.jsonl 2>/dev/null; fi || true'"
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'if [ -n \"$GENIUS_WEBHOOK_URL\" ]; then SKILL=$(jq -r \".currentSkill // \\\"none\\\"\" .genius/state.json 2>/dev/null || echo \"none\"); PHASE=$(jq -r \".phase // \\\"unknown\\\"\" .genius/state.json 2>/dev/null || echo \"unknown\"); FILE=\"${TOOL_INPUT:-unknown}\"; curl -s -X POST \"$GENIUS_WEBHOOK_URL\" -H \"Content-Type: application/json\" -d \"{\\\"event\\\":\\\"file_modified\\\",\\\"skill\\\":\\\"$SKILL\\\",\\\"phase\\\":\\\"$PHASE\\\",\\\"file\\\":\\\"$FILE\\\",\\\"agent\\\":\\\"$TOOL_NAME\\\",\\\"timestamp\\\":\\\"$(date -Iseconds)\\\"}\" > /dev/null 2>&1 || true; fi'"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'FILE=\"${TOOL_INPUT:-}\"; if [ -n \"$FILE\" ] && [ -d .claude/rules ]; then echo \"<path_rules_check>\"; for rule in .claude/rules/*.md; do if [ -f \"$rule\" ]; then RULENAME=$(basename \"$rule\"); echo \"Rule available: $RULENAME\"; fi; done; if [ -f .genius/memory/learned-rules.md ]; then echo \"Learned rules: $(wc -l < .genius/memory/learned-rules.md 2>/dev/null || echo 0) lines\"; fi; echo \"</path_rules_check>\"; fi 2>/dev/null || true'"
+          }
+        ]
+      }
+    ],
+    "InstructionsLoaded": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'GUARD=$([ -f GENIUS_GUARD.md ] && echo \"✅\" || echo \"⚠️ MISSING\"); MEM=$([ -f .genius/memory/BRIEFING.md ] && echo \"✅\" || echo \"⚠️ not generated yet\"); echo \"🛡️ Genius Team v21.0 loaded | Model: claude-opus-4-6 | Effort: high | Guard: $GUARD | Memory: $MEM\"'"
+          }
+        ]
+      }
+    ]
+  },
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
+    "GENIUS_TEAM_VERSION": "21.0.0",
+    "CLAUDE_CODE_AUTO_MODE": "skill-aware",
+    "GENIUS_TEAM_MODE": "ide",
+    "ANTHROPIC_MODEL": "claude-opus-4-6",
+    "CLAUDE_CODE_EFFORT_LEVEL": "high"
+  },
+  "compaction": {
+    "postCompactionSections": [
+      "## Genius Team Core Rules",
+      "## 🚨 ANTI-DRIFT RULES",
+      "## 🧠 Memory",
+      "## Commands",
+      "## Two Phases",
+      "## Mode System",
+      "## Workflow Registry",
+      "## Decision Framework",
+      "## Self-Evolution Protocol"
+    ]
+  }
+}

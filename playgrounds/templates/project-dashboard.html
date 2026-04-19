@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Dashboard — Genius Team</title>
+    <link rel="stylesheet" href="./design-tokens.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ========== HEADER ========== */
+        .header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .header h1 {
+            font-size: 18px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .project-name {
+            color: var(--accent-purple);
+        }
+
+        .live-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-secondary);
+            transition: background 0.3s;
+        }
+
+        .live-status.connected .live-dot {
+            background: var(--accent-green);
+            animation: pulse 2s infinite;
+        }
+
+        .live-status.polling .live-dot {
+            background: var(--accent-orange);
+            animation: pulse 0.5s infinite;
+        }
+
+        .live-status.offline .live-dot {
+            background: var(--accent-red);
+        }
+
+        .live-status.manual .live-dot {
+            background: var(--accent-blue);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .engine-badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .engine-badge.claude { background: var(--tone-purple-20); color: var(--accent-purple); }
+        .engine-badge.codex { background: var(--tone-green-20); color: var(--accent-green); }
+        .engine-badge.dual { background: var(--tone-orange-20); color: var(--accent-orange); }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 8px 14px;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border-color);
+        }
+
+        /* ========== PHASE TABS ========== */
+        .phase-tabs {
+            display: flex;
+            gap: 2px;
+            padding: 8px 24px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            overflow-x: auto;
+            flex-shrink: 0;
+        }
+
+        .phase-tab {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 18px;
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid transparent;
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+            position: relative;
+        }
+
+        .phase-tab:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .phase-tab.active {
+            color: var(--accent-purple);
+            border-bottom-color: var(--accent-purple);
+            background: var(--tone-purple-10);
+        }
+
+        .phase-tab.completed .phase-icon {
+            color: var(--accent-green);
+        }
+
+        .phase-tab.in-progress .phase-icon {
+            color: var(--accent-orange);
+        }
+
+        .phase-icon {
+            font-size: 16px;
+        }
+
+        .phase-name {
+            font-weight: 500;
+        }
+
+        .phase-status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--text-secondary);
+        }
+
+        .phase-tab.completed .phase-status-dot {
+            background: var(--accent-green);
+        }
+
+        .phase-tab.in-progress .phase-status-dot {
+            background: var(--accent-orange);
+            animation: pulse 2s infinite;
+        }
+
+        /* ========== IFRAME CONTAINER ========== */
+        .iframe-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .playground-frame {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: var(--bg-primary);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+
+        .playground-frame.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .frame-loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            color: var(--text-secondary);
+        }
+
+        .frame-loading.hidden {
+            display: none;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border-color);
+            border-top-color: var(--accent-purple);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* ========== FEEDBACK ========== */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--accent-green);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* ========== RESPONSIVE ========== */
+        @media (max-width: 768px) {
+            .header {
+                padding: 10px 16px;
+            }
+
+            .phase-tabs {
+                padding: 8px 16px;
+            }
+
+            .phase-tab {
+                padding: 8px 12px;
+            }
+
+            .phase-name {
+                display: none;
+            }
+
+            .phase-icon {
+                font-size: 20px;
+            }
+        }
+    
+/* ===== MOBILE RESPONSIVE (v13) ===== */
+@media (max-width: 768px) {
+  body { padding: 1rem !important; }
+
+  /* Single-column grids */
+  [style*="grid-template-columns"],
+  .grid, .cards-grid, .two-col, .three-col,
+  [class*="grid-"] { grid-template-columns: 1fr !important; }
+
+  /* Stack flex rows */
+  .flex-row, .row, [class*="-row"] { flex-direction: column !important; }
+
+  /* Full-width elements */
+  .card, .panel, .box, .section,
+  [class*="card"], [class*="panel"] { width: 100% !important; max-width: 100% !important; }
+
+  /* Touch-friendly inputs and buttons */
+  input, select, textarea, button, .btn,
+  [class*="btn"], [class*="button"] {
+    min-height: 44px !important;
+    font-size: 16px !important;
+  }
+
+  /* Prevent horizontal scroll */
+  .container, .wrapper, main, section { overflow-x: hidden; }
+
+  /* Readable font sizes */
+  h1 { font-size: 1.6rem !important; }
+  h2 { font-size: 1.3rem !important; }
+  h3 { font-size: 1.1rem !important; }
+
+  /* Reduce whitespace */
+  .container, .wrapper, main {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+
+  /* Table responsiveness */
+  table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* Navigation */
+  nav, .nav, .navbar { flex-wrap: wrap; gap: .5rem; }
+}
+
+@media (max-width: 480px) {
+  body { padding: .75rem !important; }
+  h1 { font-size: 1.3rem !important; }
+  .header, header { padding: .75rem 1rem !important; }
+}
+
+</style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-left">
+            <h1>🚀 <span class="project-name" id="projectName">Project Dashboard</span></h1>
+            <div class="live-status offline" id="liveStatus">
+                <span class="live-dot"></span>
+                <span id="statusText">Connecting...</span>
+            </div>
+            <span class="engine-badge claude" id="engineBadge">Claude</span>
+        </div>
+        <div class="header-actions">
+            <button class="btn btn-secondary" onclick="exportProject()">📥 Export</button>
+            <button class="btn btn-secondary" onclick="refreshCurrentFrame()">🔄 Refresh</button>
+        </div>
+    </header>
+
+    <!-- Phase Tabs -->
+    <nav class="phase-tabs" id="phaseTabs">
+        <button class="phase-tab active" data-phase="discovery" data-src="project-canvas.html" onclick="switchPhase('discovery')">
+            <span class="phase-icon">🎯</span>
+            <span class="phase-name">Discovery</span>
+            <span class="phase-status-dot"></span>
+        </button>
+        <button class="phase-tab" data-phase="market" data-src="market-simulator.html" onclick="switchPhase('market')">
+            <span class="phase-icon">📊</span>
+            <span class="phase-name">Market</span>
+            <span class="phase-status-dot"></span>
+        </button>
+        <button class="phase-tab" data-phase="specs" data-src="user-journey-builder.html" onclick="switchPhase('specs')">
+            <span class="phase-icon">📋</span>
+            <span class="phase-name">Specs</span>
+            <span class="phase-status-dot"></span>
+        </button>
+        <button class="phase-tab" data-phase="design" data-src="design-system-builder.html" onclick="switchPhase('design')">
+            <span class="phase-icon">🎨</span>
+            <span class="phase-name">Design</span>
+            <span class="phase-status-dot"></span>
+        </button>
+        <button class="phase-tab" data-phase="dev" data-src="architecture-explorer.html" onclick="switchPhase('dev')">
+            <span class="phase-icon">💻</span>
+            <span class="phase-name">Dev</span>
+            <span class="phase-status-dot"></span>
+        </button>
+        <button class="phase-tab" data-phase="qa" data-src="test-coverage-map.html" onclick="switchPhase('qa')">
+            <span class="phase-icon">🧪</span>
+            <span class="phase-name">QA</span>
+            <span class="phase-status-dot"></span>
+        </button>
+        <button class="phase-tab" data-phase="deploy" data-src="deploy-checklist.html" onclick="switchPhase('deploy')">
+            <span class="phase-icon">🚀</span>
+            <span class="phase-name">Deploy</span>
+            <span class="phase-status-dot"></span>
+        </button>
+        <!-- v17 Playgrounds -->
+        <button class="phase-tab" data-phase="seo" data-src="seo-dashboard.html" onclick="switchPhase('seo')">
+            <span class="phase-icon">🔍</span>
+            <span class="phase-name">SEO/GEO</span>
+            <span class="phase-status-dot"></span>
+        </button>
+        <button class="phase-tab" data-phase="crypto" data-src="crypto-analyzer.html" onclick="switchPhase('crypto')">
+            <span class="phase-icon">🔮</span>
+            <span class="phase-name">Crypto</span>
+            <span class="phase-status-dot"></span>
+        </button>
+        <button class="phase-tab" data-phase="analytics" data-src="analytics-wizard.html" onclick="switchPhase('analytics')">
+            <span class="phase-icon">📊</span>
+            <span class="phase-name">Analytics</span>
+            <span class="phase-status-dot"></span>
+        </button>
+        <button class="phase-tab" data-phase="perf" data-src="performance-monitor.html" onclick="switchPhase('perf')">
+            <span class="phase-icon">⚡</span>
+            <span class="phase-name">Perf</span>
+            <span class="phase-status-dot"></span>
+        </button>
+        <button class="phase-tab" data-phase="a11y" data-src="accessibility-checker.html" onclick="switchPhase('a11y')">
+            <span class="phase-icon">♿</span>
+            <span class="phase-name">A11y</span>
+            <span class="phase-status-dot"></span>
+        </button>
+        <button class="phase-tab" data-phase="experiments" data-src="experiments-tracker.html" onclick="switchPhase('experiments')">
+            <span class="phase-icon">🧪</span>
+            <span class="phase-name">Experiments</span>
+            <span class="phase-status-dot"></span>
+        </button>
+        <button class="phase-tab" data-phase="codereview" data-src="code-review-reporter.html" onclick="switchPhase('codereview')">
+            <span class="phase-icon">🔍</span>
+            <span class="phase-name">Code Review</span>
+            <span class="phase-status-dot"></span>
+        </button>
+    </nav>
+
+    <!-- Iframe Container -->
+    <div class="iframe-container" id="iframeContainer">
+        <div class="frame-loading" id="frameLoading">
+            <div class="loading-spinner"></div>
+            <span>Loading playground...</span>
+        </div>
+        <!-- Iframes are created dynamically -->
+    </div>
+
+    <div class="toast" id="toast">✅ Action completed!</div>
+
+    <script>
+        // ============ STATE ============
+        const state = {
+            projectName: 'Project Dashboard',
+            engine: 'claude',
+            currentPhase: 'discovery',
+            phases: {
+                discovery: { status: 'in-progress', src: 'project-canvas.html' },
+                market: { status: 'pending', src: 'market-simulator.html' },
+                specs: { status: 'pending', src: 'user-journey-builder.html' },
+                design: { status: 'pending', src: 'design-system-builder.html' },
+                dev: { status: 'pending', src: 'architecture-explorer.html' },
+                qa: { status: 'pending', src: 'test-coverage-map.html' },
+                deploy: { status: 'pending', src: 'deploy-checklist.html' },
+                seo: { status: 'pending', src: 'seo-dashboard.html' },
+                crypto: { status: 'pending', src: 'crypto-analyzer.html' },
+                analytics: { status: 'pending', src: 'analytics-wizard.html' },
+                perf: { status: 'pending', src: 'performance-monitor.html' },
+                a11y: { status: 'pending', src: 'accessibility-checker.html' },
+                experiments: { status: 'pending', src: 'experiments-tracker.html' },
+                codereview: { status: 'pending', src: 'code-review-reporter.html' }
+            },
+            loadedFrames: new Set(),
+            lastStateHash: ''
+        };
+
+        // ============ IFRAME MANAGEMENT ============
+        function createIframe(phase) {
+            const container = document.getElementById('iframeContainer');
+            const phaseData = state.phases[phase];
+            
+            const iframe = document.createElement('iframe');
+            iframe.id = `frame-${phase}`;
+            iframe.className = 'playground-frame';
+            iframe.src = phaseData.src;
+            
+            iframe.onload = () => {
+                state.loadedFrames.add(phase);
+                document.getElementById('frameLoading').classList.add('hidden');
+                
+                // Inject state sync into iframe
+                try {
+                    const iframeWindow = iframe.contentWindow;
+                    if (iframeWindow && iframeWindow.applyLiveState) {
+                        // If iframe has a state handler, use it
+                        syncStateToIframe(iframe);
+                    }
+                } catch (e) {
+                    // Cross-origin restrictions, ignore
+                }
+            };
+            
+            container.appendChild(iframe);
+            return iframe;
+        }
+
+        function getOrCreateIframe(phase) {
+            let iframe = document.getElementById(`frame-${phase}`);
+            if (!iframe) {
+                iframe = createIframe(phase);
+            }
+            return iframe;
+        }
+
+        function switchPhase(phase) {
+            const loading = document.getElementById('frameLoading');
+            
+            // Update state
+            state.currentPhase = phase;
+            
+            // Update tabs
+            document.querySelectorAll('.phase-tab').forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.phase === phase);
+            });
+            
+            // Hide all frames
+            document.querySelectorAll('.playground-frame').forEach(frame => {
+                frame.classList.remove('active');
+            });
+            
+            // Show loading if frame not loaded
+            if (!state.loadedFrames.has(phase)) {
+                loading.classList.remove('hidden');
+            }
+            
+            // Get or create iframe and show it
+            const iframe = getOrCreateIframe(phase);
+            iframe.classList.add('active');
+            
+            // If already loaded, hide loading
+            if (state.loadedFrames.has(phase)) {
+                loading.classList.add('hidden');
+            }
+        }
+
+        function refreshCurrentFrame() {
+            const iframe = document.getElementById(`frame-${state.currentPhase}`);
+            if (iframe) {
+                state.loadedFrames.delete(state.currentPhase);
+                document.getElementById('frameLoading').classList.remove('hidden');
+                iframe.src = iframe.src;
+            }
+        }
+
+        // ============ LIVE POLLING ============
+        let pollInterval = null;
+        let consecutiveFailures = 0;
+        const MAX_FAILURES = 5;
+        const POLL_INTERVAL = 2000;
+        const STATE_URL = '/state.json';
+
+        function startLivePolling() {
+            // Only poll if served from localhost
+            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                console.log('🔴 Starting live polling...');
+                pollInterval = setInterval(pollState, POLL_INTERVAL);
+                pollState(); // Initial poll
+            } else {
+                setStatus('manual', 'Manual Mode');
+            }
+        }
+
+        async function pollState() {
+            setStatus('polling', 'Polling...');
+            
+            try {
+                const response = await fetch(STATE_URL + '?t=' + Date.now(), { 
+                    cache: 'no-store',
+                    headers: { 'Accept': 'application/json' }
+                });
+                
+                if (!response.ok) throw new Error('State file not found');
+                
+                const newState = await response.json();
+                const newHash = JSON.stringify(newState);
+                
+                if (newHash !== state.lastStateHash) {
+                    console.log('📥 State updated!');
+                    applyState(newState);
+                    state.lastStateHash = newHash;
+                    broadcastStateToIframes(newState);
+                }
+                
+                consecutiveFailures = 0;
+                setStatus('connected', 'Live');
+                
+            } catch (error) {
+                consecutiveFailures++;
+                console.log('⚠️ Poll failed:', consecutiveFailures, error.message);
+                
+                if (consecutiveFailures >= MAX_FAILURES) {
+                    stopLivePolling();
+                    setStatus('manual', 'Manual Mode');
+                } else {
+                    setStatus('offline', 'Reconnecting...');
+                }
+            }
+        }
+
+        function stopLivePolling() {
+            if (pollInterval) {
+                clearInterval(pollInterval);
+                pollInterval = null;
+            }
+        }
+
+        function setStatus(statusClass, text) {
+            const statusEl = document.getElementById('liveStatus');
+            const statusText = document.getElementById('statusText');
+            statusEl.className = 'live-status ' + statusClass;
+            statusText.textContent = text;
+        }
+
+        function applyState(newState) {
+            // Update project name
+            if (newState.projectName) {
+                state.projectName = newState.projectName;
+                document.getElementById('projectName').textContent = newState.projectName;
+            }
+
+            // Update engine badge
+            if (newState.engine) {
+                state.engine = newState.engine;
+                const badge = document.getElementById('engineBadge');
+                badge.className = 'engine-badge ' + newState.engine;
+                badge.textContent = newState.engine.charAt(0).toUpperCase() + newState.engine.slice(1);
+            }
+
+            // Update phase statuses
+            if (newState.phases) {
+                Object.keys(newState.phases).forEach(phase => {
+                    if (state.phases[phase] && newState.phases[phase].status) {
+                        state.phases[phase].status = newState.phases[phase].status;
+                    }
+                });
+                updateTabStatuses();
+            }
+
+            // Switch to current phase if specified
+            if (newState.currentPhase && newState.currentPhase !== state.currentPhase) {
+                switchPhase(newState.currentPhase);
+            }
+        }
+
+        function updateTabStatuses() {
+            document.querySelectorAll('.phase-tab').forEach(tab => {
+                const phase = tab.dataset.phase;
+                const phaseData = state.phases[phase];
+                
+                tab.classList.remove('completed', 'in-progress');
+                
+                if (phaseData.status === 'completed') {
+                    tab.classList.add('completed');
+                } else if (phaseData.status === 'in-progress') {
+                    tab.classList.add('in-progress');
+                }
+            });
+        }
+
+        function broadcastStateToIframes(newState) {
+            document.querySelectorAll('.playground-frame').forEach(iframe => {
+                try {
+                    if (iframe.contentWindow) {
+                        iframe.contentWindow.postMessage({
+                            type: 'STATE_UPDATE',
+                            state: newState
+                        }, '*');
+                    }
+                } catch (e) {
+                    // Cross-origin, ignore
+                }
+            });
+        }
+
+        function syncStateToIframe(iframe) {
+            try {
+                if (iframe.contentWindow && iframe.contentWindow.applyLiveState) {
+                    // Direct function call if same origin
+                    iframe.contentWindow.applyLiveState(state);
+                }
+            } catch (e) {
+                // Use postMessage as fallback
+                iframe.contentWindow.postMessage({
+                    type: 'STATE_UPDATE',
+                    state: state
+                }, '*');
+            }
+        }
+
+        // ============ EXPORT ============
+        function exportProject() {
+            const exportData = {
+                projectName: state.projectName,
+                engine: state.engine,
+                currentPhase: state.currentPhase,
+                phases: state.phases,
+                exportedAt: new Date().toISOString()
+            };
+            
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${state.projectName.toLowerCase().replace(/\s+/g, '-')}-export.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            showToast('📥 Project exported!');
+        }
+
+        // ============ TOAST ============
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+        }
+
+        // ============ MESSAGE HANDLER ============
+        window.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'PHASE_COMPLETE') {
+                const phase = event.data.phase;
+                if (state.phases[phase]) {
+                    state.phases[phase].status = 'completed';
+                    updateTabStatuses();
+                    showToast(`✅ ${phase} phase completed!`);
+                }
+            }
+            
+            if (event.data && event.data.type === 'STATE_REQUEST') {
+                // Iframe requesting current state
+                event.source.postMessage({
+                    type: 'STATE_UPDATE',
+                    state: state
+                }, '*');
+            }
+        });
+
+        // ============ INIT ============
+        document.addEventListener('DOMContentLoaded', () => {
+            // Load the initial phase
+            switchPhase('discovery');
+            
+            // Start live polling
+            startLivePolling();
+            
+            // Update tab statuses
+            updateTabStatuses();
+        });
+    </script>
+</body>
+</html>

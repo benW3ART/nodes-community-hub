@@ -1,6 +1,12 @@
 ---
 name: genius-deployer
-description: Deployment and operations skill that handles staging and production deployments, monitors systems, reads logs, diagnoses issues, and manages rollbacks. Works with Vercel, Railway, and other platforms. Use for "deploy", "go live", "push to production", "ship it".
+description: >-
+  Deployment skill. Handles environment setup, CI/CD configuration, and production deployment.
+  Use when user says "deploy", "ship it", "go to production", "setup CI/CD", "configure deployment",
+  "publish", "release", "push to prod", "make it live".
+  Do NOT use for development/coding (use genius-dev skills).
+  Do NOT use for testing (use genius-qa).
+  After deployment, suggest genius-seo and genius-analytics for post-launch optimization.
 ---
 
 ## ⚠️ MANDATORY ARTIFACT
@@ -58,7 +64,7 @@ Update state.json with:
 
 ---
 
-# Genius Deployer v9.0 — Ship It Safely
+# Genius Deployer v17.0 — Ship It Safely
 
 **Ships code to production with zero downtime. Never deploy on Friday at 5pm.**
 
@@ -130,67 +136,8 @@ Provides: Deployment logs, error messages, environment context
 ## Playground Integration (Unified Dashboard)
 
 ### Deploy Checklist in Dashboard
-Before any deployment, update state.json with checklist items for human validation.
 
-### Deployment Flow with Unified Dashboard
-
-```
-1. UPDATE STATE → Write checklist to phases.deploy.data
-2. USER VIEWS   → Dashboard shows deploy phase automatically
-3. VALIDATE     → User checks items in dashboard
-4. CONFIRM      → Wait for GO status in state.json
-5. DEPLOY       → Execute deployment
-6. UPDATE       → Record final status in state.json
-```
-
-### Updating state.json with Checklist
-
-Write to `phases.deploy.data`:
-
-```json
-{
-  "currentPhase": "deploy",
-  "phases": {
-    "deploy": {
-      "status": "in-progress",
-      "data": {
-        "projectInfo": {
-          "projectName": "my-awesome-app",
-          "version": "v2.1.0",
-          "environment": "production",
-          "deployDate": "2024-02-17T18:00:00Z"
-        },
-        "checklist": {
-          "preDeploy": [
-            { "item": "Environment variables configured", "status": "done", "critical": true },
-            { "item": "Database backup completed", "status": "done", "critical": true }
-          ],
-          "deploy": [
-            { "item": "Team notified", "status": "done", "critical": false },
-            { "item": "Deployment executed", "status": "in-progress", "critical": true }
-          ],
-          "postDeploy": [
-            { "item": "Error rates checked", "status": "pending", "critical": true },
-            { "item": "Smoke tests passed", "status": "pending", "critical": true }
-          ],
-          "rollback": [
-            { "item": "Previous version tagged", "status": "done", "critical": false }
-          ]
-        },
-        "goStatus": "wait",
-        "rollbackPlan": "..."
-      }
-    }
-  }
-}
-```
-
-### DO NOT Create Separate HTML Files
-
-The unified dashboard reads from state.json. No need to:
-- ❌ Copy templates
-- ❌ Create DEPLOY-CHECKLIST.html
-- ❌ Open separate URLs
+Write checklist to `phases.deploy.data` in state.json. Flow: update state → user views dashboard → validate items → confirm GO → deploy → record final status. Checklist has 4 categories: `preDeploy`, `deploy`, `postDeploy`, `rollback` — each item has `{ item, status, critical }`. Set `goStatus: "wait"|"go"|"no-go"`. **DO NOT create separate HTML files** — dashboard reads from state.json.
 
 ### Presets
 
@@ -258,61 +205,26 @@ Preparation for potential rollback.
 
 ### Prompt Output Format
 
-When user clicks "Copy", the checklist generates a status report:
-
-```
-# DEPLOYMENT CHECKLIST STATUS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-## 📊 STATUS: ✅ GO - Ready to Deploy!
-
-## 📋 Project Info
-- Project: my-awesome-app
-- Version: v2.1.0
-- Environment: production
-
-## 📈 Progress: 95%
-- ✓ Done: 28
-- ⏳ In Progress: 1
-- ✗ Not Done: 1
-
-## 🚨 BLOCKERS (0)
-None
-
-## 📊 Phase Summary
-📋 Pre-Deploy: [██████████] 100%
-🚀 Deploy: [████████░░] 80%
-✅ Post-Deploy: [██████████] 100%
-🔙 Rollback Plan: [██████████] 100%
-
-## 🔙 Rollback Plan
-1. Revert to v2.0.9: docker pull myapp:v2.0.9
-2. Restore DB: pg_restore backup_20240115.sql
-...
-```
+The checklist summary should surface environment, readiness status, remaining blockers, phase progress, and rollback instructions in a copyable format.
 
 ### Integration with Memory
 
-**On checklist completion (GO):**
-```json
-{"id": "d-XXX", "decision": "DEPLOY APPROVED: [version] to [env]", "reason": "checklist passed", "timestamp": "ISO", "tags": ["deployment", "checklist", "approved"]}
-```
-
-**On deployment blocked (NO-GO):**
-```json
-{"id": "d-XXX", "decision": "DEPLOY BLOCKED: [version] to [env]", "reason": "[blocker list]", "timestamp": "ISO", "tags": ["deployment", "checklist", "blocked"]}
-```
+Log a deployment approval or block decision to memory with version, environment, reason, timestamp, and deployment tags.
 
 ### Usage Example
 
-```
-User: Deploy to production
+Flow: read BRIEFING, update deploy checklist state, surface dashboard status, deploy only on GO, then log the decision.
 
-Agent:
-1. Reads BRIEFING.md for deployment context
-2. Updates state.json with deploy checklist data
-3. User views Deploy tab in unified dashboard
-4. Waits for GO status in state.json
-5. Executes deployment protocol
-6. Records decision in memory
-```
+## Post-Deployment Suggestions
+
+After successful deployment:
+- **genius-seo** — Optimize for AI and traditional search (GEO + SEO audit)
+- **genius-analytics** — Set up event tracking and conversion funnels
+- **genius-performance** — Run Lighthouse audit and optimize Core Web Vitals
+## Definition of Done
+
+- [ ] All tests passing before deploy
+- [ ] Environment variables verified
+- [ ] Build succeeds cleanly (no warnings)
+- [ ] Deployment verified with health check URL
+- [ ] Rollback plan documented

@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Experiments Tracker — Genius Team</title>
+    <link rel="stylesheet" href="./design-tokens.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+        .header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 14px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .header h1 { font-size: 18px; font-weight: 600; display: flex; align-items: center; gap: 10px; }
+        .header-right { display: flex; align-items: center; gap: 10px; }
+        .status-chips { display: flex; gap: 6px; }
+        .status-chip {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            border: 1px solid var(--border-color);
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            transition: all 0.2s;
+        }
+        .status-chip.active-running { background: var(--tone-green-15); color: var(--accent-green); border-color: var(--accent-green); }
+        .status-chip.active-converged { background: var(--tone-blue-15); color: var(--accent-blue); border-color: var(--accent-blue); }
+        .status-chip.active-paused { background: var(--tone-gray-15); color: var(--text-secondary); border-color: var(--text-secondary); }
+        .btn {
+            background: var(--accent-purple);
+            color: var(--text-inverse);
+            border: none;
+            padding: 7px 14px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .btn:hover { opacity: 0.85; }
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+        .main { padding: 24px; max-width: 1300px; margin: 0 auto; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+        .card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 20px;
+        }
+        .card-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .config-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .config-field label { font-size: 11px; color: var(--text-secondary); display: block; margin-bottom: 5px; }
+        .field-input {
+            width: 100%;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 8px 10px;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+        .field-input:focus { outline: none; border-color: var(--accent-purple); }
+        /* Runs table */
+        .runs-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .runs-table th {
+            text-align: left;
+            padding: 8px 10px;
+            color: var(--text-secondary);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .runs-table td { padding: 9px 10px; border-bottom: 1px solid var(--border-color); }
+        .runs-table tbody tr:last-child td { border-bottom: none; }
+        .runs-table td input {
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-size: 13px;
+            width: 100%;
+        }
+        .runs-table td input:focus { outline: none; }
+        .delta-badge {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .delta-pos { background: var(--tone-green-15); color: var(--accent-green); }
+        .delta-neg { background: var(--tone-red-15); color: var(--accent-red); }
+        .delta-neu { background: var(--tone-gray-15); color: var(--text-secondary); }
+        .run-status-btn {
+            background: none;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 2px;
+        }
+        /* SVG Chart */
+        .chart-wrap {
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            padding: 12px;
+            overflow: hidden;
+        }
+        /* Best found */
+        .best-card {
+            background: var(--tone-purple-08);
+            border: 1px solid var(--tone-purple-30);
+            border-radius: 8px;
+            padding: 16px;
+        }
+        .best-title { font-size: 12px; color: var(--accent-purple); font-weight: 600; text-transform: uppercase; margin-bottom: 8px; }
+        .best-metric { font-size: 28px; font-weight: 800; color: var(--accent-green); }
+        .toast {
+            position: fixed; bottom: 24px; right: 24px;
+            background: var(--accent-green); color: var(--text-inverse);
+            padding: 10px 18px; border-radius: 8px;
+            font-size: 13px; opacity: 0; transform: translateY(10px);
+            transition: all 0.3s; pointer-events: none; z-index: 999;
+        }
+        .toast.show { opacity: 1; transform: translateY(0); }
+    </style>
+</head>
+<body>
+<div class="header">
+    <h1>🧪 Experiments Tracker</h1>
+    <div class="header-right">
+        <div class="status-chips">
+            <span class="status-chip active-running" id="chip-running" onclick="setExpStatus('running')">🔄 Running</span>
+            <span class="status-chip" id="chip-converged" onclick="setExpStatus('converged')">✅ Converged</span>
+            <span class="status-chip" id="chip-paused" onclick="setExpStatus('paused')">⏸️ Paused</span>
+        </div>
+        <button class="btn btn-secondary" onclick="exportExperiment()">Export experiment.md</button>
+    </div>
+</div>
+
+<div class="main">
+    <div class="grid-2">
+        <!-- Config -->
+        <div class="card">
+            <div class="card-title">⚙️ Experiment Config</div>
+            <div class="config-grid">
+                <div class="config-field">
+                    <label>Objectif</label>
+                    <input type="text" class="field-input" id="expObjectif" value="Improve conversion rate on landing page">
+                </div>
+                <div class="config-field">
+                    <label>Metric cible</label>
+                    <input type="text" class="field-input" id="expMetric" value="Conversion rate (%)">
+                </div>
+                <div class="config-field">
+                    <label>Seuil de succès</label>
+                    <input type="text" class="field-input" id="expSeuil" value="+5%">
+                </div>
+                <div class="config-field">
+                    <label>Durée max</label>
+                    <input type="text" class="field-input" id="expDuree" value="14 days">
+                </div>
+            </div>
+        </div>
+
+        <!-- Best Found -->
+        <div class="card">
+            <div class="card-title">🏆 Best Run Found</div>
+            <div class="best-card" id="bestCard">
+                <div class="best-title">Best Delta</div>
+                <div class="best-metric" id="bestDelta">+0.0%</div>
+                <div style="font-size:13px;color:var(--text-secondary);margin-top:8px" id="bestDesc">No runs yet</div>
+                <div style="font-size:12px;color:var(--text-secondary);margin-top:4px" id="bestRun">Run #—</div>
+            </div>
+            <div style="margin-top:16px">
+                <div class="chart-wrap">
+                    <svg id="progressChart" width="100%" height="80" viewBox="0 0 400 80" preserveAspectRatio="none">
+                        <text x="200" y="44" text-anchor="middle" fill="var(--text-secondary)" font-size="12">No data yet</text>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Runs Log -->
+    <div class="card">
+        <div class="card-title">
+            <span>📋 Runs Log</span>
+            <button class="btn" style="font-size:11px;padding:5px 12px" onclick="addRun()">+ Add Run</button>
+        </div>
+        <div style="overflow-x:auto">
+            <table class="runs-table">
+                <thead>
+                    <tr>
+                        <th>Run #</th>
+                        <th>Description</th>
+                        <th>Metric Before</th>
+                        <th>Metric After</th>
+                        <th>Delta</th>
+                        <th>Status</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="runsBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast">✅ Done!</div>
+
+<script>
+    let expStatus = 'running';
+    const runs = [
+        { id: 1, desc: 'Baseline measurement', before: '3.2', after: '3.2', kept: null },
+        { id: 2, desc: 'Hero CTA button color change (orange → green)', before: '3.2', after: '4.1', kept: true },
+        { id: 3, desc: 'Headline copy A/B test', before: '4.1', after: '3.8', kept: false },
+        { id: 4, desc: 'Social proof section above fold', before: '4.1', after: '5.2', kept: true },
+    ];
+
+    function setExpStatus(s) {
+        expStatus = s;
+        document.querySelectorAll('.status-chip').forEach(c => {
+            c.className = 'status-chip';
+        });
+        document.getElementById('chip-' + s).classList.add('active-' + s);
+    }
+
+    function renderRuns() {
+        const tbody = document.getElementById('runsBody');
+        tbody.innerHTML = runs.map((r, i) => {
+            const before = parseFloat(r.before) || 0;
+            const after = parseFloat(r.after) || 0;
+            const delta = after - before;
+            const deltaStr = (delta >= 0 ? '+' : '') + delta.toFixed(1) + '%';
+            const deltaCls = delta > 0 ? 'delta-pos' : delta < 0 ? 'delta-neg' : 'delta-neu';
+            const statusIcon = r.kept === null ? '⬜' : r.kept ? '✅' : '❌';
+            return `
+                <tr>
+                    <td style="color:var(--text-secondary);font-weight:600">#${r.id}</td>
+                    <td><input type="text" value="${r.desc}" oninput="runs[${i}].desc=this.value;updateBest()"></td>
+                    <td><input type="text" value="${r.before}" style="width:70px" oninput="runs[${i}].before=this.value;renderRuns()"></td>
+                    <td><input type="text" value="${r.after}" style="width:70px" oninput="runs[${i}].after=this.value;renderRuns()"></td>
+                    <td><span class="delta-badge ${deltaCls}">${deltaStr}</span></td>
+                    <td>
+                        <button class="run-status-btn" title="Toggle status" onclick="cycleRunStatus(${i})">${statusIcon}</button>
+                    </td>
+                    <td><button onclick="deleteRun(${i})" style="background:none;border:none;color:var(--accent-red);cursor:pointer;font-size:14px">×</button></td>
+                </tr>
+            `;
+        }).join('');
+        updateBest();
+        drawChart();
+    }
+
+    function cycleRunStatus(i) {
+        if (runs[i].kept === null) runs[i].kept = true;
+        else if (runs[i].kept === true) runs[i].kept = false;
+        else runs[i].kept = null;
+        renderRuns();
+    }
+
+    function addRun() {
+        const nextId = runs.length > 0 ? Math.max(...runs.map(r => r.id)) + 1 : 1;
+        const lastAfter = runs.length > 0 ? runs[runs.length-1].after : '0';
+        runs.push({ id: nextId, desc: 'New run', before: lastAfter, after: lastAfter, kept: null });
+        renderRuns();
+    }
+
+    function deleteRun(i) {
+        runs.splice(i, 1);
+        renderRuns();
+    }
+
+    function updateBest() {
+        let bestDelta = -Infinity;
+        let bestRun = null;
+        runs.forEach(r => {
+            const d = parseFloat(r.after) - parseFloat(r.before);
+            if (d > bestDelta) { bestDelta = d; bestRun = r; }
+        });
+        if (bestRun) {
+            const str = (bestDelta >= 0 ? '+' : '') + bestDelta.toFixed(1) + '%';
+            document.getElementById('bestDelta').textContent = str;
+            document.getElementById('bestDelta').style.color = bestDelta > 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+            document.getElementById('bestDesc').textContent = bestRun.desc;
+            document.getElementById('bestRun').textContent = 'Run #' + bestRun.id;
+        }
+    }
+
+    function drawChart() {
+        const svg = document.getElementById('progressChart');
+        if (runs.length < 2) {
+            svg.innerHTML = '<text x="200" y="44" text-anchor="middle" fill="var(--text-secondary)" font-size="12">Add more runs to see chart</text>';
+            return;
+        }
+        const vals = runs.map(r => parseFloat(r.after) || 0);
+        const min = Math.min(...vals) - 0.5;
+        const max = Math.max(...vals) + 0.5;
+        const W = 400, H = 70, pad = 10;
+        const xStep = (W - pad*2) / (vals.length - 1);
+        const yScale = (H - pad*2) / (max - min);
+        const pts = vals.map((v, i) => `${pad + i * xStep},${H - pad - (v - min) * yScale}`);
+        const path = 'M ' + pts.join(' L ');
+        const fillPts = [`${pad},${H-pad}`, ...pts, `${pad + (vals.length-1)*xStep},${H-pad}`];
+        const area = 'M ' + fillPts.join(' L ') + ' Z';
+        svg.innerHTML = `
+            <defs>
+                <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#a371f7" stop-opacity="0.3"/>
+                    <stop offset="100%" stop-color="#a371f7" stop-opacity="0.0"/>
+                </linearGradient>
+            </defs>
+            <path d="${area}" fill="url(#chartGrad)"/>
+            <path d="${path}" fill="none" stroke="#a371f7" stroke-width="2" stroke-linejoin="round"/>
+            ${pts.map((pt, i) => `<circle cx="${pt.split(',')[0]}" cy="${pt.split(',')[1]}" r="3" fill="#a371f7"/><text x="${pt.split(',')[0]}" y="${parseFloat(pt.split(',')[1])-7}" text-anchor="middle" fill="var(--text-secondary)" font-size="9">${vals[i]}%</text>`).join('')}
+        `;
+    }
+
+    function exportExperiment() {
+        const obj = document.getElementById('expObjectif').value;
+        const metric = document.getElementById('expMetric').value;
+        const seuil = document.getElementById('expSeuil').value;
+        const duree = document.getElementById('expDuree').value;
+        const bestDelta = document.getElementById('bestDelta').textContent;
+        const lines = [
+            '# Experiment Report',
+            '',
+            '## Configuration',
+            `- **Objectif:** ${obj}`,
+            `- **Metric cible:** ${metric}`,
+            `- **Seuil de succès:** ${seuil}`,
+            `- **Durée max:** ${duree}`,
+            `- **Status:** ${expStatus}`,
+            '',
+            '## Runs',
+            '',
+            '| Run # | Description | Before | After | Delta | Status |',
+            '|-------|-------------|--------|-------|-------|--------|',
+            ...runs.map(r => {
+                const d = parseFloat(r.after) - parseFloat(r.before);
+                const ds = (d >= 0 ? '+' : '') + d.toFixed(1) + '%';
+                const st = r.kept === null ? '⬜' : r.kept ? '✅ kept' : '❌ reverted';
+                return `| #${r.id} | ${r.desc} | ${r.before}% | ${r.after}% | ${ds} | ${st} |`;
+            }),
+            '',
+            '## Result',
+            `- **Best delta found:** ${bestDelta}`,
+            `- **Generated:** ${new Date().toISOString()}`,
+        ];
+        const blob = new Blob([lines.join('\n')], { type: 'text/markdown' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = 'experiment.md'; a.click();
+        URL.revokeObjectURL(url);
+        showToast('📥 experiment.md exported!');
+    }
+
+    function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 2500);
+    }
+
+    renderRuns();
+</script>
+</body>
+</html>

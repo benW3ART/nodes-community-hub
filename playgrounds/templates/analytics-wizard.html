@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics Wizard — Genius Team</title>
+    <link rel="stylesheet" href="./design-tokens.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+        .header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 14px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .header h1 { font-size: 18px; font-weight: 600; display: flex; align-items: center; gap: 10px; }
+        .main { padding: 24px; max-width: 1100px; margin: 0 auto; }
+        /* Step indicator */
+        .steps-bar {
+            display: flex;
+            align-items: center;
+            gap: 0;
+            margin-bottom: 28px;
+        }
+        .step-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+            cursor: pointer;
+        }
+        .step-item:not(:last-child)::after {
+            content: '';
+            flex: 1;
+            height: 2px;
+            background: var(--border-color);
+            margin: 0 8px;
+        }
+        .step-circle {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 700;
+            border: 2px solid var(--border-color);
+            color: var(--text-secondary);
+            background: var(--bg-secondary);
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+        .step-item.active .step-circle {
+            background: var(--accent-purple);
+            border-color: var(--accent-purple);
+            color: var(--text-inverse);
+        }
+        .step-item.done .step-circle {
+            background: var(--accent-green);
+            border-color: var(--accent-green);
+            color: var(--text-inverse);
+        }
+        .step-name { font-size: 13px; color: var(--text-secondary); white-space: nowrap; }
+        .step-item.active .step-name { color: var(--text-primary); font-weight: 600; }
+        .card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .platform-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+        .platform-card {
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            padding: 20px 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .platform-card:hover { border-color: var(--accent-purple); }
+        .platform-card.selected { border-color: var(--accent-purple); background: var(--tone-purple-10); }
+        .platform-icon { font-size: 32px; margin-bottom: 10px; }
+        .platform-name { font-size: 14px; font-weight: 600; }
+        .platform-sub { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+        /* Events table */
+        .events-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .events-table th {
+            text-align: left;
+            padding: 8px 12px;
+            color: var(--text-secondary);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .events-table td { padding: 10px 12px; border-bottom: 1px solid var(--border-color); }
+        .events-table tr:last-child td { border-bottom: none; }
+        .events-table td input {
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-size: 13px;
+            width: 100%;
+        }
+        .events-table td input:focus { outline: none; }
+        .prio-badge {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .prio-p1 { background: var(--tone-red-20); color: var(--accent-red); }
+        .prio-p2 { background: var(--tone-orange-20); color: var(--accent-orange); }
+        .prio-p3 { background: var(--tone-blue-20); color: var(--accent-blue); }
+        .btn {
+            background: var(--accent-purple);
+            color: var(--text-inverse);
+            border: none;
+            padding: 7px 14px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .btn:hover { opacity: 0.85; }
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+        .funnel-steps { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
+        .funnel-step {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .funnel-num {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--accent-purple);
+            color: var(--text-inverse);
+            font-size: 12px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .field-input {
+            flex: 1;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+        .field-input:focus { outline: none; border-color: var(--accent-purple); }
+        .code-block {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 14px;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 12px;
+            color: var(--accent-cyan);
+            white-space: pre;
+            overflow-x: auto;
+            margin-top: 12px;
+        }
+        .privacy-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .privacy-item:last-child { border-bottom: none; }
+        .toggle-btn {
+            width: 36px;
+            height: 20px;
+            border-radius: 10px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            position: relative;
+            flex-shrink: 0;
+            transition: background 0.2s;
+        }
+        .toggle-btn.on { background: var(--accent-green); border-color: var(--accent-green); }
+        .toggle-knob {
+            width: 14px; height: 14px;
+            border-radius: 50%;
+            background: var(--text-inverse);
+            position: absolute;
+            top: 2px; left: 2px;
+            transition: left 0.2s;
+        }
+        .toggle-btn.on .toggle-knob { left: 18px; }
+        .nav-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+        }
+        .toast {
+            position: fixed; bottom: 24px; right: 24px;
+            background: var(--accent-green); color: var(--text-inverse);
+            padding: 10px 18px; border-radius: 8px;
+            font-size: 13px; opacity: 0; transform: translateY(10px);
+            transition: all 0.3s; pointer-events: none; z-index: 999;
+        }
+        .toast.show { opacity: 1; transform: translateY(0); }
+        .step-panel { display: none; }
+        .step-panel.active { display: block; }
+    </style>
+</head>
+<body>
+<div class="header">
+    <h1>📊 Analytics Setup Wizard</h1>
+    <button class="btn" onclick="exportConfig()">Export Config JSON</button>
+</div>
+
+<div class="main">
+    <!-- Steps bar -->
+    <div class="steps-bar">
+        <div class="step-item active" id="stepItem1" onclick="goToStep(1)">
+            <div class="step-circle" id="stepCircle1">1</div>
+            <span class="step-name">Platform</span>
+        </div>
+        <div class="step-item" id="stepItem2" onclick="goToStep(2)">
+            <div class="step-circle" id="stepCircle2">2</div>
+            <span class="step-name">Events</span>
+        </div>
+        <div class="step-item" id="stepItem3" onclick="goToStep(3)">
+            <div class="step-circle" id="stepCircle3">3</div>
+            <span class="step-name">Funnels</span>
+        </div>
+        <div class="step-item" id="stepItem4" onclick="goToStep(4)">
+            <div class="step-circle" id="stepCircle4">4</div>
+            <span class="step-name">Privacy</span>
+        </div>
+    </div>
+
+    <!-- Step 1: Platform -->
+    <div class="step-panel active" id="panel1">
+        <div class="card">
+            <div class="card-title">🎯 Step 1 — Choose your analytics platform</div>
+            <div class="platform-grid">
+                <div class="platform-card" onclick="selectPlatform(this,'ga4')">
+                    <div class="platform-icon">📊</div>
+                    <div class="platform-name">GA4</div>
+                    <div class="platform-sub">Google Analytics 4</div>
+                </div>
+                <div class="platform-card selected" onclick="selectPlatform(this,'plausible')">
+                    <div class="platform-icon">🌿</div>
+                    <div class="platform-name">Plausible</div>
+                    <div class="platform-sub">Privacy-first analytics</div>
+                </div>
+                <div class="platform-card" onclick="selectPlatform(this,'posthog')">
+                    <div class="platform-icon">🦔</div>
+                    <div class="platform-name">PostHog</div>
+                    <div class="platform-sub">Product analytics OS</div>
+                </div>
+                <div class="platform-card" onclick="selectPlatform(this,'mixpanel')">
+                    <div class="platform-icon">🎛️</div>
+                    <div class="platform-name">Mixpanel</div>
+                    <div class="platform-sub">Event-based analytics</div>
+                </div>
+            </div>
+            <div class="nav-row">
+                <span></span>
+                <button class="btn" onclick="goToStep(2)">Next: Event Taxonomy →</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Step 2: Events -->
+    <div class="step-panel" id="panel2">
+        <div class="card">
+            <div class="card-title" style="justify-content:space-between">
+                <span>📋 Step 2 — Event Taxonomy</span>
+                <button class="btn" style="font-size:11px;padding:5px 12px" onclick="addEvent()">+ Add event</button>
+            </div>
+            <table class="events-table">
+                <thead>
+                    <tr>
+                        <th>Event Name</th>
+                        <th>Type</th>
+                        <th>Properties</th>
+                        <th>Priority</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="eventsBody">
+                </tbody>
+            </table>
+            <div class="nav-row">
+                <button class="btn btn-secondary" onclick="goToStep(1)">← Back</button>
+                <button class="btn" onclick="goToStep(3)">Next: Funnels →</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Step 3: Funnels -->
+    <div class="step-panel" id="panel3">
+        <div class="card">
+            <div class="card-title">🔽 Step 3 — Define your funnel</div>
+            <div class="funnel-steps" id="funnelSteps">
+                <div class="funnel-step">
+                    <div class="funnel-num">1</div>
+                    <input type="text" class="field-input" placeholder="e.g. Landing page visit" value="Landing page visit">
+                </div>
+                <div class="funnel-step">
+                    <div class="funnel-num">2</div>
+                    <input type="text" class="field-input" placeholder="e.g. Sign up form view" value="Sign up form view">
+                </div>
+                <div class="funnel-step">
+                    <div class="funnel-num">3</div>
+                    <input type="text" class="field-input" placeholder="e.g. Account created" value="Account created">
+                </div>
+            </div>
+            <button class="btn btn-secondary" onclick="generateFunnelCode()">Generate funnel code</button>
+            <div id="funnelCode" class="code-block" style="display:none"></div>
+            <div class="nav-row">
+                <button class="btn btn-secondary" onclick="goToStep(2)">← Back</button>
+                <button class="btn" onclick="goToStep(4)">Next: Privacy →</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Step 4: Privacy -->
+    <div class="step-panel" id="panel4">
+        <div class="card">
+            <div class="card-title">🔒 Step 4 — Privacy & GDPR</div>
+            <div id="privacyList">
+                <div class="privacy-item">
+                    <button class="toggle-btn on" onclick="togglePrivacy(this)"><div class="toggle-knob"></div></button>
+                    <div>
+                        <div style="font-weight:500;font-size:13px">Cookie Consent Banner</div>
+                        <div style="font-size:12px;color:var(--text-secondary);margin-top:3px">Ask users before setting analytics cookies. Required under GDPR/ePrivacy.</div>
+                    </div>
+                </div>
+                <div class="privacy-item">
+                    <button class="toggle-btn on" onclick="togglePrivacy(this)"><div class="toggle-knob"></div></button>
+                    <div>
+                        <div style="font-weight:500;font-size:13px">Data Retention Policy (13 months max)</div>
+                        <div style="font-size:12px;color:var(--text-secondary);margin-top:3px">Automatically delete user data after retention period expires.</div>
+                    </div>
+                </div>
+                <div class="privacy-item">
+                    <button class="toggle-btn on" onclick="togglePrivacy(this)"><div class="toggle-knob"></div></button>
+                    <div>
+                        <div style="font-weight:500;font-size:13px">IP Anonymization</div>
+                        <div style="font-size:12px;color:var(--text-secondary);margin-top:3px">Mask the last octet of user IP addresses before storage.</div>
+                    </div>
+                </div>
+                <div class="privacy-item">
+                    <button class="toggle-btn" onclick="togglePrivacy(this)"><div class="toggle-knob"></div></button>
+                    <div>
+                        <div style="font-weight:500;font-size:13px">User Data Export (Right of Access)</div>
+                        <div style="font-size:12px;color:var(--text-secondary);margin-top:3px">Allow users to download all their tracked data on request.</div>
+                    </div>
+                </div>
+                <div class="privacy-item">
+                    <button class="toggle-btn" onclick="togglePrivacy(this)"><div class="toggle-knob"></div></button>
+                    <div>
+                        <div style="font-weight:500;font-size:13px">Right to Erasure (Delete user data)</div>
+                        <div style="font-size:12px;color:var(--text-secondary);margin-top:3px">Provide endpoint to purge all data associated with a user ID.</div>
+                    </div>
+                </div>
+                <div class="privacy-item">
+                    <button class="toggle-btn on" onclick="togglePrivacy(this)"><div class="toggle-knob"></div></button>
+                    <div>
+                        <div style="font-weight:500;font-size:13px">No Cross-site Tracking</div>
+                        <div style="font-size:12px;color:var(--text-secondary);margin-top:3px">Disable Google Signals and cross-domain tracking features.</div>
+                    </div>
+                </div>
+            </div>
+            <div class="nav-row">
+                <button class="btn btn-secondary" onclick="goToStep(3)">← Back</button>
+                <button class="btn" onclick="exportConfig()">✅ Export Config</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast">✅ Done!</div>
+
+<script>
+    let currentStep = 1;
+    let selectedPlatform = 'plausible';
+    const events = [
+        { name: 'page_viewed', type: 'pageview', props: 'path, title, referrer', prio: 'p1' },
+        { name: 'button_clicked', type: 'interaction', props: 'id, text, page', prio: 'p1' },
+        { name: 'form_submitted', type: 'conversion', props: 'form_id, fields_count', prio: 'p1' },
+        { name: 'purchase_completed', type: 'conversion', props: 'amount, currency, plan', prio: 'p1' },
+    ];
+
+    function goToStep(n) {
+        document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
+        document.getElementById('panel' + n).classList.add('active');
+        for (let i = 1; i <= 4; i++) {
+            const item = document.getElementById('stepItem' + i);
+            const circle = document.getElementById('stepCircle' + i);
+            item.classList.remove('active','done');
+            if (i < n) { item.classList.add('done'); circle.textContent = '✓'; }
+            else if (i === n) { item.classList.add('active'); circle.textContent = i; }
+            else { circle.textContent = i; }
+        }
+        currentStep = n;
+        if (n === 2) renderEvents();
+    }
+
+    function selectPlatform(el, id) {
+        document.querySelectorAll('.platform-card').forEach(c => c.classList.remove('selected'));
+        el.classList.add('selected');
+        selectedPlatform = id;
+    }
+
+    function renderEvents() {
+        const tbody = document.getElementById('eventsBody');
+        const prioColors = { p1: 'prio-p1', p2: 'prio-p2', p3: 'prio-p3' };
+        const prioLabels = { p1: 'P1 Critical', p2: 'P2 High', p3: 'P3 Low' };
+        tbody.innerHTML = events.map((e, i) => `
+            <tr>
+                <td><input type="text" value="${e.name}" oninput="events[${i}].name=this.value"></td>
+                <td><input type="text" value="${e.type}" oninput="events[${i}].type=this.value"></td>
+                <td><input type="text" value="${e.props}" oninput="events[${i}].props=this.value"></td>
+                <td><span class="prio-badge ${prioColors[e.prio]}" onclick="cyclePrio(${i},this)">${prioLabels[e.prio]}</span></td>
+                <td><button onclick="deleteEvent(${i})" style="background:none;border:none;color:var(--accent-red);cursor:pointer;font-size:14px">×</button></td>
+            </tr>
+        `).join('');
+    }
+
+    function cyclePrio(i, el) {
+        const order = ['p1','p2','p3'];
+        const labels = { p1: 'P1 Critical', p2: 'P2 High', p3: 'P3 Low' };
+        const colors = { p1: 'prio-p1', p2: 'prio-p2', p3: 'prio-p3' };
+        let idx = order.indexOf(events[i].prio);
+        idx = (idx + 1) % 3;
+        events[i].prio = order[idx];
+        el.className = 'prio-badge ' + colors[events[i].prio];
+        el.textContent = labels[events[i].prio];
+    }
+
+    function addEvent() {
+        events.push({ name: 'new_event', type: 'interaction', props: '', prio: 'p3' });
+        renderEvents();
+    }
+
+    function deleteEvent(i) {
+        events.splice(i, 1);
+        renderEvents();
+    }
+
+    function generateFunnelCode() {
+        const steps = Array.from(document.querySelectorAll('.funnel-step input')).map(i => i.value);
+        const platform = selectedPlatform;
+        let code = '';
+        if (platform === 'ga4') {
+            code = `// GA4 Funnel Tracking\n`;
+            steps.forEach((s, i) => {
+                code += `gtag('event', 'funnel_step_${i+1}', {\n  'step_name': '${s}',\n  'step_index': ${i+1}\n});\n`;
+            });
+        } else if (platform === 'posthog') {
+            code = `// PostHog Funnel\nposthog.capture('$funnel_started', { funnel_name: 'main' });\n`;
+            steps.forEach((s, i) => {
+                code += `posthog.capture('funnel_step', { step: ${i+1}, name: '${s}' });\n`;
+            });
+        } else {
+            code = `// Analytics Funnel Tracking\n`;
+            steps.forEach((s, i) => {
+                code += `analytics.track('Funnel Step ${i+1}', { step_name: '${s}' });\n`;
+            });
+        }
+        const el = document.getElementById('funnelCode');
+        el.textContent = code;
+        el.style.display = 'block';
+        showToast('Code generated!');
+    }
+
+    function togglePrivacy(btn) {
+        btn.classList.toggle('on');
+    }
+
+    function exportConfig() {
+        const privacyToggles = document.querySelectorAll('.toggle-btn');
+        const privacyLabels = ['cookie_consent','data_retention','ip_anonymization','data_export','right_to_erasure','no_cross_site'];
+        const privacy = {};
+        privacyLabels.forEach((l, i) => { privacy[l] = privacyToggles[i]?.classList.contains('on') ?? false; });
+        const config = {
+            platform: selectedPlatform,
+            events: events.map(e => ({ name: e.name, type: e.type, properties: e.props.split(',').map(p => p.trim()), priority: e.prio })),
+            funnel: Array.from(document.querySelectorAll('.funnel-step input')).map(i => i.value),
+            privacy,
+            generated_at: new Date().toISOString()
+        };
+        const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = 'analytics-config.json'; a.click();
+        URL.revokeObjectURL(url);
+        showToast('📥 Config exported!');
+    }
+
+    function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 2500);
+    }
+
+    renderEvents();
+</script>
+</body>
+</html>

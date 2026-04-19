@@ -1,6 +1,14 @@
 ---
 name: genius-product-market-analyst
-description: Market research and business strategy skill that validates product-market fit, analyzes competition, identifies market gaps, and proposes business models. Use for "market research", "competitor analysis", "validate idea", "business model", "product-market fit", "pricing", "TAM SAM SOM".
+description: >-
+  Market research and business strategy skill. Validates product-market fit, analyzes
+  competition, identifies market gaps, and proposes business models. Use when user says
+  "market research", "competitor analysis", "validate idea", "business model",
+  "product-market fit", "pricing", "TAM SAM SOM", "market opportunity", "analyze the market",
+  "who are the competitors", "market size", "target audience analysis".
+  Do NOT use for writing technical specs (genius-specs).
+  Do NOT use for building the product (genius-dev skills) or tracking post-launch metrics
+  (genius-analytics).
 ---
 
 ## ⚠️ MANDATORY ARTIFACT
@@ -45,7 +53,7 @@ Update state.json with:
 
 ---
 
-# Genius Product Market Analyst v9.0 — Strategic Intelligence
+# Genius Product Market Analyst v17.0 — Strategic Intelligence
 
 **Turn ideas into validated opportunities.**
 
@@ -100,7 +108,7 @@ Structured XML with: executive summary, market size, opportunity assessment, com
 
 ### Flow avec Unified Dashboard
 
-1. **Analyser le marché** — TAM/SAM/SOM, competitors, pricing (méthode classique)
+1. **Analyze the market** — TAM/SAM/SOM, competitors, pricing (standard method)
 2. **Update state.json** — Write market analysis data to `phases.market`
 3. **User views in dashboard** — The unified dashboard shows market phase automatically
 4. **Validation** — User reviews data, provides feedback
@@ -127,7 +135,7 @@ Update `.genius/outputs/state.json` with market data:
         "preset": "realistic",
         "competitors": [
           {
-            "name": "Votre produit",
+            "name": "Your product",
             "color": "#58a6ff",
             "scores": { "prix": 7, "features": 8, "ux": 8, "brand": 5, "support": 7 }
           },
@@ -199,3 +207,28 @@ Provides: MARKET-ANALYSIS.xml, competitive positioning, pricing recommendation
 
 ### To: genius-marketer
 Provides: Positioning map, target segments, competitive intelligence
+
+## Handoff to genius-analytics
+
+After launch, use **genius-analytics** to:
+- Validate the TAM/SAM estimates against real user data
+- Track conversion rates and acquisition costs
+- Measure retention and churn against the model projections
+
+
+---
+
+## Next Step (Auto-Chain)
+
+When this skill completes its work:
+→ **Automatically suggest**: "Market analysis complete! Ready to write specifications? I'll hand off to **genius-specs**."
+→ If user approves: route to genius-specs
+→ Update state.json: `currentSkill = "genius-specs"`
+
+## Definition of Done
+
+- [ ] Market problem, audience, and competitive landscape are analyzed
+- [ ] Findings produce actionable positioning or pricing implications
+- [ ] Output is concrete enough to drive specifications
+- [ ] Key assumptions and unknowns are called out explicitly
+- [ ] Next-step handoff to specs or marketing is clear

@@ -1,6 +1,12 @@
 ---
 name: genius-qa-micro
-description: Quick quality check skill. Fast 30-second validation of code changes. MANDATORY after every dev task. Use for "quick check", "validate", "does this work", "test this".
+description: >-
+  Quick per-task validation. Verifies a single completed task before moving to the next.
+  Supports /loop for continuous monitoring during active dev sessions. Use after each
+  genius-dev task completes, or when user says "quick check", "validate this", "did it work".
+  Do NOT use for full project QA audits (use genius-qa).
+  Do NOT use for security audits (use genius-security).
+  Do NOT use for code review (use genius-reviewer or genius-code-review).
 context: fork
 agent: genius-qa-micro
 user-invocable: false
@@ -19,7 +25,7 @@ hooks:
       once: true
 ---
 
-# Genius QA Micro v9.0 — Rapid Validation
+# Genius QA Micro v17.0 — Rapid Validation
 
 **Lightning-fast quality checks in 30 seconds or less. MANDATORY after every task.**
 
@@ -112,3 +118,15 @@ Provides: Specific error found, file and line number
 
 ### To genius-qa (escalation)
 Provides: Issues found, files checked, reason for escalation
+
+## Continuous Monitoring with /loop
+
+Use `/loop 2m /genius-qa-micro` to run automatic validation every 2 minutes during active development sessions. This catches regressions in real-time without manual checks.
+
+## Definition of Done
+
+- [ ] Validation targets the just-completed task, not a vague project-wide check
+- [ ] Pass/fail result is explicit and supported by evidence
+- [ ] Blocking issues include file references or repro detail
+- [ ] Escalation to debugger or full QA is triggered when thresholds are met
+- [ ] The workflow does not advance on a failed micro-QA result

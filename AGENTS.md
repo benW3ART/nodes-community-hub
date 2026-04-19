@@ -1,4 +1,4 @@
-# Genius Team v10.0 — Codex CLI Mode
+# Genius Team v21.0 — Codex CLI Mode
 
 > ⚠️ **MANDATORY**: Read `GENIUS_GUARD.md` before ANY action.
 > This project uses Genius Team. You MUST use the skills, not work standalone.
@@ -76,7 +76,7 @@ The Lead reads `plan.md` + `BRIEFING.md` + `state.json` to reconstruct state.
 
 ## Agent Teams Protocol
 
-Genius Team v10.0 uses subagent delegation for parallel work.
+Genius Team v21.0 uses subagent delegation for parallel work.
 
 - **Lead** (you, the main session) coordinates — never codes directly
 - **Subagents** are spawned with clear task descriptions

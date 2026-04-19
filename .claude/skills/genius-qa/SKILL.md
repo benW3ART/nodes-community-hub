@@ -1,6 +1,10 @@
 ---
 name: genius-qa
-description: Comprehensive QA skill with dual testing strategy using Playwright for automated tests and visual testing. Runs full audits before deployment. Use for "run tests", "test this", "quality check", "QA audit".
+description: >-
+  Full quality audit skill. Tests functionality, validates against specs, checks edge cases,
+  and produces a QA report. Use when implementation is complete and user says "run QA",
+  "test everything", "quality audit", "validate the build", "check if it works".
+  Do NOT use for micro-validation during coding — use genius-qa-micro instead.
 ---
 
 ## ⚠️ MANDATORY ARTIFACT
@@ -51,7 +55,7 @@ Update state.json with:
 
 ---
 
-# Genius QA v9.0 — The Quality Guardian
+# Genius QA v17.0 — The Quality Guardian
 
 **Quality is not an act, it is a habit.**
 
@@ -198,3 +202,10 @@ Also generate `QA-REPORT.md` with:
 - Latest test run summary
 - Prioritized recommendations
 - Module-by-module breakdown
+## Definition of Done
+
+- [ ] Test suite runs with 0 failures
+- [ ] Coverage meets project threshold
+- [ ] All critical paths tested (happy + error paths)
+- [ ] Performance benchmarks within targets
+- [ ] QA report generated in `.genius/QA-REPORT.md`

@@ -1,5 +1,5 @@
 ---
-description: Show current Genius Team v9.0 project status and progress
+description: Show current Genius Team v21.0 project status and progress
 ---
 
 # /status
@@ -22,7 +22,7 @@ ls -la DISCOVERY.xml MARKET-ANALYSIS.xml SPECIFICATIONS.xml DESIGN-SYSTEM.html A
 ### Step 3: Display Status
 
 ```
-📊 **Project Status — Genius Team v9.0**
+📊 **Project Status — Genius Team v17.0**
 
 **Phase:** {Ideation / Execution / Complete}
 **Current Step:** {skill name or "Ready to start"}
@@ -46,7 +46,16 @@ ls -la DISCOVERY.xml MARKET-ANALYSIS.xml SPECIFICATIONS.xml DESIGN-SYSTEM.html A
 **Execution Progress:** (if in execution phase)
   Total: {X} | Done: {Y} ✅ | In Progress: {Z} ⏳ | Remaining: {W}
 
+**Mode:** {from .genius/mode.json — beginner/builder/pro/agency}
+
+**Origin:** {from state.json — native/imported/upgraded}
+
 **Save-Token Mode:** {on/off}
 
 **Next Action:** {context-aware suggestion}
+
+---
+
+📊 **Your Dashboard** → `open .genius/DASHBOARD.html`
+   Run `/genius-dashboard` to refresh it with the latest playgrounds.
 ```
