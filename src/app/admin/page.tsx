@@ -2,20 +2,26 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Header } from '@/components/Header';
 import { useAccount } from 'wagmi';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
-import { 
-  Shield, 
-  Upload, 
-  Trash2, 
+import {
+  Shield,
+  Upload,
+  Trash2,
   Plus,
   Image as ImageIcon,
   Loader2,
   AlertTriangle
 } from 'lucide-react';
 import Image from 'next/image';
+import {
+  computeDefaultRevealDate,
+  derivePhaseDates,
+  type PhaseDates,
+} from '@/lib/convergence-phases';
+import type { ConvergenceConfig } from '@/lib/convergence-config';
 
 interface Asset {
   id: string;
@@ -25,6 +31,26 @@ interface Asset {
   createdAt: string;
 }
 
+function toLocalDateTimeString(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function DateCard({ label, date }: { label: string; date: number }) {
+  const d = new Date(date);
+  return (
+    <div className="p-3 bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg">
+      <div className="text-[10px] uppercase tracking-wide text-gray-500">{label}</div>
+      <div className="text-sm text-white mt-1">
+        {d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+      </div>
+      <div className="text-xs text-gray-500 font-mono">
+        {d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+      </div>
+    </div>
+  );
+}
+
 export default function AdminPage() {
   const { address, isConnected } = useAccount();
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
@@ -32,6 +58,15 @@ export default function AdminPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [newAsset, setNewAsset] = useState({ name: '', type: 'logo' as Asset['type'] });
+
+  const [revealAtLocal, setRevealAtLocal] = useState<string>('');
+  const [savingConfig, setSavingConfig] = useState(false);
+  const [configStatus, setConfigStatus] = useState<{ type: 'ok' | 'error'; message: string } | null>(null);
+
+  const derived = useMemo<PhaseDates>(() => {
+    const revealAt = revealAtLocal ? new Date(revealAtLocal).getTime() : computeDefaultRevealDate();
+    return derivePhaseDates(revealAt);
+  }, [revealAtLocal]);
 
   // Check if user is whitelisted
   useEffect(() => {
@@ -75,6 +110,45 @@ export default function AdminPage() {
       fetchAssets();
     }
   }, [isAuthorized]);
+
+  useEffect(() => {
+    if (!isAuthorized) return;
+    fetch('/api/admin/config')
+      .then(r => r.json())
+      .then((cfg: ConvergenceConfig | null) => {
+        const revealAt = cfg?.revealAt ? new Date(cfg.revealAt) : new Date(computeDefaultRevealDate());
+        setRevealAtLocal(toLocalDateTimeString(revealAt));
+      })
+      .catch(() => {});
+  }, [isAuthorized]);
+
+  async function saveConfig() {
+    if (!address) return;
+    setSavingConfig(true);
+    setConfigStatus(null);
+    try {
+      const revealAtIso = new Date(revealAtLocal).toISOString();
+      const res = await fetch('/api/admin/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ address, revealAt: revealAtIso }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: res.statusText }));
+        throw new Error(err.error || `HTTP ${res.status}`);
+      }
+      setConfigStatus({ type: 'ok', message: 'Saved.' });
+    } catch (e) {
+      setConfigStatus({ type: 'error', message: (e as Error).message });
+    } finally {
+      setSavingConfig(false);
+    }
+  }
+
+  function resetToDefault() {
+    setRevealAtLocal(toLocalDateTimeString(new Date(computeDefaultRevealDate())));
+    setConfigStatus({ type: 'ok', message: 'Reset to default — click Save to persist.' });
+  }
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -178,6 +252,45 @@ export default function AdminPage() {
           <Shield className="w-8 h-8 text-purple-500" />
           <h1 className="section-title mb-0">Admin Panel</h1>
         </div>
+
+        <section className="card mb-8 sm:mb-12">
+          <h2 className="section-title">Convergence Config</h2>
+          <p className="text-sm text-gray-500 mb-4">
+            Set the Reveal timestamp for Chapter III. Other phases are derived automatically
+            (Announce = Reveal − 6d, Snapshot = Reveal − 48h, Intermediate = Reveal − 36h).
+          </p>
+
+          <label className="block mb-4">
+            <span className="text-xs uppercase tracking-wide text-gray-500">Reveal (local time)</span>
+            <input
+              type="datetime-local"
+              value={revealAtLocal}
+              onChange={e => setRevealAtLocal(e.target.value)}
+              className="mt-1 w-full max-w-md px-3 py-2 bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg text-white focus:border-[#00D4FF] outline-none"
+            />
+          </label>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4 text-sm">
+            <DateCard label="Announce" date={derived.announceAt} />
+            <DateCard label="Snapshot" date={derived.snapshotAt} />
+            <DateCard label="Intermediate" date={derived.intermediateAt} />
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+            <button onClick={saveConfig} className="btn-primary" disabled={savingConfig}>
+              {savingConfig ? 'Saving…' : 'Save Reveal Date'}
+            </button>
+            <button onClick={resetToDefault} className="btn-secondary" disabled={savingConfig}>
+              Reset to default (next Friday 20:00 UTC)
+            </button>
+          </div>
+
+          {configStatus && (
+            <div className={`mt-3 text-sm ${configStatus.type === 'error' ? 'text-red-400' : 'text-[#4FFFDF]'}`}>
+              {configStatus.message}
+            </div>
+          )}
+        </section>
 
         {/* Upload New Asset */}
         <div className="card mb-8">

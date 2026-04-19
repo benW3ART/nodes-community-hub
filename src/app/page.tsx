@@ -23,12 +23,19 @@ import {
   ClipboardPaste,
   Bot,
   Loader2,
+  Zap,
 } from 'lucide-react';
 import { TwitterFeed } from '@/components/TwitterFeed';
 import { getNFTsForOwner } from '@/lib/alchemy';
 import { calculateConvergence, type ConvergenceResult } from '@/lib/robot-convergence';
 
 const features = [
+  {
+    href: '/convergence',
+    icon: Zap,
+    title: 'Convergence Week',
+    description: 'Follow your evolving FCs through snapshot, intermediate and reveal',
+  },
   {
     href: '/gallery',
     icon: ImageIcon,
@@ -195,6 +202,10 @@ export default function Home() {
               <Link href="/gallery" className="btn-primary inline-flex items-center justify-center py-3 sm:py-2">
                 View My NODES
                 <ArrowRight className="w-5 h-5 ml-2" />
+              </Link>
+              <Link href="/convergence" className="btn-electric inline-flex items-center justify-center py-3 sm:py-2">
+                The Convergence Week
+                <Zap className="w-5 h-5 ml-2" />
               </Link>
               <Link href="/full-sets" className="btn-secondary inline-flex items-center justify-center py-3 sm:py-2">
                 Check Full Sets

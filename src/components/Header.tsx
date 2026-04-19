@@ -18,11 +18,13 @@ import {
   GitCompareArrows,
   Menu,
   X,
-  Eye
+  Eye,
+  Zap
 } from 'lucide-react';
 
 const navItems = [
   { href: '/', label: 'Home', icon: Home },
+  { href: '/convergence', label: 'Convergence', icon: Zap },
   { href: '/gallery', label: 'Gallery', icon: ImageIcon },
   { href: '/grid-creator', label: 'Grids', icon: Grid3X3 },
   { href: '/before-after', label: 'Before/After', icon: GitCompareArrows },
