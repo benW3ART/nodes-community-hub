@@ -2,6 +2,9 @@ import { promises as fs } from 'fs';
 import path from 'path';
 
 export interface ConvergenceConfig {
+  announceAt: string;
+  snapshotAt: string;
+  intermediateAt: string;
   revealAt: string;
   updatedAt: string;
 }
@@ -13,11 +16,17 @@ const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
 export async function readConvergenceConfig(): Promise<ConvergenceConfig | null> {
   try {
     const raw = await fs.readFile(CONFIG_PATH, 'utf-8');
-    const parsed = JSON.parse(raw) as ConvergenceConfig;
-    if (typeof parsed?.revealAt !== 'string' || typeof parsed?.updatedAt !== 'string') {
+    const parsed = JSON.parse(raw) as Partial<ConvergenceConfig>;
+    if (
+      typeof parsed?.announceAt !== 'string' ||
+      typeof parsed?.snapshotAt !== 'string' ||
+      typeof parsed?.intermediateAt !== 'string' ||
+      typeof parsed?.revealAt !== 'string' ||
+      typeof parsed?.updatedAt !== 'string'
+    ) {
       return null;
     }
-    return parsed;
+    return parsed as ConvergenceConfig;
   } catch (err) {
     if ((err as NodeJS.ErrnoException)?.code === 'ENOENT') {
       return null;
@@ -26,15 +35,37 @@ export async function readConvergenceConfig(): Promise<ConvergenceConfig | null>
   }
 }
 
-export async function writeConvergenceConfig(revealAtIso: string): Promise<ConvergenceConfig> {
-  if (typeof revealAtIso !== 'string' || revealAtIso.length === 0) {
-    throw new Error('revealAt must be a non-empty ISO string');
+function parseIsoOrThrow(label: string, value: string): number {
+  if (typeof value !== 'string' || value.length === 0) {
+    throw new Error(`${label} must be a non-empty ISO string`);
   }
+  const ms = new Date(value).getTime();
+  if (Number.isNaN(ms)) {
+    throw new Error(`${label} is not a valid date`);
+  }
+  return ms;
+}
 
-  const revealDate = new Date(revealAtIso);
-  const revealMs = revealDate.getTime();
-  if (Number.isNaN(revealMs)) {
-    throw new Error('revealAt is not a valid date');
+export async function writeConvergenceConfig(dates: {
+  announceAt: string;
+  snapshotAt: string;
+  intermediateAt: string;
+  revealAt: string;
+}): Promise<ConvergenceConfig> {
+  const announceMs = parseIsoOrThrow('announceAt', dates.announceAt);
+  const snapshotMs = parseIsoOrThrow('snapshotAt', dates.snapshotAt);
+  const intermediateMs = parseIsoOrThrow('intermediateAt', dates.intermediateAt);
+  const revealMs = parseIsoOrThrow('revealAt', dates.revealAt);
+
+  // Monotonic order: announce < snapshot < intermediate < reveal
+  if (!(announceMs < snapshotMs)) {
+    throw new Error('announceAt must be before snapshotAt');
+  }
+  if (!(snapshotMs < intermediateMs)) {
+    throw new Error('snapshotAt must be before intermediateAt');
+  }
+  if (!(intermediateMs < revealMs)) {
+    throw new Error('intermediateAt must be before revealAt');
   }
 
   const now = Date.now();
@@ -46,7 +77,10 @@ export async function writeConvergenceConfig(revealAtIso: string): Promise<Conve
   }
 
   const config: ConvergenceConfig = {
-    revealAt: revealDate.toISOString(),
+    announceAt: new Date(announceMs).toISOString(),
+    snapshotAt: new Date(snapshotMs).toISOString(),
+    intermediateAt: new Date(intermediateMs).toISOString(),
+    revealAt: new Date(revealMs).toISOString(),
     updatedAt: new Date(now).toISOString(),
   };
 

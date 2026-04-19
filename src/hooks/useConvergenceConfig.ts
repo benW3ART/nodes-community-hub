@@ -33,10 +33,40 @@ export function useConvergenceConfig(): UseConvergenceConfigResult {
         if (cancelled) return;
 
         if (res.ok) {
-          const config = (await res.json()) as { revealAt?: string } | null;
-          const revealMs = config?.revealAt ? new Date(config.revealAt).getTime() : NaN;
-          if (!Number.isNaN(revealMs)) {
-            setDates(derivePhaseDates(revealMs));
+          const config = (await res.json()) as
+            | {
+                announceAt?: string;
+                snapshotAt?: string;
+                intermediateAt?: string;
+                revealAt?: string;
+              }
+            | null;
+          if (
+            config &&
+            config.announceAt &&
+            config.snapshotAt &&
+            config.intermediateAt &&
+            config.revealAt
+          ) {
+            const announceMs = new Date(config.announceAt).getTime();
+            const snapshotMs = new Date(config.snapshotAt).getTime();
+            const intermediateMs = new Date(config.intermediateAt).getTime();
+            const revealMs = new Date(config.revealAt).getTime();
+            if (
+              !Number.isNaN(announceMs) &&
+              !Number.isNaN(snapshotMs) &&
+              !Number.isNaN(intermediateMs) &&
+              !Number.isNaN(revealMs)
+            ) {
+              setDates({
+                announceAt: announceMs,
+                snapshotAt: snapshotMs,
+                intermediateAt: intermediateMs,
+                revealAt: revealMs,
+              });
+            } else {
+              setDates(derivePhaseDates(computeDefaultRevealDate()));
+            }
           } else {
             setDates(derivePhaseDates(computeDefaultRevealDate()));
           }

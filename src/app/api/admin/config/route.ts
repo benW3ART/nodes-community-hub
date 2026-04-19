@@ -15,11 +15,27 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   const body = (await request.json().catch(() => null)) as
-    | { address?: unknown; revealAt?: unknown }
+    | {
+        address?: unknown;
+        announceAt?: unknown;
+        snapshotAt?: unknown;
+        intermediateAt?: unknown;
+        revealAt?: unknown;
+      }
     | null;
 
-  if (!body || typeof body.address !== 'string' || typeof body.revealAt !== 'string') {
-    return NextResponse.json({ error: 'Missing address or revealAt' }, { status: 400 });
+  if (
+    !body ||
+    typeof body.address !== 'string' ||
+    typeof body.announceAt !== 'string' ||
+    typeof body.snapshotAt !== 'string' ||
+    typeof body.intermediateAt !== 'string' ||
+    typeof body.revealAt !== 'string'
+  ) {
+    return NextResponse.json(
+      { error: 'Missing address, announceAt, snapshotAt, intermediateAt or revealAt' },
+      { status: 400 },
+    );
   }
 
   const whitelist = (process.env.ADMIN_WHITELIST || '')
@@ -32,7 +48,12 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const config = await writeConvergenceConfig(body.revealAt);
+    const config = await writeConvergenceConfig({
+      announceAt: body.announceAt,
+      snapshotAt: body.snapshotAt,
+      intermediateAt: body.intermediateAt,
+      revealAt: body.revealAt,
+    });
     return NextResponse.json(config);
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 400 });

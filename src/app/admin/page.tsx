@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { Header } from '@/components/Header';
 import { useAccount } from 'wagmi';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
@@ -19,7 +19,6 @@ import Image from 'next/image';
 import {
   computeDefaultRevealDate,
   derivePhaseDates,
-  type PhaseDates,
 } from '@/lib/convergence-phases';
 import type { ConvergenceConfig } from '@/lib/convergence-config';
 
@@ -31,23 +30,37 @@ interface Asset {
   createdAt: string;
 }
 
-function toLocalDateTimeString(d: Date): string {
+// Convert Date → UTC string for <input type="datetime-local"> (value is interpreted as UTC)
+function toUtcDateTimeString(d: Date): string {
   const pad = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}T${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
 }
 
-function DateCard({ label, date }: { label: string; date: number }) {
-  const d = new Date(date);
+// Interpret a datetime-local string AS UTC (not local) → ISO string
+function utcDateTimeToIso(value: string): string {
+  // value is YYYY-MM-DDTHH:MM — append :00.000Z to force UTC
+  return `${value}:00.000Z`;
+}
+
+function UtcInput({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
   return (
-    <div className="p-3 bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg">
-      <div className="text-[10px] uppercase tracking-wide text-gray-500">{label}</div>
-      <div className="text-sm text-white mt-1">
-        {d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
-      </div>
-      <div className="text-xs text-gray-500 font-mono">
-        {d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
-      </div>
-    </div>
+    <label className="block">
+      <span className="text-xs uppercase tracking-wide text-gray-500">{label}</span>
+      <input
+        type="datetime-local"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="mt-1 w-full px-3 py-2 bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg text-white focus:border-[#00D4FF] outline-none font-mono text-sm"
+      />
+    </label>
   );
 }
 
@@ -59,14 +72,12 @@ export default function AdminPage() {
   const [uploadingFile, setUploadingFile] = useState(false);
   const [newAsset, setNewAsset] = useState({ name: '', type: 'logo' as Asset['type'] });
 
-  const [revealAtLocal, setRevealAtLocal] = useState<string>('');
+  const [announceAtUtc, setAnnounceAtUtc] = useState<string>('');
+  const [snapshotAtUtc, setSnapshotAtUtc] = useState<string>('');
+  const [intermediateAtUtc, setIntermediateAtUtc] = useState<string>('');
+  const [revealAtUtc, setRevealAtUtc] = useState<string>('');
   const [savingConfig, setSavingConfig] = useState(false);
   const [configStatus, setConfigStatus] = useState<{ type: 'ok' | 'error'; message: string } | null>(null);
-
-  const derived = useMemo<PhaseDates>(() => {
-    const revealAt = revealAtLocal ? new Date(revealAtLocal).getTime() : computeDefaultRevealDate();
-    return derivePhaseDates(revealAt);
-  }, [revealAtLocal]);
 
   // Check if user is whitelisted
   useEffect(() => {
@@ -113,13 +124,30 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (!isAuthorized) return;
+
+    const applyDefaults = () => {
+      const defaults = derivePhaseDates(computeDefaultRevealDate());
+      setAnnounceAtUtc(toUtcDateTimeString(new Date(defaults.announceAt)));
+      setSnapshotAtUtc(toUtcDateTimeString(new Date(defaults.snapshotAt)));
+      setIntermediateAtUtc(toUtcDateTimeString(new Date(defaults.intermediateAt)));
+      setRevealAtUtc(toUtcDateTimeString(new Date(defaults.revealAt)));
+    };
+
     fetch('/api/admin/config')
       .then(r => r.json())
       .then((cfg: ConvergenceConfig | null) => {
-        const revealAt = cfg?.revealAt ? new Date(cfg.revealAt) : new Date(computeDefaultRevealDate());
-        setRevealAtLocal(toLocalDateTimeString(revealAt));
+        if (cfg?.announceAt && cfg?.snapshotAt && cfg?.intermediateAt && cfg?.revealAt) {
+          setAnnounceAtUtc(toUtcDateTimeString(new Date(cfg.announceAt)));
+          setSnapshotAtUtc(toUtcDateTimeString(new Date(cfg.snapshotAt)));
+          setIntermediateAtUtc(toUtcDateTimeString(new Date(cfg.intermediateAt)));
+          setRevealAtUtc(toUtcDateTimeString(new Date(cfg.revealAt)));
+        } else {
+          applyDefaults();
+        }
       })
-      .catch(() => {});
+      .catch(() => {
+        applyDefaults();
+      });
   }, [isAuthorized]);
 
   async function saveConfig() {
@@ -127,11 +155,17 @@ export default function AdminPage() {
     setSavingConfig(true);
     setConfigStatus(null);
     try {
-      const revealAtIso = new Date(revealAtLocal).toISOString();
+      const body = {
+        address,
+        announceAt: utcDateTimeToIso(announceAtUtc),
+        snapshotAt: utcDateTimeToIso(snapshotAtUtc),
+        intermediateAt: utcDateTimeToIso(intermediateAtUtc),
+        revealAt: utcDateTimeToIso(revealAtUtc),
+      };
       const res = await fetch('/api/admin/config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ address, revealAt: revealAtIso }),
+        body: JSON.stringify(body),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: res.statusText }));
@@ -145,8 +179,27 @@ export default function AdminPage() {
     }
   }
 
+  function deriveFromReveal() {
+    if (!revealAtUtc) return;
+    const revealMs = new Date(utcDateTimeToIso(revealAtUtc)).getTime();
+    if (Number.isNaN(revealMs)) return;
+    const derived = derivePhaseDates(revealMs);
+    setAnnounceAtUtc(toUtcDateTimeString(new Date(derived.announceAt)));
+    setSnapshotAtUtc(toUtcDateTimeString(new Date(derived.snapshotAt)));
+    setIntermediateAtUtc(toUtcDateTimeString(new Date(derived.intermediateAt)));
+    setConfigStatus({
+      type: 'ok',
+      message:
+        'Announce, Snapshot and Intermediate derived from Reveal. Click Save to persist.',
+    });
+  }
+
   function resetToDefault() {
-    setRevealAtLocal(toLocalDateTimeString(new Date(computeDefaultRevealDate())));
+    const defaults = derivePhaseDates(computeDefaultRevealDate());
+    setAnnounceAtUtc(toUtcDateTimeString(new Date(defaults.announceAt)));
+    setSnapshotAtUtc(toUtcDateTimeString(new Date(defaults.snapshotAt)));
+    setIntermediateAtUtc(toUtcDateTimeString(new Date(defaults.intermediateAt)));
+    setRevealAtUtc(toUtcDateTimeString(new Date(defaults.revealAt)));
     setConfigStatus({ type: 'ok', message: 'Reset to default — click Save to persist.' });
   }
 
@@ -256,31 +309,27 @@ export default function AdminPage() {
         <section className="card mb-8 sm:mb-12">
           <h2 className="section-title">Convergence Config</h2>
           <p className="text-sm text-gray-500 mb-4">
-            Set the Reveal timestamp for Chapter III. Other phases are derived automatically
-            (Announce = Reveal − 6d, Snapshot = Reveal − 48h, Intermediate = Reveal − 36h).
+            Phase dates for Chapter III. All timestamps are UTC. You can edit each phase
+            independently, or click &quot;Derive from Reveal&quot; to auto-fill the 3 earlier
+            phases using the default spacing (Announce = Reveal − 6d, Snapshot = Reveal −
+            48h, Intermediate = Reveal − 36h).
           </p>
 
-          <label className="block mb-4">
-            <span className="text-xs uppercase tracking-wide text-gray-500">Reveal (local time)</span>
-            <input
-              type="datetime-local"
-              value={revealAtLocal}
-              onChange={e => setRevealAtLocal(e.target.value)}
-              className="mt-1 w-full max-w-md px-3 py-2 bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg text-white focus:border-[#00D4FF] outline-none"
-            />
-          </label>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4 text-sm">
-            <DateCard label="Announce" date={derived.announceAt} />
-            <DateCard label="Snapshot" date={derived.snapshotAt} />
-            <DateCard label="Intermediate" date={derived.intermediateAt} />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+            <UtcInput label="Announce (UTC)" value={announceAtUtc} onChange={setAnnounceAtUtc} />
+            <UtcInput label="Snapshot (UTC)" value={snapshotAtUtc} onChange={setSnapshotAtUtc} />
+            <UtcInput label="Intermediate (UTC)" value={intermediateAtUtc} onChange={setIntermediateAtUtc} />
+            <UtcInput label="Reveal (UTC)" value={revealAtUtc} onChange={setRevealAtUtc} />
           </div>
 
           <div className="flex flex-wrap gap-3">
-            <button onClick={saveConfig} className="btn-primary" disabled={savingConfig}>
-              {savingConfig ? 'Saving…' : 'Save Reveal Date'}
+            <button onClick={saveConfig} disabled={savingConfig} className="btn-primary">
+              {savingConfig ? 'Saving…' : 'Save All Dates'}
             </button>
-            <button onClick={resetToDefault} className="btn-secondary" disabled={savingConfig}>
+            <button onClick={deriveFromReveal} disabled={savingConfig} className="btn-secondary">
+              Derive from Reveal
+            </button>
+            <button onClick={resetToDefault} disabled={savingConfig} className="btn-secondary">
               Reset to default (next Friday 20:00 UTC)
             </button>
           </div>
