@@ -27,9 +27,9 @@ export function useConvergenceConfig(): UseConvergenceConfigResult {
   useEffect(() => {
     let cancelled = false;
 
-    (async () => {
+    const fetchConfig = async () => {
       try {
-        const res = await fetch('/data/convergence-config.json', { cache: 'no-store' });
+        const res = await fetch('/api/admin/config', { cache: 'no-store' });
         if (cancelled) return;
 
         if (res.ok) {
@@ -80,10 +80,18 @@ export function useConvergenceConfig(): UseConvergenceConfigResult {
       } finally {
         if (!cancelled) setLoading(false);
       }
-    })();
+    };
+
+    fetchConfig();
+
+    const onFocus = () => {
+      if (!cancelled) fetchConfig();
+    };
+    window.addEventListener('focus', onFocus);
 
     return () => {
       cancelled = true;
+      window.removeEventListener('focus', onFocus);
     };
   }, []);
 
