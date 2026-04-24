@@ -10,11 +10,11 @@ import { ViewOnlyLink } from '@/components/ViewOnlyInput';
 import { getNFTsForOwner, analyzeFullSets } from '@/lib/alchemy';
 import { useNodesStore } from '@/stores/useNodesStore';
 import { INNER_STATES } from '@/lib/wagmi';
-import { 
-  Loader2, 
-  Wallet, 
-  Check, 
-  X, 
+import {
+  Loader2,
+  Wallet,
+  Check,
+  X,
   ExternalLink,
   ShoppingCart,
   Sparkles,
@@ -22,11 +22,56 @@ import {
   CheckCircle2,
   Zap,
   Target,
-  Bot,
-  CircleDot,
 } from 'lucide-react';
 import Image from 'next/image';
-import { calculateConvergence, type ConvergenceResult } from '@/lib/robot-convergence';
+
+interface InterferenceEligibility {
+  eligible: boolean;
+  hasFullSet: boolean;
+  completeSets: number;
+  interferenceNftsOwned: number;
+  canClaimMore: boolean;
+  nextClaimRequirement: string | null;
+  status: 'not-eligible' | 'eligible' | 'has-interference' | 'maxed-out';
+}
+
+function checkInterferenceEligibility(
+  nfts: ReturnType<typeof useNodesStore.getState>['nfts'],
+  completeSets: number
+): InterferenceEligibility {
+  const interferenceNftsOwned = nfts.filter(nft => nft.interference).length;
+  const hasFullSet = completeSets > 0;
+  const eligible = hasFullSet;
+  const canClaimMore = completeSets > interferenceNftsOwned;
+
+  let status: InterferenceEligibility['status'] = 'not-eligible';
+  if (!hasFullSet) {
+    status = 'not-eligible';
+  } else if (interferenceNftsOwned >= completeSets) {
+    status = 'maxed-out';
+  } else if (interferenceNftsOwned > 0) {
+    status = 'has-interference';
+  } else {
+    status = 'eligible';
+  }
+
+  let nextClaimRequirement: string | null = null;
+  if (!hasFullSet) {
+    nextClaimRequirement = 'Complete a Full Set (collect all 7 Inner States)';
+  } else if (!canClaimMore) {
+    nextClaimRequirement = `Collect another Full Set to claim more (need ${interferenceNftsOwned + 1} complete sets)`;
+  }
+
+  return {
+    eligible,
+    hasFullSet,
+    completeSets,
+    interferenceNftsOwned,
+    canClaimMore,
+    nextClaimRequirement,
+    status,
+  };
+}
 
 export default function FullSetsPage() {
   const { address, isConnected, isViewOnly } = useWalletAddress();
@@ -50,7 +95,7 @@ export default function FullSetsPage() {
   
   const [openSeaListings, setOpenSeaListings] = useState<Record<string, OpenSeaListing[]>>({});
   const [loadingListings, setLoadingListings] = useState(false);
-  const [convergence, setConvergence] = useState<ConvergenceResult | null>(null);
+  const [interferenceEligibility, setInterferenceEligibility] = useState<InterferenceEligibility | null>(null);
   const [filters, setFilters] = useState<Record<string, string>>({});
 
   const FILTER_ATTRIBUTES = ['Background', 'Grid', 'Shade', 'Glow', 'Type', 'Network Status'] as const;
@@ -111,8 +156,8 @@ export default function FullSetsPage() {
         const analysis = analyzeFullSets(fetchedNfts);
         setFullSetAnalysis(analysis.status, analysis.completeSets, analysis.missingStates);
         
-        const conv = calculateConvergence(fetchedNfts);
-        setConvergence(conv);
+        const eligibility = checkInterferenceEligibility(fetchedNfts, analysis.completeSets);
+        setInterferenceEligibility(eligibility);
       } catch (err) {
         console.error(err);
       } finally {
@@ -147,7 +192,30 @@ export default function FullSetsPage() {
     fetchListings();
   }, [missingStates]);
 
-  // No longer needed — replaced by Robot Convergence Checker
+  const getEligibilityIcon = (status: InterferenceEligibility['status']) => {
+    switch (status) {
+      case 'eligible':
+        return <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6 text-[#4FFFDF]" />;
+      case 'has-interference':
+        return <Zap className="w-5 h-5 sm:w-6 sm:h-6 text-[#00D4FF]" />;
+      case 'maxed-out':
+        return <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-[#00D4FF]" />;
+      default:
+        return <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-amber-400" />;
+    }
+  };
+
+  const getEligibilityColor = (status: InterferenceEligibility['status']) => {
+    switch (status) {
+      case 'eligible':
+        return 'bg-[#4FFFDF]/5 border-[#4FFFDF]/20';
+      case 'has-interference':
+      case 'maxed-out':
+        return 'bg-[#00D4FF]/5 border-[#00D4FF]/30';
+      default:
+        return 'bg-amber-500/5 border-amber-500/20';
+    }
+  };
 
   return (
     <div className="min-h-screen bg-black">
@@ -200,108 +268,82 @@ export default function FullSetsPage() {
               </p>
             </div>
 
-            {/* Robot Convergence Checker */}
-            {convergence && (
-              <div className={`card mb-6 sm:mb-8 ${convergence.totalRobots.total > 0 ? 'bg-[#00D4FF]/5 border-[#00D4FF]/30' : 'bg-amber-500/5 border-amber-500/20'}`}>
-                <h2 className="text-lg sm:text-xl font-bold mb-3 flex items-center gap-2 uppercase tracking-wide">
-                  <Bot className="w-5 h-5 text-[#00D4FF]" />
-                  Robot Convergence
-                </h2>
-                <p className="text-gray-400 text-xs sm:text-sm mb-4">
-                  The Convergence will transform eligible Full Circles into Robots.
-                </p>
-
-                {/* Robot Summary */}
-                {convergence.totalRobots.total > 0 ? (
-                  <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-5">
-                    <div className="p-2 sm:p-3 bg-black/40 rounded-lg text-center">
-                      <p className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide">Total Robots</p>
-                      <p className="text-xl sm:text-2xl font-bold text-[#00D4FF]">{convergence.effectiveRobots.total}</p>
-                      {convergence.fullCirclesShortage > 0 && (
-                        <p className="text-[9px] text-amber-400">({convergence.totalRobots.total} eligible)</p>
-                      )}
-                    </div>
-                    <div className="p-2 sm:p-3 bg-black/40 rounded-lg text-center">
-                      <p className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide">New Robots</p>
-                      <p className="text-xl sm:text-2xl font-bold">{convergence.effectiveRobots.newRobots}</p>
-                    </div>
-                    <div className="p-2 sm:p-3 bg-black/40 rounded-lg text-center border border-amber-400/20">
-                      <p className="text-[10px] sm:text-xs text-amber-400 uppercase tracking-wide">Guaranteed Ultra Rare</p>
-                      <p className="text-xl sm:text-2xl font-bold text-amber-400">{convergence.effectiveRobots.guaranteedUltraRare}</p>
-                    </div>
+            {/* Interference Eligibility Checker */}
+            {interferenceEligibility && (
+              <div className={`card mb-6 sm:mb-8 ${getEligibilityColor(interferenceEligibility.status)}`}>
+                <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
+                  <div className="flex-shrink-0">
+                    {getEligibilityIcon(interferenceEligibility.status)}
                   </div>
-                ) : (
-                  <div className="p-3 bg-black/30 rounded-lg mb-5 text-center">
-                    <p className="text-amber-400 font-semibold text-sm">Not Yet Eligible</p>
-                    <p className="text-gray-500 text-xs mt-1">Complete the criteria below to unlock Robot evolutions</p>
-                  </div>
-                )}
+                  <div className="flex-1 min-w-0">
+                    <h2 className="text-lg sm:text-xl font-bold mb-2 flex items-center gap-2 uppercase tracking-wide">
+                      <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-[#00D4FF]" />
+                      Interference Eligibility
+                    </h2>
 
-                {/* Criteria Checklist */}
-                <div className="space-y-2 mb-5">
-                  {convergence.criteria.map((crit) => {
-                    const active = crit.count > 0;
-                    return (
-                    <div key={crit.id} className={`p-3 rounded-lg border ${active ? 'bg-[#4FFFDF]/5 border-[#4FFFDF]/20' : 'bg-black/30 border-[#1a1a1a]'}`}>
-                      <div className="flex items-start gap-2">
-                        {active ? (
-                          <CheckCircle2 className="w-4 h-4 text-[#4FFFDF] mt-0.5 flex-shrink-0" />
-                        ) : (
-                          <CircleDot className="w-4 h-4 text-gray-600 mt-0.5 flex-shrink-0" />
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-2">
-                            <span className={`text-xs sm:text-sm font-semibold ${active ? 'text-white' : 'text-gray-400'}`}>
-                              {crit.label}
-                            </span>
-                            {active && crit.robots.total > 0 && (
-                              <span className="text-[10px] sm:text-xs px-2 py-0.5 rounded-full bg-[#00D4FF]/15 text-[#00D4FF] whitespace-nowrap">
-                                +{crit.robots.total} robot{crit.robots.total > 1 ? 's' : ''}
-                                {crit.robots.guaranteedUltraRare > 0 && (
-                                  <span className="text-amber-400"> ({crit.robots.guaranteedUltraRare} guaranteed ultra rare)</span>
-                                )}
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5">{crit.description}</p>
-                          <p className={`text-[10px] sm:text-xs mt-1 ${active ? 'text-[#4FFFDF]/70' : 'text-amber-400/70'}`}>
-                            {crit.details}
-                          </p>
-                        </div>
+                    {interferenceEligibility.status === 'not-eligible' && (
+                      <p className="text-amber-400 font-semibold mb-2 text-sm sm:text-base">
+                        Not Yet Eligible
+                      </p>
+                    )}
+
+                    {interferenceEligibility.status === 'eligible' && (
+                      <p className="text-[#4FFFDF] font-semibold mb-2 text-sm sm:text-base">
+                        You Are Eligible!
+                      </p>
+                    )}
+
+                    {interferenceEligibility.status === 'has-interference' && (
+                      <p className="text-[#00D4FF] font-semibold mb-2 text-sm sm:text-base">
+                        Interference Holder
+                      </p>
+                    )}
+
+                    {interferenceEligibility.status === 'maxed-out' && (
+                      <p className="text-[#00D4FF] font-semibold mb-2 text-sm sm:text-base">
+                        Maximum Reached
+                      </p>
+                    )}
+
+                    <p className="text-gray-400 text-xs sm:text-sm mb-4">
+                      Details about the next interference will be shared here when available.
+                    </p>
+
+                    {/* Stats Grid */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 pt-3 sm:pt-4 border-t border-white/10">
+                      <div className="p-2 sm:p-3 bg-black/30 rounded-lg">
+                        <p className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide">Full Sets</p>
+                        <p className="text-base sm:text-lg font-bold">{interferenceEligibility.completeSets}</p>
+                      </div>
+                      <div className="p-2 sm:p-3 bg-black/30 rounded-lg" title="Information not available yet">
+                        <p className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide">Interference</p>
+                        <p className="text-base sm:text-lg font-bold text-gray-600 cursor-help">#N/A</p>
+                      </div>
+                      <div className="p-2 sm:p-3 bg-black/30 rounded-lg" title="Information not available yet">
+                        <p className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide">Can Claim</p>
+                        <p className="text-base sm:text-lg font-bold text-gray-600 cursor-help">#N/A</p>
+                      </div>
+                      <div className="p-2 sm:p-3 bg-black/30 rounded-lg" title="Information not available yet">
+                        <p className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide">Status</p>
+                        <p className="text-base sm:text-lg font-bold text-gray-600 cursor-help">#N/A</p>
                       </div>
                     </div>
-                    );
-                  })}
-                </div>
 
-                {/* Full Circle Status */}
-                <div className={`p-3 rounded-lg border ${convergence.canFullyEvolve ? 'bg-[#4FFFDF]/5 border-[#4FFFDF]/20' : 'bg-amber-500/5 border-amber-500/20'}`}>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs sm:text-sm font-semibold uppercase tracking-wide">Full Circles Available</span>
-                    <span className={`text-sm sm:text-base font-bold ${convergence.canFullyEvolve ? 'text-[#4FFFDF]' : 'text-amber-400'}`}>
-                      {convergence.fullCirclesAvailable} / {convergence.fullCirclesNeeded} needed
-                    </span>
+                    {/* CTA */}
+                    {interferenceEligibility.eligible && interferenceEligibility.canClaimMore && (
+                      <div className="mt-3 sm:mt-4">
+                        <a
+                          href="https://x.com/gmhunterart"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn-primary inline-flex items-center gap-2 text-sm py-2.5"
+                        >
+                          Follow @gmhunterart
+                          <ExternalLink className="w-4 h-4" />
+                        </a>
+                      </div>
+                    )}
                   </div>
-                  {convergence.fullCirclesShortage > 0 && (
-                    <div className="mt-2">
-                      <p className="text-xs text-amber-400 mb-2">
-                        You need {convergence.fullCirclesShortage} more Full Circle{convergence.fullCirclesShortage > 1 ? 's' : ''} to fully evolve
-                      </p>
-                      <a
-                        href="https://opensea.io/collection/nodes-by-hunter?traits=[{%22traitType%22:%22Type%22,%22values%22:[%22Full+Circle%22]}]"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="btn-secondary inline-flex items-center gap-2 text-xs py-1.5 px-3"
-                      >
-                        <ShoppingCart className="w-3 h-3" />
-                        Buy Full Circles on OpenSea
-                        <ExternalLink className="w-3 h-3" />
-                      </a>
-                    </div>
-                  )}
-                  {convergence.canFullyEvolve && convergence.totalRobots.total > 0 && (
-                    <p className="text-xs text-[#4FFFDF] mt-1">✅ You have enough Full Circles for all evolutions</p>
-                  )}
                 </div>
               </div>
             )}
