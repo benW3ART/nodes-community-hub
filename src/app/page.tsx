@@ -69,10 +69,12 @@ const features = [
   },
 ];
 
+// TODO: counts are pre-Convergence — regenerate rarity.json to reflect Robot trait and updated Full Circle totals.
 const CHARACTER_FORMS = [
-  { name: 'Full Circle', tokenId: '2', traitKey: 'Full Circle' },
+  { name: 'Full Circle', tokenId: '1000', traitKey: 'Full Circle' },
   { name: 'Skull', tokenId: '4', traitKey: 'Skull' },
   { name: 'Ghost', tokenId: '3', traitKey: 'Ghost' },
+  { name: 'Robot', tokenId: '100', traitKey: 'Robot' },
 ];
 
 export default function Home() {
@@ -232,7 +234,7 @@ export default function Home() {
         {/* Character Forms */}
         <section className="mt-10 sm:mt-16">
           <h2 className="section-title text-center text-lg sm:text-2xl">Character Forms</h2>
-          <div className="grid grid-cols-3 gap-3 sm:gap-6 max-w-2xl mx-auto mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6 max-w-3xl mx-auto mb-6">
             {CHARACTER_FORMS.map((form) => {
               const imgSrc = characterImages[form.tokenId];
               return (
