@@ -135,9 +135,6 @@ export default function BeforeAfterPage() {
 
   const hasAnyRelevantNfts = hasEvolvedNfts;
 
-  // Resolve "before" image when NFT is selected.
-  // - Convergence: cleanImage (pre-convergence Full Circle) is the before, proxied if remote.
-  // - GI/DR: fetch the legacy GCS image via /api/resolve-legacy-image.
   const handleSelectNft = async (nft: NodeNFT) => {
     setSelectedNft(nft);
     setLegacyImageUrl(null);
@@ -145,23 +142,12 @@ export default function BeforeAfterPage() {
     setLegacyFormat(null);
     setIsLoadingLegacy(true);
     try {
-      if (nft.networkStatus === 'The Convergence' && nft.cleanImage) {
-        const clean = nft.cleanImage;
-        const proxied = clean.startsWith('http')
-          ? `/api/proxy-gif?url=${encodeURIComponent(clean)}`
-          : clean;
-        const format = clean.toLowerCase().endsWith('.gif') ? 'gif' : 'png';
-        setLegacyImageUrl(clean);
-        setLegacyProxyUrl(proxied);
-        setLegacyFormat(format);
-      } else {
-        const res = await fetch(`/api/resolve-legacy-image?tokenId=${nft.tokenId}`);
-        if (res.ok) {
-          const data = await res.json();
-          setLegacyImageUrl(data.url);
-          setLegacyProxyUrl(data.proxyUrl);
-          setLegacyFormat(data.format);
-        }
+      const res = await fetch(`/api/resolve-legacy-image?tokenId=${nft.tokenId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setLegacyImageUrl(data.url);
+        setLegacyProxyUrl(data.proxyUrl);
+        setLegacyFormat(data.format);
       }
     } catch {
       // Before image not available
