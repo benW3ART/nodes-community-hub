@@ -104,10 +104,11 @@ export function drawArtIsNeverFinished(ctx: CanvasRenderingContext2D, canvasW: n
   ctx.restore();
 }
 
-/** Interference type label — "GENESIS INTERFERENCE" or "DIGITAL RENAISSANCE INTERFERENCE" */
+/** Interference type label — "GENESIS INTERFERENCE", "DIGITAL RENAISSANCE", or "THE CONVERGENCE" */
 function getInterferenceLabel(networkStatus: string): string {
   if (networkStatus === 'Digital Renaissance') return 'DIGITAL RENAISSANCE';
   if (networkStatus === 'Genesis Interference') return 'GENESIS INTERFERENCE';
+  if (networkStatus === 'The Convergence') return 'THE CONVERGENCE';
   return networkStatus.toUpperCase();
 }
 

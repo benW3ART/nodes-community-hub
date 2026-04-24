@@ -89,6 +89,7 @@ export default function BeforeAfterPage() {
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>('square');
   const [showGISection, setShowGISection] = useState(true);
   const [showDRSection, setShowDRSection] = useState(true);
+  const [showConvergenceSection, setShowConvergenceSection] = useState(true);
 
   // Chapter III state
   const [showCh3Section, setShowCh3Section] = useState(true);
@@ -131,7 +132,14 @@ export default function BeforeAfterPage() {
     () => nfts.filter(nft => nft.networkStatus === 'Digital Renaissance'),
     [nfts]
   );
-  const hasEvolvedNfts = genesisInterferenceNfts.length > 0 || digitalRenaissanceNfts.length > 0;
+  const convergenceNfts = useMemo(
+    () => nfts.filter(nft => nft.networkStatus === 'The Convergence'),
+    [nfts]
+  );
+  const hasEvolvedNfts =
+    genesisInterferenceNfts.length > 0 ||
+    digitalRenaissanceNfts.length > 0 ||
+    convergenceNfts.length > 0;
 
   // Chapter III: Full Circle NFTs without Network Status
   const fullCircleNfts = useMemo(
@@ -144,7 +152,9 @@ export default function BeforeAfterPage() {
 
   const hasAnyRelevantNfts = hasEvolvedNfts || fullCircleNfts.length > 0;
 
-  // Resolve legacy image when NFT is selected
+  // Resolve "before" image when NFT is selected.
+  // - Convergence: cleanImage (pre-convergence Full Circle) is the before, proxied if remote.
+  // - GI/DR: fetch the legacy GCS image via /api/resolve-legacy-image.
   const handleSelectNft = async (nft: NodeNFT) => {
     setSelectedNft(nft);
     setLegacyImageUrl(null);
@@ -152,15 +162,26 @@ export default function BeforeAfterPage() {
     setLegacyFormat(null);
     setIsLoadingLegacy(true);
     try {
-      const res = await fetch(`/api/resolve-legacy-image?tokenId=${nft.tokenId}`);
-      if (res.ok) {
-        const data = await res.json();
-        setLegacyImageUrl(data.url);
-        setLegacyProxyUrl(data.proxyUrl);
-        setLegacyFormat(data.format);
+      if (nft.networkStatus === 'The Convergence' && nft.cleanImage) {
+        const clean = nft.cleanImage;
+        const proxied = clean.startsWith('http')
+          ? `/api/proxy-gif?url=${encodeURIComponent(clean)}`
+          : clean;
+        const format = clean.toLowerCase().endsWith('.gif') ? 'gif' : 'png';
+        setLegacyImageUrl(clean);
+        setLegacyProxyUrl(proxied);
+        setLegacyFormat(format);
+      } else {
+        const res = await fetch(`/api/resolve-legacy-image?tokenId=${nft.tokenId}`);
+        if (res.ok) {
+          const data = await res.json();
+          setLegacyImageUrl(data.url);
+          setLegacyProxyUrl(data.proxyUrl);
+          setLegacyFormat(data.format);
+        }
       }
     } catch {
-      // Legacy image not available
+      // Before image not available
     } finally {
       setIsLoadingLegacy(false);
     }
@@ -789,6 +810,12 @@ export default function BeforeAfterPage() {
               digitalRenaissanceNfts,
               showDRSection,
               () => setShowDRSection(!showDRSection)
+            )}
+            {renderNftSection(
+              'The Convergence NFTs',
+              convergenceNfts,
+              showConvergenceSection,
+              () => setShowConvergenceSection(!showConvergenceSection)
             )}
             {renderChapter3Section()}
           </div>
