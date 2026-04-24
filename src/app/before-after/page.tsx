@@ -25,7 +25,6 @@ import {
   MoveHorizontal,
   MoveVertical,
   MoveDiagonal2,
-  HelpCircle,
 } from 'lucide-react';
 import Image from 'next/image';
 import type { NodeNFT } from '@/types/nft';
@@ -91,13 +90,6 @@ export default function BeforeAfterPage() {
   const [showDRSection, setShowDRSection] = useState(true);
   const [showConvergenceSection, setShowConvergenceSection] = useState(true);
 
-  // Chapter III state
-  const [showCh3Section, setShowCh3Section] = useState(true);
-  const [selectedCh3Nft, setSelectedCh3Nft] = useState<NodeNFT | null>(null);
-  const [selectedCh3Template, setSelectedCh3Template] = useState<string>('transition');
-  const [isExportingCh3, setIsExportingCh3] = useState(false);
-  const [ch3ExportProgress, setCh3ExportProgress] = useState('');
-
   // When template changes, ensure current aspect ratio is supported
   useEffect(() => {
     const supported = TEMPLATE_FORMATS[selectedTemplate.id] || ['square'];
@@ -141,16 +133,7 @@ export default function BeforeAfterPage() {
     digitalRenaissanceNfts.length > 0 ||
     convergenceNfts.length > 0;
 
-  // Chapter III: Full Circle NFTs without Network Status
-  const fullCircleNfts = useMemo(
-    () => nfts.filter(nft => {
-      const typeAttr = nft.metadata.attributes.find(a => a.trait_type === 'Type');
-      return typeAttr?.value === 'Full Circle' && !nft.networkStatus;
-    }),
-    [nfts]
-  );
-
-  const hasAnyRelevantNfts = hasEvolvedNfts || fullCircleNfts.length > 0;
+  const hasAnyRelevantNfts = hasEvolvedNfts;
 
   // Resolve "before" image when NFT is selected.
   // - Convergence: cleanImage (pre-convergence Full Circle) is the before, proxied if remote.
@@ -192,39 +175,6 @@ export default function BeforeAfterPage() {
     setLegacyImageUrl(null);
     setLegacyProxyUrl(null);
     setLegacyFormat(null);
-  };
-
-  const closeCh3Modal = () => setSelectedCh3Nft(null);
-
-  const handleExportCh3Video = async () => {
-    if (!selectedCh3Nft) return;
-    setIsExportingCh3(true);
-    setCh3ExportProgress('Generating Chapter III video...');
-    try {
-      const response = await fetch('/api/create-chapter3-video', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          nftImageUrl: selectedCh3Nft.image,
-          template: selectedCh3Template,
-          tokenId: selectedCh3Nft.tokenId,
-        }),
-      });
-      if (!response.ok) throw new Error('Export failed');
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.download = `nodes-chapter3-${selectedCh3Nft.tokenId}-${Date.now()}.mp4`;
-      link.href = url;
-      link.click();
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error('Chapter III video export failed:', err);
-      alert('Export failed. Please try again.');
-    } finally {
-      setIsExportingCh3(false);
-      setCh3ExportProgress('');
-    }
   };
 
   const getRequestBody = () => ({
@@ -576,194 +526,6 @@ export default function BeforeAfterPage() {
     );
   };
 
-  // ── Chapter III templates ──────────────────────────────────────────────────
-  const CH3_TEMPLATES = [
-    { id: 'transition',       name: 'Transition', description: 'Glitch wipe reveal',      icon: <Film className="w-4 h-4" /> },
-    { id: 'slider-horizontal',name: 'Slider H',   description: 'Horizontal slider reveal', icon: <MoveHorizontal className="w-4 h-4" /> },
-    { id: 'slider-vertical',  name: 'Slider V',   description: 'Vertical slider reveal',   icon: <MoveVertical className="w-4 h-4" /> },
-    { id: 'slider-diagonal',  name: 'Slider D',   description: 'Diagonal slider reveal',   icon: <MoveDiagonal2 className="w-4 h-4" /> },
-  ];
-
-  // ── Chapter III section ────────────────────────────────────────────────────
-  const renderChapter3Section = () => {
-    if (fullCircleNfts.length === 0) return null;
-    return (
-      <div className="card">
-        <button
-          onClick={() => setShowCh3Section(!showCh3Section)}
-          className="w-full font-semibold mb-3 sm:mb-4 flex items-center justify-between text-sm sm:text-base uppercase tracking-wide"
-        >
-          <div className="flex items-center gap-2">
-            <HelpCircle className="w-4 h-4 sm:w-5 sm:h-5 text-[#4FFFDF]" />
-            Chapter III
-            <span className="text-xs text-gray-500 normal-case">({fullCircleNfts.length})</span>
-          </div>
-          {showCh3Section ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-        </button>
-        {showCh3Section && (
-          <>
-            <p className="text-gray-500 text-xs sm:text-sm mb-4 italic">
-              what are your full circles going to transform into ???
-            </p>
-            <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-2">
-              {fullCircleNfts.map((nft) => (
-                <NFTCardMini
-                  key={nft.tokenId}
-                  nft={nft}
-                  onClick={() => setSelectedCh3Nft(nft)}
-                />
-              ))}
-            </div>
-          </>
-        )}
-      </div>
-    );
-  };
-
-  // ── Chapter III modal ──────────────────────────────────────────────────────
-  const renderChapter3Modal = () => {
-    if (!selectedCh3Nft) return null;
-    const sliderPos = 0.4;
-    const isSlider = selectedCh3Template.startsWith('slider-');
-    const isHoriz = selectedCh3Template === 'slider-horizontal';
-    const isVert  = selectedCh3Template === 'slider-vertical';
-    const pw = 300;
-    const ph = 300;
-
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-        <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-          {/* Header */}
-          <div className="flex items-center justify-between p-4 sm:p-6 border-b border-[#1a1a1a]">
-            <div>
-              <h3 className="font-semibold text-sm sm:text-lg">{selectedCh3Nft.name}</h3>
-              <p className="text-xs sm:text-sm text-[#4FFFDF]">Chapter III — Full Circle</p>
-            </div>
-            <button onClick={closeCh3Modal} className="p-2 hover:bg-white/5 rounded-lg transition-colors">
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-
-          <div className="p-4 sm:p-6 space-y-6">
-            {/* Preview */}
-            <div className="flex justify-center">
-              <div className="rounded-xl overflow-hidden shadow-2xl border border-[#1a1a1a] bg-black relative" style={{ width: pw, height: ph }}>
-                {isSlider ? (
-                  <>
-                    {/* Slider preview: slot[0]=chapter3 logo behind, slot[1]=NFT being revealed */}
-                    <div className="absolute rounded-lg overflow-hidden" style={{ top: '3%', left: '3%', right: '3%', bottom: '3%' }}>
-                      {/* From: chapter3 logo */}
-                      <Image src="/assets/chapter3/chapter3-logo.png" alt="Chapter III" fill unoptimized className="object-cover" />
-                      {/* To: NFT revealed by slider */}
-                      <div
-                        className="absolute inset-0 overflow-hidden"
-                        style={
-                          isHoriz ? { width: `${sliderPos * 100}%` } :
-                          isVert  ? { height: `${sliderPos * 100}%` } :
-                          { clipPath: `polygon(0 0, ${sliderPos * 100 + 15}% 0, ${sliderPos * 100 - 15}% 100%, 0 100%)` }
-                        }
-                      >
-                        <Image src={selectedCh3Nft.image} alt="NFT" fill unoptimized className="object-cover" />
-                      </div>
-                      {isHoriz && (
-                        <div className="absolute top-0 bottom-0 w-[2px] bg-[#00D4FF] shadow-[0_0_8px_rgba(0,212,255,0.6)] z-10" style={{ left: `${sliderPos * 100}%` }}>
-                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-[#00D4FF] border border-white" />
-                        </div>
-                      )}
-                      {isVert && (
-                        <div className="absolute left-0 right-0 h-[2px] bg-[#00D4FF] shadow-[0_0_8px_rgba(0,212,255,0.6)] z-10" style={{ top: `${sliderPos * 100}%` }}>
-                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-[#00D4FF] border border-white" />
-                        </div>
-                      )}
-                      {!isHoriz && !isVert && (
-                        <div className="absolute inset-0 z-10 pointer-events-none">
-                          <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none">
-                            <line x1={`${sliderPos*100+15}%`} y1="0%" x2={`${sliderPos*100-15}%`} y2="100%"
-                              stroke="#00D4FF" strokeWidth="2" filter="drop-shadow(0 0 4px rgba(0,212,255,0.6))" />
-                          </svg>
-                          <div className="absolute w-3 h-3 rounded-full bg-[#00D4FF] border border-white"
-                            style={{ top: '50%', left: `${sliderPos * 100}%`, transform: 'translate(-50%, -50%)' }} />
-                        </div>
-                      )}
-                    </div>
-                  </>
-                ) : (
-                  /* Transition preview: show chapter3 logo with film icon overlay */
-                  <div className="absolute inset-[6%] rounded-lg overflow-hidden">
-                    <Image src="/assets/chapter3/chapter3-logo.png" alt="Chapter III" fill unoptimized className="object-cover" />
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                      <Film className="w-8 h-8 text-[#00D4FF]/70" />
-                    </div>
-                  </div>
-                )}
-                {/* "→ ?" badge */}
-                <div className="absolute bottom-2 right-2 z-20 flex items-center gap-1 bg-black/60 rounded-md px-2 py-0.5">
-                  <ArrowRight className="w-3 h-3 text-[#00D4FF]" />
-                  <HelpCircle className="w-3 h-3 text-[#4FFFDF]" />
-                </div>
-                <div className="absolute top-2 left-2 z-20">
-                  <span className="text-[7px] text-[#00D4FF]/60 font-medium bg-black/40 rounded px-1 py-0.5">CHAPTER III</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Template selector */}
-            <div>
-              <h4 className="font-semibold text-xs sm:text-sm uppercase tracking-wide mb-3">Template</h4>
-              <div className="grid grid-cols-4 gap-2">
-                {CH3_TEMPLATES.map((tmpl) => (
-                  <button
-                    key={tmpl.id}
-                    onClick={() => setSelectedCh3Template(tmpl.id)}
-                    className={`p-2 sm:p-3 rounded-lg text-xs transition-all active:scale-95 flex flex-col items-center gap-1 ${
-                      selectedCh3Template === tmpl.id
-                        ? 'bg-gradient-to-br from-[#00D4FF] to-[#4FFFDF] text-black'
-                        : 'bg-black border border-[#1a1a1a] hover:border-[#4FFFDF]/50'
-                    }`}
-                  >
-                    {tmpl.icon}
-                    <div className="font-medium text-[10px] sm:text-xs">{tmpl.name}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Info */}
-            <div className="bg-[#050505] border border-[#1a1a1a] rounded-lg p-3 text-xs text-gray-500 space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="text-[#00D4FF]">●</span> Chapter III → your NODE → ??? → Chapter III (loop)
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-[#00D4FF]">●</span> 1080×1080 · 8.5s · 30fps · seamless loop
-              </div>
-            </div>
-
-            {/* Export */}
-            <div>
-              <button
-                onClick={handleExportCh3Video}
-                disabled={isExportingCh3}
-                className="w-full btn-primary flex items-center justify-center gap-2 text-sm py-3 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isExportingCh3 ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    {ch3ExportProgress || 'Generating…'}
-                  </>
-                ) : (
-                  <>
-                    <Download className="w-4 h-4" />
-                    Export Video
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   return (
     <div className="min-h-screen bg-black">
       <Header />
@@ -817,12 +579,8 @@ export default function BeforeAfterPage() {
               showConvergenceSection,
               () => setShowConvergenceSection(!showConvergenceSection)
             )}
-            {renderChapter3Section()}
           </div>
         )}
-
-        {/* Chapter III Modal */}
-        {renderChapter3Modal()}
 
         {/* Comparison Modal */}
         {selectedNft && (
