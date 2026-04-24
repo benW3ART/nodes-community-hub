@@ -14,7 +14,7 @@ import type { NodeNFT } from '@/types/nft';
 // Bump this when a new interference drops
 // to force all users to re-fetch metadata.
 // =============================================
-export const CACHE_VERSION = 3; // Bumped: added cleanImage field
+export const CACHE_VERSION = 4; // Bumped: Chapter III Convergence — FC→Robot type + new metadata
 
 interface CachedWalletData {
   version: number;
