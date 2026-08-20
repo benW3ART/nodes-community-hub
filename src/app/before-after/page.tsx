@@ -89,6 +89,7 @@ export default function BeforeAfterPage() {
   const [showGISection, setShowGISection] = useState(true);
   const [showDRSection, setShowDRSection] = useState(true);
   const [showConvergenceSection, setShowConvergenceSection] = useState(true);
+  const [showRefinementSection, setShowRefinementSection] = useState(true);
 
   // When template changes, ensure current aspect ratio is supported
   useEffect(() => {
@@ -128,12 +129,10 @@ export default function BeforeAfterPage() {
     () => nfts.filter(nft => nft.networkStatus === 'The Convergence'),
     [nfts]
   );
-  const hasEvolvedNfts =
-    genesisInterferenceNfts.length > 0 ||
-    digitalRenaissanceNfts.length > 0 ||
-    convergenceNfts.length > 0;
-
-  const hasAnyRelevantNfts = hasEvolvedNfts;
+  const refinementNfts = useMemo(
+    () => nfts.filter(nft => nft.networkStatus === 'The Refinement'),
+    [nfts]
+  );
 
   const handleSelectNft = async (nft: NodeNFT) => {
     setSelectedNft(nft);
@@ -537,16 +536,24 @@ export default function BeforeAfterPage() {
             <Loader2 className="w-10 h-10 mx-auto mb-4 animate-spin text-[#00D4FF]" />
             <p className="text-gray-500">Loading your NODES...</p>
           </div>
-        ) : !hasAnyRelevantNfts ? (
-          <div className="card text-center py-12 sm:py-16">
-            <Sparkles className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 sm:mb-6 text-gray-700" />
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3 sm:mb-4">No NODES Found</h2>
-            <p className="text-gray-500 text-sm sm:text-base">
-              No NODES detected in this wallet. Evolved NFTs and Full Circle NODES will appear here.
-            </p>
-          </div>
         ) : (
           <div className="space-y-6">
+            {refinementNfts.length > 0 ? (
+              renderNftSection(
+                'The Refinement',
+                refinementNfts,
+                showRefinementSection,
+                () => setShowRefinementSection(!showRefinementSection)
+              )
+            ) : (
+              <div className="card text-center py-8 sm:py-10">
+                <p className="text-4xl sm:text-5xl text-gray-600 mb-3 font-light">?</p>
+                <h2 className="text-lg sm:text-xl font-semibold uppercase tracking-wide mb-2">
+                  The Refinement
+                </h2>
+                <p className="text-gray-500 text-sm">Coming soon</p>
+              </div>
+            )}
             {renderNftSection(
               'Genesis Interference',
               genesisInterferenceNfts,

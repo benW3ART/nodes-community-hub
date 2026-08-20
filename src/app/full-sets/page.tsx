@@ -24,54 +24,10 @@ import {
   Target,
 } from 'lucide-react';
 import Image from 'next/image';
-
-interface InterferenceEligibility {
-  eligible: boolean;
-  hasFullSet: boolean;
-  completeSets: number;
-  interferenceNftsOwned: number;
-  canClaimMore: boolean;
-  nextClaimRequirement: string | null;
-  status: 'not-eligible' | 'eligible' | 'has-interference' | 'maxed-out';
-}
-
-function checkInterferenceEligibility(
-  nfts: ReturnType<typeof useNodesStore.getState>['nfts'],
-  completeSets: number
-): InterferenceEligibility {
-  const interferenceNftsOwned = nfts.filter(nft => nft.interference).length;
-  const hasFullSet = completeSets > 0;
-  const eligible = hasFullSet;
-  const canClaimMore = completeSets > interferenceNftsOwned;
-
-  let status: InterferenceEligibility['status'] = 'not-eligible';
-  if (!hasFullSet) {
-    status = 'not-eligible';
-  } else if (interferenceNftsOwned >= completeSets) {
-    status = 'maxed-out';
-  } else if (interferenceNftsOwned > 0) {
-    status = 'has-interference';
-  } else {
-    status = 'eligible';
-  }
-
-  let nextClaimRequirement: string | null = null;
-  if (!hasFullSet) {
-    nextClaimRequirement = 'Complete a Full Set (collect all 7 Inner States)';
-  } else if (!canClaimMore) {
-    nextClaimRequirement = `Collect another Full Set to claim more (need ${interferenceNftsOwned + 1} complete sets)`;
-  }
-
-  return {
-    eligible,
-    hasFullSet,
-    completeSets,
-    interferenceNftsOwned,
-    canClaimMore,
-    nextClaimRequirement,
-    status,
-  };
-}
+import { calculateRefinement, isRefinementSnapshotTaken, REFINEMENT_ARTICLE, type RefinementEligibility } from '@/lib/refinement';
+import { RefinementCountdown } from '@/components/RefinementCountdown';
+import { RefinementPreview } from '@/components/RefinementPreview';
+import { useRefinementPhase } from '@/hooks/useRefinementPhase';
 
 export default function FullSetsPage() {
   const { address, isConnected, isViewOnly } = useWalletAddress();
@@ -95,7 +51,7 @@ export default function FullSetsPage() {
   
   const [openSeaListings, setOpenSeaListings] = useState<Record<string, OpenSeaListing[]>>({});
   const [loadingListings, setLoadingListings] = useState(false);
-  const [interferenceEligibility, setInterferenceEligibility] = useState<InterferenceEligibility | null>(null);
+  const [refinementEligibility, setRefinementEligibility] = useState<RefinementEligibility | null>(null);
   const [filters, setFilters] = useState<Record<string, string>>({});
 
   const FILTER_ATTRIBUTES = ['Background', 'Grid', 'Shade', 'Glow', 'Type', 'Network Status'] as const;
@@ -156,8 +112,7 @@ export default function FullSetsPage() {
         const analysis = analyzeFullSets(fetchedNfts);
         setFullSetAnalysis(analysis.status, analysis.completeSets, analysis.missingStates);
         
-        const eligibility = checkInterferenceEligibility(fetchedNfts, analysis.completeSets);
-        setInterferenceEligibility(eligibility);
+        setRefinementEligibility(calculateRefinement(fetchedNfts, analysis.completeSets));
       } catch (err) {
         console.error(err);
       } finally {
@@ -192,30 +147,11 @@ export default function FullSetsPage() {
     fetchListings();
   }, [missingStates]);
 
-  const getEligibilityIcon = (status: InterferenceEligibility['status']) => {
-    switch (status) {
-      case 'eligible':
-        return <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6 text-[#4FFFDF]" />;
-      case 'has-interference':
-        return <Zap className="w-5 h-5 sm:w-6 sm:h-6 text-[#00D4FF]" />;
-      case 'maxed-out':
-        return <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-[#00D4FF]" />;
-      default:
-        return <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-amber-400" />;
-    }
-  };
-
-  const getEligibilityColor = (status: InterferenceEligibility['status']) => {
-    switch (status) {
-      case 'eligible':
-        return 'bg-[#4FFFDF]/5 border-[#4FFFDF]/20';
-      case 'has-interference':
-      case 'maxed-out':
-        return 'bg-[#00D4FF]/5 border-[#00D4FF]/30';
-      default:
-        return 'bg-amber-500/5 border-amber-500/20';
-    }
-  };
+  const { now: refinementNow } = useRefinementPhase();
+  const snapshotTaken = isRefinementSnapshotTaken(refinementNow ?? undefined);
+  const refinementEligible =
+    refinementEligibility !== null &&
+    (refinementEligibility.skullRefinements > 0 || refinementEligibility.ghostRefinements > 0);
 
   return (
     <div className="min-h-screen bg-black">
@@ -262,87 +198,86 @@ export default function FullSetsPage() {
               </h2>
               <p className="text-gray-500 text-sm sm:text-base">
                 {completeSets > 0
-                  ? `Congratulations! You have ${completeSets} complete full set${completeSets > 1 ? 's' : ''}. You're ready for the next interference.`
+                  ? `Congratulations! You have ${completeSets} complete full set${completeSets > 1 ? 's' : ''}.`
                   : `You need ${missingStates.length} more Inner State${missingStates.length > 1 ? 's' : ''} to complete a full set.`
                 }
               </p>
             </div>
 
-            {/* Interference Eligibility Checker */}
-            {interferenceEligibility && (
-              <div className={`card mb-6 sm:mb-8 ${getEligibilityColor(interferenceEligibility.status)}`}>
+            {refinementEligibility && (
+              <div className={`card mb-6 sm:mb-8 ${
+                refinementEligible
+                  ? 'bg-[#4FFFDF]/5 border-[#4FFFDF]/20'
+                  : 'bg-amber-500/5 border-amber-500/20'
+              }`}>
                 <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
-                  <div className="flex-shrink-0">
-                    {getEligibilityIcon(interferenceEligibility.status)}
-                  </div>
+                  <RefinementPreview size={96} className="mx-auto sm:mx-0" />
                   <div className="flex-1 min-w-0">
-                    <h2 className="text-lg sm:text-xl font-bold mb-2 flex items-center gap-2 uppercase tracking-wide">
-                      <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-[#00D4FF]" />
-                      Interference Eligibility
-                    </h2>
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
+                      <h2 className="text-lg sm:text-xl font-bold flex items-center gap-2 uppercase tracking-wide">
+                        {refinementEligible ? (
+                          <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-[#4FFFDF]" />
+                        ) : (
+                          <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400" />
+                        )}
+                        The Refinement
+                      </h2>
+                      <RefinementCountdown compact />
+                    </div>
 
-                    {interferenceEligibility.status === 'not-eligible' && (
-                      <p className="text-amber-400 font-semibold mb-2 text-sm sm:text-base">
-                        Not Yet Eligible
-                      </p>
-                    )}
-
-                    {interferenceEligibility.status === 'eligible' && (
-                      <p className="text-[#4FFFDF] font-semibold mb-2 text-sm sm:text-base">
-                        You Are Eligible!
-                      </p>
-                    )}
-
-                    {interferenceEligibility.status === 'has-interference' && (
-                      <p className="text-[#00D4FF] font-semibold mb-2 text-sm sm:text-base">
-                        Interference Holder
-                      </p>
-                    )}
-
-                    {interferenceEligibility.status === 'maxed-out' && (
-                      <p className="text-[#00D4FF] font-semibold mb-2 text-sm sm:text-base">
-                        Maximum Reached
-                      </p>
-                    )}
-
-                    <p className="text-gray-400 text-xs sm:text-sm mb-4">
-                      Details about the next interference will be shared here when available.
+                    <p className={`font-semibold mb-2 text-sm sm:text-base ${
+                      refinementEligible ? 'text-[#4FFFDF]' : 'text-amber-400'
+                    }`}>
+                      {refinementEligible ? 'You are eligible' : 'Not yet eligible'}
                     </p>
 
-                    {/* Stats Grid */}
+                    <p className="text-gray-400 text-xs sm:text-sm mb-3">
+                      3 Skulls → 1 Skull evolution. Inner State Full Set (any types) → 1 Ghost evolution. Criteria are cumulative. Which tokens evolve is chosen by the system — we only count how many.
+                    </p>
+
+                    {snapshotTaken && (
+                      <p className="text-amber-400/90 text-xs sm:text-sm mb-3">
+                        These numbers are based on your current holdings. If any NFTs were purchased after the snapshot, official eligibility may differ.
+                      </p>
+                    )}
+
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 pt-3 sm:pt-4 border-t border-white/10">
                       <div className="p-2 sm:p-3 bg-black/30 rounded-lg">
-                        <p className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide">Full Sets</p>
-                        <p className="text-base sm:text-lg font-bold">{interferenceEligibility.completeSets}</p>
+                        <p className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide">Skulls</p>
+                        <p className="text-base sm:text-lg font-bold">{refinementEligibility.skullCount}</p>
+                        <p className="text-[10px] text-gray-600">{refinementEligibility.skullsTowardNext}/3 to next</p>
                       </div>
-                      <div className="p-2 sm:p-3 bg-black/30 rounded-lg" title="Information not available yet">
-                        <p className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide">Interference</p>
-                        <p className="text-base sm:text-lg font-bold text-gray-600 cursor-help">#N/A</p>
+                      <div className="p-2 sm:p-3 bg-black/30 rounded-lg">
+                        <p className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide">Ghosts</p>
+                        <p className="text-base sm:text-lg font-bold">{refinementEligibility.ghostCount}</p>
                       </div>
-                      <div className="p-2 sm:p-3 bg-black/30 rounded-lg" title="Information not available yet">
-                        <p className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide">Can Claim</p>
-                        <p className="text-base sm:text-lg font-bold text-gray-600 cursor-help">#N/A</p>
+                      <div className="p-2 sm:p-3 bg-black/30 rounded-lg">
+                        <p className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide">Skull refinements</p>
+                        <p className="text-base sm:text-lg font-bold text-[#00D4FF]">{refinementEligibility.skullRefinements}</p>
                       </div>
-                      <div className="p-2 sm:p-3 bg-black/30 rounded-lg" title="Information not available yet">
-                        <p className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide">Status</p>
-                        <p className="text-base sm:text-lg font-bold text-gray-600 cursor-help">#N/A</p>
+                      <div className="p-2 sm:p-3 bg-black/30 rounded-lg">
+                        <p className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide">Ghost refinements</p>
+                        <p className="text-base sm:text-lg font-bold text-[#00D4FF]">{refinementEligibility.ghostRefinements}</p>
                       </div>
                     </div>
 
-                    {/* CTA */}
-                    {interferenceEligibility.eligible && interferenceEligibility.canClaimMore && (
-                      <div className="mt-3 sm:mt-4">
-                        <a
-                          href="https://x.com/gmhunterart"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="btn-primary inline-flex items-center gap-2 text-sm py-2.5"
-                        >
-                          Follow @gmhunterart
-                          <ExternalLink className="w-4 h-4" />
-                        </a>
-                      </div>
+                    {refinementEligibility.missingGhostsForSet && (
+                      <p className="text-amber-400/90 text-xs sm:text-sm mt-3">
+                        Your Full Set grants {refinementEligibility.ghostRefinements} Ghost evolution{refinementEligibility.ghostRefinements !== 1 ? 's' : ''}, but no Ghost is in this wallet. The Ghost(s) to evolve must be here at snapshot.
+                      </p>
                     )}
+
+                    <div className="mt-3 sm:mt-4">
+                      <a
+                        href={REFINEMENT_ARTICLE}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn-secondary inline-flex items-center gap-2 text-sm py-2.5"
+                      >
+                        Read The Refinement
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
+                    </div>
                   </div>
                 </div>
               </div>
