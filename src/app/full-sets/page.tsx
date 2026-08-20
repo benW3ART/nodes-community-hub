@@ -26,6 +26,7 @@ import {
 import Image from 'next/image';
 import { calculateRefinement, REFINEMENT_ARTICLE, type RefinementEligibility } from '@/lib/refinement';
 import { RefinementCountdown } from '@/components/RefinementCountdown';
+import { RefinementPreview } from '@/components/RefinementPreview';
 
 export default function FullSetsPage() {
   const { address, isConnected, isViewOnly } = useWalletAddress();
@@ -207,17 +208,15 @@ export default function FullSetsPage() {
                   : 'bg-amber-500/5 border-amber-500/20'
               }`}>
                 <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
-                  <div className="flex-shrink-0">
-                    {refinementEligible ? (
-                      <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6 text-[#4FFFDF]" />
-                    ) : (
-                      <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-amber-400" />
-                    )}
-                  </div>
+                  <RefinementPreview size={96} className="mx-auto sm:mx-0" />
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
                       <h2 className="text-lg sm:text-xl font-bold flex items-center gap-2 uppercase tracking-wide">
-                        <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-[#00D4FF]" />
+                        {refinementEligible ? (
+                          <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-[#4FFFDF]" />
+                        ) : (
+                          <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400" />
+                        )}
                         The Refinement
                       </h2>
                       <RefinementCountdown compact />

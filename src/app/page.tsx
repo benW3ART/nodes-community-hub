@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { TwitterFeed } from '@/components/TwitterFeed';
 import { RefinementCountdown } from '@/components/RefinementCountdown';
+import { RefinementPreview } from '@/components/RefinementPreview';
 import { InternetMonkesBar } from '@/components/InternetMonkesBar';
 import { useRefinementPhase } from '@/hooks/useRefinementPhase';
 
@@ -189,16 +190,19 @@ export default function Home() {
             <div className="mt-6 sm:mt-8 px-4">
               <Link
                 href="/full-sets"
-                className="inline-flex flex-col sm:flex-row items-center gap-2 sm:gap-3 px-5 py-3 rounded-xl bg-[#00D4FF]/10 border border-[#00D4FF]/40 hover:border-[#4FFFDF]/60 hover:bg-[#00D4FF]/15 transition-colors"
+                className="inline-flex flex-col sm:flex-row items-center gap-3 sm:gap-4 px-4 py-3 rounded-xl bg-[#00D4FF]/10 border border-[#00D4FF]/40 hover:border-[#4FFFDF]/60 hover:bg-[#00D4FF]/15 transition-colors"
               >
-                <span className="inline-flex items-center gap-2 text-white font-semibold uppercase tracking-wide text-sm">
-                  <Zap className="w-4 h-4 text-[#00D4FF]" />
-                  The Refinement
-                </span>
-                <RefinementCountdown compact />
-                <span className="text-xs text-gray-400 inline-flex items-center gap-1">
-                  Check eligibility
-                  <Target className="w-3.5 h-3.5" />
+                <RefinementPreview size={64} />
+                <span className="inline-flex flex-col items-center sm:items-start gap-1">
+                  <span className="inline-flex items-center gap-2 text-white font-semibold uppercase tracking-wide text-sm">
+                    <Zap className="w-4 h-4 text-[#00D4FF]" />
+                    The Refinement
+                  </span>
+                  <RefinementCountdown compact />
+                  <span className="text-xs text-gray-400 inline-flex items-center gap-1">
+                    Check eligibility
+                    <Target className="w-3.5 h-3.5" />
+                  </span>
                 </span>
               </Link>
             </div>
