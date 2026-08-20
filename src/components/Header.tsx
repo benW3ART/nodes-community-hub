@@ -8,6 +8,7 @@ import Image from 'next/image';
 import { AddBaseButton } from './NetworkHelper';
 import { ViewOnlyInput } from './ViewOnlyInput';
 import { useWalletAddress } from '@/hooks/useWalletAddress';
+import { useRefinementPhase } from '@/hooks/useRefinementPhase';
 import {
   Home,
   Image as ImageIcon,
@@ -36,6 +37,7 @@ export function Header() {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { isWalletConnected, isViewOnly, viewOnlyAddress, clearViewOnlyAddress } = useWalletAddress();
+  const { active: highlightFullSets } = useRefinementPhase();
 
   return (
     <header className="sticky top-0 z-50 bg-black/90 backdrop-blur-xl border-b border-[#1a1a1a]">
@@ -62,12 +64,13 @@ export function Header() {
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href;
+              const highlight = highlightFullSets && item.href === '/full-sets' && !isActive;
               return (
                 <Link
                   key={item.href}
                   href={item.href}
                   className={`nav-link flex items-center space-x-2 ${
-                    isActive ? 'nav-link-active' : ''
+                    isActive ? 'nav-link-active' : highlight ? 'nav-link-highlight' : ''
                   }`}
                 >
                   <Icon className="w-4 h-4" />
@@ -147,6 +150,7 @@ export function Header() {
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href;
+              const highlight = highlightFullSets && item.href === '/full-sets' && !isActive;
               return (
                 <Link
                   key={item.href}
@@ -155,7 +159,9 @@ export function Header() {
                   className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all active:scale-98 ${
                     isActive 
                       ? 'bg-[#00D4FF]/10 text-[#00D4FF] border border-[#00D4FF]/30' 
-                      : 'hover:bg-white/5 text-gray-300'
+                      : highlight
+                        ? 'bg-[#00D4FF]/10 text-[#00D4FF] border border-[#00D4FF]/20'
+                        : 'hover:bg-white/5 text-gray-300'
                   }`}
                 >
                   <Icon className="w-5 h-5" />

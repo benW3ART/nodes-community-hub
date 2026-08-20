@@ -21,8 +21,12 @@ import {
   ArrowRight,
   Wallet,
   ClipboardPaste,
+  Zap,
 } from 'lucide-react';
 import { TwitterFeed } from '@/components/TwitterFeed';
+import { RefinementCountdown } from '@/components/RefinementCountdown';
+import { InternetMonkesBar } from '@/components/InternetMonkesBar';
+import { useRefinementPhase } from '@/hooks/useRefinementPhase';
 
 const features = [
   {
@@ -69,7 +73,6 @@ const features = [
   },
 ];
 
-// TODO: counts are pre-Convergence — regenerate rarity.json to reflect Robot trait and updated Full Circle totals.
 const CHARACTER_FORMS = [
   { name: 'Full Circle', tokenId: '1000', traitKey: 'Full Circle' },
   { name: 'Skull', tokenId: '4', traitKey: 'Skull' },
@@ -79,6 +82,7 @@ const CHARACTER_FORMS = [
 
 export default function Home() {
   const { isConnected, address } = useWalletAddress();
+  const { active: refinementActive } = useRefinementPhase();
   const [characterImages, setCharacterImages] = useState<Record<string, string>>({});
   const [typeCounts, setTypeCounts] = useState<Record<string, number>>({});
   const [floorPrice, setFloorPrice] = useState<string | null>(null);
@@ -122,9 +126,10 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-black pb-16">
       <Header />
       <NetworkHelper />
+      <InternetMonkesBar />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         {/* Hero Section with Banner */}
@@ -149,7 +154,7 @@ export default function Home() {
           
           <p className="text-base sm:text-lg text-gray-400 max-w-2xl mx-auto mb-6 sm:mb-8 px-4">
             3,333 digital identities — retro-inspired characters born from internet culture.
-            Features three iconic forms: <span className="text-white">Full Circle</span>, <span className="text-white">Skull</span>, and <span className="text-white">Ghost</span>, 
+            Four iconic forms: <span className="text-white">Full Circle</span>, <span className="text-white">Skull</span>, <span className="text-white">Ghost</span>, and <span className="text-white">Robot</span>,
             each brought to life through colors, symbols, and dynamic motion.
           </p>
 
@@ -176,6 +181,25 @@ export default function Home() {
               <Link href="/full-sets" className="btn-secondary inline-flex items-center justify-center py-3 sm:py-2">
                 Check Full Sets
                 <Target className="w-5 h-5 ml-2" />
+              </Link>
+            </div>
+          )}
+
+          {refinementActive && (
+            <div className="mt-6 sm:mt-8 px-4">
+              <Link
+                href="/full-sets"
+                className="inline-flex flex-col sm:flex-row items-center gap-2 sm:gap-3 px-5 py-3 rounded-xl bg-[#00D4FF]/10 border border-[#00D4FF]/40 hover:border-[#4FFFDF]/60 hover:bg-[#00D4FF]/15 transition-colors"
+              >
+                <span className="inline-flex items-center gap-2 text-white font-semibold uppercase tracking-wide text-sm">
+                  <Zap className="w-4 h-4 text-[#00D4FF]" />
+                  The Refinement
+                </span>
+                <RefinementCountdown compact />
+                <span className="text-xs text-gray-400 inline-flex items-center gap-1">
+                  Check eligibility
+                  <Target className="w-3.5 h-3.5" />
+                </span>
               </Link>
             </div>
           )}

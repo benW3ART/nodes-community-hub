@@ -29,6 +29,7 @@ const securityHeaders = [
     key: 'Content-Security-Policy',
     value: [
       "default-src 'self'",
+      "media-src 'self' blob:",
       "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://platform.twitter.com https://*.twimg.com",
       "style-src 'self' 'unsafe-inline' https://platform.twitter.com https://*.twimg.com",
       "img-src 'self' data: blob: https://*.alchemy.com https://ipfs.io https://*.ipfs.nftstorage.link https://arweave.net https://storage.googleapis.com https://res.cloudinary.com https://pbs.twimg.com https://video.twimg.com https://abs.twimg.com https://*.twitter.com https://syndication.twitter.com",
