@@ -8,16 +8,27 @@ import {
 } from '@/lib/refinement';
 
 export function useRefinementPhase() {
-  const [now, setNow] = useState(() => new Date());
+  // null until mount so SSR and the first client render match (no ticking seconds).
+  const [now, setNow] = useState<Date | null>(null);
 
   useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 1000);
+    const start = new Date();
+    if (!isRefinementCountdownActive(start)) return;
+
+    setNow(start);
+    const id = setInterval(() => {
+      const t = new Date();
+      setNow(t);
+      if (!isRefinementCountdownActive(t)) clearInterval(id);
+    }, 1000);
+
     return () => clearInterval(id);
   }, []);
 
-  const phase = getRefinementPhase(now);
-  const active = isRefinementCountdownActive(now);
-  const remaining = phase.endsAt ? formatCountdown(phase.endsAt, now) : null;
+  const clock = now ?? new Date();
+  const phase = getRefinementPhase(clock);
+  const active = isRefinementCountdownActive(clock);
+  const remaining = now && phase.endsAt ? formatCountdown(phase.endsAt, now) : null;
 
   return { phase, active, remaining, now };
 }

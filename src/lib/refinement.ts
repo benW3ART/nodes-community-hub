@@ -35,6 +35,10 @@ export function isRefinementCountdownActive(now: Date = new Date()): boolean {
   return now < REFINEMENT_REVEAL_AT;
 }
 
+export function isRefinementSnapshotTaken(now: Date = new Date()): boolean {
+  return now >= REFINEMENT_SNAPSHOT_AT;
+}
+
 export function formatCountdown(endsAt: Date, now: Date = new Date()): string {
   const ms = Math.max(0, endsAt.getTime() - now.getTime());
   const totalSec = Math.floor(ms / 1000);

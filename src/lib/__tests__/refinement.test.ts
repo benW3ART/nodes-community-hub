@@ -5,6 +5,7 @@ import {
   formatCountdown,
   getRefinementPhase,
   isRefinementCountdownActive,
+  isRefinementSnapshotTaken,
   REFINEMENT_BEGINS_AT,
   REFINEMENT_REVEAL_AT,
   REFINEMENT_SNAPSHOT_AT,
@@ -91,6 +92,17 @@ describe('getRefinementPhase', () => {
     const after = new Date(REFINEMENT_REVEAL_AT.getTime() + 1000);
     expect(getRefinementPhase(after).id).toBe('done');
     expect(isRefinementCountdownActive(after)).toBe(false);
+  });
+});
+
+describe('isRefinementSnapshotTaken', () => {
+  it('is false before the snapshot', () => {
+    expect(isRefinementSnapshotTaken(new Date(REFINEMENT_SNAPSHOT_AT.getTime() - 1))).toBe(false);
+  });
+
+  it('is true at and after the snapshot', () => {
+    expect(isRefinementSnapshotTaken(REFINEMENT_SNAPSHOT_AT)).toBe(true);
+    expect(isRefinementSnapshotTaken(new Date(REFINEMENT_SNAPSHOT_AT.getTime() + 1))).toBe(true);
   });
 });
 

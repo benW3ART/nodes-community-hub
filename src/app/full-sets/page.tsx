@@ -24,9 +24,10 @@ import {
   Target,
 } from 'lucide-react';
 import Image from 'next/image';
-import { calculateRefinement, REFINEMENT_ARTICLE, type RefinementEligibility } from '@/lib/refinement';
+import { calculateRefinement, isRefinementSnapshotTaken, REFINEMENT_ARTICLE, type RefinementEligibility } from '@/lib/refinement';
 import { RefinementCountdown } from '@/components/RefinementCountdown';
 import { RefinementPreview } from '@/components/RefinementPreview';
+import { useRefinementPhase } from '@/hooks/useRefinementPhase';
 
 export default function FullSetsPage() {
   const { address, isConnected, isViewOnly } = useWalletAddress();
@@ -146,6 +147,8 @@ export default function FullSetsPage() {
     fetchListings();
   }, [missingStates]);
 
+  const { now: refinementNow } = useRefinementPhase();
+  const snapshotTaken = isRefinementSnapshotTaken(refinementNow ?? undefined);
   const refinementEligible =
     refinementEligibility !== null &&
     (refinementEligibility.skullRefinements > 0 || refinementEligibility.ghostRefinements > 0);
@@ -231,6 +234,12 @@ export default function FullSetsPage() {
                     <p className="text-gray-400 text-xs sm:text-sm mb-3">
                       3 Skulls → 1 Skull evolution. Inner State Full Set (any types) → 1 Ghost evolution. Criteria are cumulative. Which tokens evolve is chosen by the system — we only count how many.
                     </p>
+
+                    {snapshotTaken && (
+                      <p className="text-amber-400/90 text-xs sm:text-sm mb-3">
+                        These numbers are based on your current holdings. If any NFTs were purchased after the snapshot, official eligibility may differ.
+                      </p>
+                    )}
 
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 pt-3 sm:pt-4 border-t border-white/10">
                       <div className="p-2 sm:p-3 bg-black/30 rounded-lg">
