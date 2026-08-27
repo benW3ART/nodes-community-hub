@@ -72,6 +72,12 @@ const PRESET_TEXTS = [
   'Art Is Never Finished',
 ];
 
+const REFINEMENT_STATUS = 'The Refinement';
+
+function isRefinement(nft: NodeNFT): boolean {
+  return nft.networkStatus === REFINEMENT_STATUS;
+}
+
 export default function BeforeAfterPage() {
   const { address, isConnected } = useWalletAddress();
   const { nfts, setNfts } = useNodesStore();
@@ -130,7 +136,7 @@ export default function BeforeAfterPage() {
     [nfts]
   );
   const refinementNfts = useMemo(
-    () => nfts.filter(nft => nft.networkStatus === 'The Refinement'),
+    () => nfts.filter(isRefinement),
     [nfts]
   );
 
@@ -140,8 +146,13 @@ export default function BeforeAfterPage() {
     setLegacyProxyUrl(null);
     setLegacyFormat(null);
     setIsLoadingLegacy(true);
+    // The Refinement exposes its previous version through the tokenURI
+    // (`{tokenURI}/before`); earlier interferences use the legacy GCS art.
+    const endpoint = isRefinement(nft)
+      ? '/api/resolve-before-image'
+      : '/api/resolve-legacy-image';
     try {
-      const res = await fetch(`/api/resolve-legacy-image?tokenId=${nft.tokenId}`);
+      const res = await fetch(`${endpoint}?tokenId=${nft.tokenId}`);
       if (res.ok) {
         const data = await res.json();
         setLegacyImageUrl(data.url);
@@ -547,11 +558,11 @@ export default function BeforeAfterPage() {
               )
             ) : (
               <div className="card text-center py-8 sm:py-10">
-                <p className="text-4xl sm:text-5xl text-gray-600 mb-3 font-light">?</p>
+                <Sparkles className="w-8 h-8 mx-auto mb-3 text-gray-700" />
                 <h2 className="text-lg sm:text-xl font-semibold uppercase tracking-wide mb-2">
                   The Refinement
                 </h2>
-                <p className="text-gray-500 text-sm">Coming soon</p>
+                <p className="text-gray-500 text-sm">No refined NODES in this wallet</p>
               </div>
             )}
             {renderNftSection(
@@ -718,11 +729,11 @@ export default function BeforeAfterPage() {
                     </p>
                   )}
                   {!legacyImageUrl && !isLoadingLegacy && (
-                    <p className="text-xs text-red-400 mt-2 text-center">No legacy image available for this NFT</p>
+                    <p className="text-xs text-red-400 mt-2 text-center">No before image available for this NFT</p>
                   )}
                   {isLoadingLegacy && (
                     <p className="text-xs text-gray-500 mt-2 text-center flex items-center justify-center gap-1">
-                      <Loader2 className="w-3 h-3 animate-spin" /> Resolving legacy image...
+                      <Loader2 className="w-3 h-3 animate-spin" /> Resolving before image...
                     </p>
                   )}
                 </div>

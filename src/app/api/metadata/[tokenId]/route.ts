@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-const METADATA_API_URL = 'https://nodes-metadata-api.10amstudios.xyz/metadata';
+import { NODES_METADATA_API as METADATA_API_URL } from '@/lib/constants';
 
 export async function GET(
   request: NextRequest,
