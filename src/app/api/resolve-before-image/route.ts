@@ -30,7 +30,9 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await response.json();
-    const url: string | undefined = data?.image || data?.cleanimage;
+    // `image` is the art of the previous version; the other keys are defensive
+    // fallbacks in case the /before payload uses a different naming.
+    const url: string | undefined = data?.image || data?.image_url || data?.cleanimage;
 
     if (!url || typeof url !== 'string') {
       return NextResponse.json(

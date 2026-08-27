@@ -148,6 +148,17 @@ async function main() {
     console.error('No NFTs found!');
     process.exit(1);
   }
+
+  // Rarity is relative to the whole collection: writing a partial fetch would
+  // silently corrupt every rank and percentage. Abort instead of overwriting.
+  const MIN_COVERAGE = 0.95;
+  if (nfts.length < TOTAL_SUPPLY * MIN_COVERAGE) {
+    console.error(
+      `Only ${nfts.length}/${TOTAL_SUPPLY} NFTs fetched — below the ` +
+      `${MIN_COVERAGE * 100}% coverage required. rarity.json left untouched; re-run when the API is healthy.`
+    );
+    process.exit(1);
+  }
   
   // Calculate trait counts
   console.log('\nCalculating trait counts...');
