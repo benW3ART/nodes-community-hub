@@ -34,45 +34,79 @@ interface TraitCount {
   };
 }
 
-async function fetchAllNFTs(): Promise<{ tokenId: string; attributes: NFTAttribute[] }[]> {
+const RETRY_PASSES = 3;
+const RETRY_DELAY_MS = 2000;
+
+/** Fetch one token. Returns null on any failure so the caller can retry it. */
+async function fetchToken(
+  tokenId: number
+): Promise<{ tokenId: string; attributes: NFTAttribute[] } | null> {
+  try {
+    const res = await fetch(`${METADATA_API_URL}/${tokenId}`, {
+      headers: { Accept: 'application/json' },
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return { tokenId: String(tokenId), attributes: data.attributes || [] };
+  } catch {
+    return null;
+  }
+}
+
+/** Fetch a list of token ids in rate-limited batches. Returns what succeeded. */
+async function fetchTokens(
+  tokenIds: number[],
+  onProgress?: (attempted: number, ok: number) => void
+): Promise<{ tokenId: string; attributes: NFTAttribute[] }[]> {
   const nfts: { tokenId: string; attributes: NFTAttribute[] }[] = [];
-  let failed = 0;
 
-  console.log(`Fetching all ${TOTAL_SUPPLY} NFTs from live metadata API...`);
-
-  for (let batchStart = 1; batchStart <= TOTAL_SUPPLY; batchStart += BATCH_SIZE) {
-    const batchEnd = Math.min(batchStart + BATCH_SIZE - 1, TOTAL_SUPPLY);
-    const promises: Promise<void>[] = [];
-
-    for (let tokenId = batchStart; tokenId <= batchEnd; tokenId++) {
-      promises.push(
-        fetch(`${METADATA_API_URL}/${tokenId}`, { headers: { Accept: 'application/json' } })
-          .then(async (res) => {
-            if (!res.ok) {
-              failed++;
-              return;
-            }
-            const data = await res.json();
-            const attributes: NFTAttribute[] = data.attributes || [];
-            nfts.push({ tokenId: String(tokenId), attributes });
-          })
-          .catch(() => { failed++; })
-      );
+  for (let i = 0; i < tokenIds.length; i += BATCH_SIZE) {
+    const batch = tokenIds.slice(i, i + BATCH_SIZE);
+    const results = await Promise.all(batch.map(fetchToken));
+    for (const result of results) {
+      if (result) nfts.push(result);
     }
+    onProgress?.(Math.min(i + BATCH_SIZE, tokenIds.length), nfts.length);
 
-    await Promise.all(promises);
-
-    if (batchEnd % 200 === 0 || batchEnd === TOTAL_SUPPLY) {
-      console.log(`  ${nfts.length}/${TOTAL_SUPPLY} fetched (${failed} failed)...`);
-    }
-
-    // Rate limiting between batches
-    if (batchEnd < TOTAL_SUPPLY) {
+    if (i + BATCH_SIZE < tokenIds.length) {
       await new Promise(resolve => setTimeout(resolve, BATCH_DELAY_MS));
     }
   }
 
-  console.log(`Total NFTs fetched: ${nfts.length} (${failed} failed)`);
+  return nfts;
+}
+
+async function fetchAllNFTs(): Promise<{ tokenId: string; attributes: NFTAttribute[] }[]> {
+  console.log(`Fetching all ${TOTAL_SUPPLY} NFTs from live metadata API...`);
+
+  const allIds = Array.from({ length: TOTAL_SUPPLY }, (_, i) => i + 1);
+  const nfts = await fetchTokens(allIds, (attempted, ok) => {
+    if (attempted % 200 === 0 || attempted === TOTAL_SUPPLY) {
+      console.log(`  ${ok}/${attempted} fetched (of ${TOTAL_SUPPLY})...`);
+    }
+  });
+
+  // Retry whatever failed: a transient error on a handful of tokens must not
+  // cost the run, and a partial collection must never reach rarity.json.
+  const fetched = new Set(nfts.map(n => n.tokenId));
+  let missing = allIds.filter(id => !fetched.has(String(id)));
+
+  for (let pass = 1; pass <= RETRY_PASSES && missing.length > 0; pass++) {
+    console.log(`Retry ${pass}/${RETRY_PASSES} for ${missing.length} failed token(s)...`);
+    await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+
+    const recovered = await fetchTokens(missing);
+    nfts.push(...recovered);
+
+    const recoveredIds = new Set(recovered.map(n => n.tokenId));
+    missing = missing.filter(id => !recoveredIds.has(String(id)));
+  }
+
+  console.log(`Total NFTs fetched: ${nfts.length}/${TOTAL_SUPPLY} (${missing.length} missing)`);
+  if (missing.length > 0) {
+    console.error(`Missing token ids: ${missing.slice(0, 20).join(', ')}${missing.length > 20 ? ` … (+${missing.length - 20})` : ''}`);
+  }
+
   return nfts;
 }
 
@@ -144,18 +178,14 @@ async function main() {
   // Fetch all NFTs
   const nfts = await fetchAllNFTs();
   
-  if (nfts.length === 0) {
-    console.error('No NFTs found!');
-    process.exit(1);
-  }
-
-  // Rarity is relative to the whole collection: writing a partial fetch would
-  // silently corrupt every rank and percentage. Abort instead of overwriting.
-  const MIN_COVERAGE = 0.95;
-  if (nfts.length < TOTAL_SUPPLY * MIN_COVERAGE) {
+  // Every rarity percentage is a share of the collection and every rank is a
+  // position within it, so a single missing token skews the whole file — and
+  // the missing tokens would silently lose their rarity data entirely.
+  // Nothing short of full coverage may replace rarity.json.
+  if (nfts.length < TOTAL_SUPPLY) {
     console.error(
-      `Only ${nfts.length}/${TOTAL_SUPPLY} NFTs fetched — below the ` +
-      `${MIN_COVERAGE * 100}% coverage required. rarity.json left untouched; re-run when the API is healthy.`
+      `Only ${nfts.length}/${TOTAL_SUPPLY} NFTs fetched after ${RETRY_PASSES} retries. ` +
+      `rarity.json left untouched; re-run when the API is healthy.`
     );
     process.exit(1);
   }
