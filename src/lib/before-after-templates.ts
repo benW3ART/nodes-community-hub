@@ -12,6 +12,7 @@ import {
   drawImageCover,
   drawWatermark,
 } from '@/lib/canvas-utils';
+import { getAfterLabel, getBeforeLabel } from './refinement';
 
 export const SIZE = 1200;
 
@@ -106,10 +107,7 @@ export function drawArtIsNeverFinished(ctx: CanvasRenderingContext2D, canvasW: n
 
 /** Interference type label — "GENESIS INTERFERENCE", "DIGITAL RENAISSANCE", or "THE CONVERGENCE" */
 function getInterferenceLabel(networkStatus: string): string {
-  if (networkStatus === 'Digital Renaissance') return 'DIGITAL RENAISSANCE';
-  if (networkStatus === 'Genesis Interference') return 'GENESIS INTERFERENCE';
-  if (networkStatus === 'The Convergence') return 'THE CONVERGENCE';
-  return networkStatus.toUpperCase();
+  return getAfterLabel(networkStatus);
 }
 
 // ---------------------------------------------------------------------------
@@ -144,7 +142,7 @@ export function renderSideBySideFrame(
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = '#666666';
-  ctx.fillText('LEGACY', leftX + nftSize / 2, cH * 0.14);
+  ctx.fillText(getBeforeLabel(networkStatus), leftX + nftSize / 2, cH * 0.14);
   ctx.fillStyle = COLORS.cyan;
   ctx.fillText(getInterferenceLabel(networkStatus), rightX + nftSize / 2, cH * 0.14);
 
@@ -185,7 +183,7 @@ export function renderVerticalFrame(
   ctx.textBaseline = 'middle';
   ctx.fillStyle = '#666666';
   const startY = isPortrait ? cH * 0.05 : cH * 0.07;
-  ctx.fillText('LEGACY', cW / 2, startY);
+  ctx.fillText(getBeforeLabel(networkStatus), cW / 2, startY);
   const beforeImgY = startY + cH * 0.03;
   if (beforeImg) drawImageWithBorderCover(ctx, beforeImg, centerX, beforeImgY, nftSize, nftSize);
 
@@ -255,7 +253,7 @@ export function renderFrameOverlayFrame(
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = '#999999';
-  ctx.fillText('LEGACY', pipX + pipSize / 2, pipY - 16);
+  ctx.fillText(getBeforeLabel(networkStatus), pipX + pipSize / 2, pipY - 16);
 
   if (text) drawTextWithGlow(ctx, text, cW / 2, mainY + mainSize + (cH - mainY - mainSize) * 0.45, 32);
 

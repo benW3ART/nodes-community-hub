@@ -32,6 +32,7 @@ import {
   SLIDER_DURATION,
 } from '@/lib/before-after-templates';
 import type { AspectRatio } from '@/lib/before-after-templates';
+import { getAfterLabel, getBeforeLabel } from '@/lib/refinement';
 
 const execAsync = promisify(exec);
 
@@ -221,10 +222,10 @@ export async function POST(request: NextRequest) {
         const showingBefore = wipeProgress < 0 ? showBefore : (wipeProgress < 0.5 ? showBefore : !showBefore);
         if (showingBefore) {
           ctx.fillStyle = '#888888';
-          ctx.fillText('LEGACY', canvasW / 2, canvasH * 0.05);
+          ctx.fillText(getBeforeLabel(networkStatus), canvasW / 2, canvasH * 0.05);
         } else {
           ctx.fillStyle = COLORS.cyan;
-          ctx.fillText(networkStatus.toUpperCase(), canvasW / 2, canvasH * 0.05);
+          ctx.fillText(getAfterLabel(networkStatus), canvasW / 2, canvasH * 0.05);
         }
 
         if (text) drawTextWithGlow(ctx, text, canvasW / 2, canvasH * 0.88, 36);

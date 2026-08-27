@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import type { NodeNFT } from '@/types/nft';
+import { getAfterLabel, getBeforeLabel, isRefinementStatus } from '@/lib/refinement';
 
 type AspectRatio = 'square' | 'landscape' | 'portrait';
 
@@ -72,10 +73,8 @@ const PRESET_TEXTS = [
   'Art Is Never Finished',
 ];
 
-const REFINEMENT_STATUS = 'The Refinement';
-
 function isRefinement(nft: NodeNFT): boolean {
-  return nft.networkStatus === REFINEMENT_STATUS;
+  return isRefinementStatus(nft.networkStatus);
 }
 
 export default function BeforeAfterPage() {
@@ -273,6 +272,8 @@ export default function BeforeAfterPage() {
     const beforeSrc = legacyProxyUrl || '';
     const afterSrc = selectedNft.image;
     const networkStatus = selectedNft.networkStatus || '';
+    const beforeLabel = getBeforeLabel(networkStatus);
+    const afterLabel = getAfterLabel(networkStatus);
     const w = previewDims.base.w;
     const h = previewDims.base.h;
 
@@ -315,12 +316,12 @@ export default function BeforeAfterPage() {
           {bgGlow}
           <div className="flex items-center gap-3 z-10">
             <div className="text-center">
-              <div className="text-[9px] text-gray-500 mb-1 font-bold">LEGACY</div>
+              <div className="text-[9px] text-gray-500 mb-1 font-bold">{beforeLabel}</div>
               {beforeEl(imgSize)}
             </div>
             <div className="text-lg text-[#4FFFDF]">→</div>
             <div className="text-center">
-              <div className="text-[9px] text-[#00D4FF] mb-1 font-bold">{networkStatus.toUpperCase()}</div>
+              <div className="text-[9px] text-[#00D4FF] mb-1 font-bold">{afterLabel}</div>
               {afterEl(imgSize)}
             </div>
           </div>
@@ -335,10 +336,10 @@ export default function BeforeAfterPage() {
       return (
         <div className="relative overflow-hidden bg-black flex flex-col items-center justify-center gap-1" style={{ width: w, height: h }}>
           {bgGlow}
-          <div className="text-[9px] text-gray-500 font-bold z-10">LEGACY</div>
+          <div className="text-[9px] text-gray-500 font-bold z-10">{beforeLabel}</div>
           <div className="z-10">{beforeEl(imgSize)}</div>
           <div className="text-base text-[#4FFFDF] z-10">↓</div>
-          <div className="text-[9px] text-[#00D4FF] font-bold z-10">{networkStatus.toUpperCase()}</div>
+          <div className="text-[9px] text-[#00D4FF] font-bold z-10">{afterLabel}</div>
           <div className="z-10">{afterEl(imgSize)}</div>
           {captionEl && <div className="mt-1 z-10">{captionEl}</div>}
         </div>
@@ -381,7 +382,7 @@ export default function BeforeAfterPage() {
           {bgGlow}
           {/* Network label above main image */}
           <div className="absolute top-1 left-0 right-0 text-center z-10">
-            <span className="text-[9px] text-[#00D4FF] font-bold">{networkStatus.toUpperCase()}</span>
+            <span className="text-[9px] text-[#00D4FF] font-bold">{afterLabel}</span>
           </div>
           {/* Main after image centered */}
           <div className="absolute z-10 rounded-lg overflow-hidden border-2 border-[#00D4FF]/20" style={{
@@ -399,7 +400,7 @@ export default function BeforeAfterPage() {
             left: (w - mainSize) / 2 - pipSize * 0.1,
             top: h * 0.1 + mainSize - pipSize * 0.5,
           }}>
-            <div className="text-[7px] text-gray-300 mb-0.5 text-center">LEGACY</div>
+            <div className="text-[7px] text-gray-300 mb-0.5 text-center">{beforeLabel}</div>
             <div className="relative rounded-md overflow-hidden border-2 border-[#00D4FF]/30 shadow-lg bg-black/70" style={{ width: pipSize, height: pipSize }}>
               {beforeSrc ? (
                 <Image src={beforeSrc} alt="Before" fill unoptimized className="object-cover" />
