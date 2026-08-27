@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import type { NodeNFT } from '@/types/nft';
+import { getAfterLabel, getBeforeLabel, isRefinementStatus } from '@/lib/refinement';
 
 type AspectRatio = 'square' | 'landscape' | 'portrait';
 
@@ -71,6 +72,10 @@ const PRESET_TEXTS = [
   'The glow up',
   'Art Is Never Finished',
 ];
+
+function isRefinement(nft: NodeNFT): boolean {
+  return isRefinementStatus(nft.networkStatus);
+}
 
 export default function BeforeAfterPage() {
   const { address, isConnected } = useWalletAddress();
@@ -130,7 +135,7 @@ export default function BeforeAfterPage() {
     [nfts]
   );
   const refinementNfts = useMemo(
-    () => nfts.filter(nft => nft.networkStatus === 'The Refinement'),
+    () => nfts.filter(isRefinement),
     [nfts]
   );
 
@@ -140,8 +145,13 @@ export default function BeforeAfterPage() {
     setLegacyProxyUrl(null);
     setLegacyFormat(null);
     setIsLoadingLegacy(true);
+    // The Refinement exposes its previous version through the tokenURI
+    // (`{tokenURI}/before`); earlier interferences use the legacy GCS art.
+    const endpoint = isRefinement(nft)
+      ? '/api/resolve-before-image'
+      : '/api/resolve-legacy-image';
     try {
-      const res = await fetch(`/api/resolve-legacy-image?tokenId=${nft.tokenId}`);
+      const res = await fetch(`${endpoint}?tokenId=${nft.tokenId}`);
       if (res.ok) {
         const data = await res.json();
         setLegacyImageUrl(data.url);
@@ -262,6 +272,8 @@ export default function BeforeAfterPage() {
     const beforeSrc = legacyProxyUrl || '';
     const afterSrc = selectedNft.image;
     const networkStatus = selectedNft.networkStatus || '';
+    const beforeLabel = getBeforeLabel(networkStatus);
+    const afterLabel = getAfterLabel(networkStatus);
     const w = previewDims.base.w;
     const h = previewDims.base.h;
 
@@ -304,12 +316,12 @@ export default function BeforeAfterPage() {
           {bgGlow}
           <div className="flex items-center gap-3 z-10">
             <div className="text-center">
-              <div className="text-[9px] text-gray-500 mb-1 font-bold">LEGACY</div>
+              <div className="text-[9px] text-gray-500 mb-1 font-bold">{beforeLabel}</div>
               {beforeEl(imgSize)}
             </div>
             <div className="text-lg text-[#4FFFDF]">→</div>
             <div className="text-center">
-              <div className="text-[9px] text-[#00D4FF] mb-1 font-bold">{networkStatus.toUpperCase()}</div>
+              <div className="text-[9px] text-[#00D4FF] mb-1 font-bold">{afterLabel}</div>
               {afterEl(imgSize)}
             </div>
           </div>
@@ -324,10 +336,10 @@ export default function BeforeAfterPage() {
       return (
         <div className="relative overflow-hidden bg-black flex flex-col items-center justify-center gap-1" style={{ width: w, height: h }}>
           {bgGlow}
-          <div className="text-[9px] text-gray-500 font-bold z-10">LEGACY</div>
+          <div className="text-[9px] text-gray-500 font-bold z-10">{beforeLabel}</div>
           <div className="z-10">{beforeEl(imgSize)}</div>
           <div className="text-base text-[#4FFFDF] z-10">↓</div>
-          <div className="text-[9px] text-[#00D4FF] font-bold z-10">{networkStatus.toUpperCase()}</div>
+          <div className="text-[9px] text-[#00D4FF] font-bold z-10">{afterLabel}</div>
           <div className="z-10">{afterEl(imgSize)}</div>
           {captionEl && <div className="mt-1 z-10">{captionEl}</div>}
         </div>
@@ -370,7 +382,7 @@ export default function BeforeAfterPage() {
           {bgGlow}
           {/* Network label above main image */}
           <div className="absolute top-1 left-0 right-0 text-center z-10">
-            <span className="text-[9px] text-[#00D4FF] font-bold">{networkStatus.toUpperCase()}</span>
+            <span className="text-[9px] text-[#00D4FF] font-bold">{afterLabel}</span>
           </div>
           {/* Main after image centered */}
           <div className="absolute z-10 rounded-lg overflow-hidden border-2 border-[#00D4FF]/20" style={{
@@ -388,7 +400,7 @@ export default function BeforeAfterPage() {
             left: (w - mainSize) / 2 - pipSize * 0.1,
             top: h * 0.1 + mainSize - pipSize * 0.5,
           }}>
-            <div className="text-[7px] text-gray-300 mb-0.5 text-center">LEGACY</div>
+            <div className="text-[7px] text-gray-300 mb-0.5 text-center">{beforeLabel}</div>
             <div className="relative rounded-md overflow-hidden border-2 border-[#00D4FF]/30 shadow-lg bg-black/70" style={{ width: pipSize, height: pipSize }}>
               {beforeSrc ? (
                 <Image src={beforeSrc} alt="Before" fill unoptimized className="object-cover" />
@@ -547,11 +559,11 @@ export default function BeforeAfterPage() {
               )
             ) : (
               <div className="card text-center py-8 sm:py-10">
-                <p className="text-4xl sm:text-5xl text-gray-600 mb-3 font-light">?</p>
+                <Sparkles className="w-8 h-8 mx-auto mb-3 text-gray-700" />
                 <h2 className="text-lg sm:text-xl font-semibold uppercase tracking-wide mb-2">
                   The Refinement
                 </h2>
-                <p className="text-gray-500 text-sm">Coming soon</p>
+                <p className="text-gray-500 text-sm">No refined NODES in this wallet</p>
               </div>
             )}
             {renderNftSection(
@@ -718,11 +730,11 @@ export default function BeforeAfterPage() {
                     </p>
                   )}
                   {!legacyImageUrl && !isLoadingLegacy && (
-                    <p className="text-xs text-red-400 mt-2 text-center">No legacy image available for this NFT</p>
+                    <p className="text-xs text-red-400 mt-2 text-center">No before image available for this NFT</p>
                   )}
                   {isLoadingLegacy && (
                     <p className="text-xs text-gray-500 mt-2 text-center flex items-center justify-center gap-1">
-                      <Loader2 className="w-3 h-3 animate-spin" /> Resolving legacy image...
+                      <Loader2 className="w-3 h-3 animate-spin" /> Resolving before image...
                     </p>
                   )}
                 </div>

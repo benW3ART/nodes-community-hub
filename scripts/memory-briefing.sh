@@ -56,6 +56,19 @@ get_events_by_type() {
 ALL_EVENTS=$(read_all_events)
 TOTAL_EVENTS=$(echo "$ALL_EVENTS" | jq 'length' 2>/dev/null || echo "0")
 
+# Nothing captured yet? Then this script has no content to generate, and
+# regenerating would replace a hand-maintained BRIEFING.md with a stub.
+# Keep whatever is already there — it is auto-loaded at every session start.
+CAPTURED=$(( TOTAL_EVENTS \
+  + $(json_len "$MEMORY_DIR/decisions.json") \
+  + $(json_len "$MEMORY_DIR/patterns.json") \
+  + $(json_len "$MEMORY_DIR/errors.json") \
+  + $(json_len "$MEMORY_DIR/progress.json") ))
+if [ "$CAPTURED" -eq 0 ] && [ -s "$BRIEFING" ]; then
+  echo "[memory-briefing] no captured memory — keeping existing BRIEFING.md ($(wc -l < "$BRIEFING") lines)"
+  exit 0
+fi
+
 # Count by type
 EVENTS_DECISIONS=$(count_events_by_type "$ALL_EVENTS" "decision")
 EVENTS_MILESTONES=$(count_events_by_type "$ALL_EVENTS" "milestone")
@@ -214,7 +227,9 @@ EVENTS_ERRORS=$(count_events_by_type "$ALL_EVENTS" "error")
   echo "- **Memory files:** decisions=$DECISIONS_COUNT patterns=$PATTERNS_COUNT errors=$ERRORS_COUNT progress=$PROGRESS_COUNT"
 
   # Session logs count
-  LOG_COUNT=$(find "$MEMORY_DIR/session-logs" -name "*.md" -type f 2>/dev/null | wc -l | tr -d ' ')
+  # `find` exits 1 when session-logs/ does not exist, which set -o pipefail
+  # would turn into a fatal error before the briefing is written.
+  LOG_COUNT=$({ find "$MEMORY_DIR/session-logs" -name "*.md" -type f 2>/dev/null || true; } | wc -l | tr -d ' ')
   echo "- **Session logs:** $LOG_COUNT"
 
   # Checkpoints summary

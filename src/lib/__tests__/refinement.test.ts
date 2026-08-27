@@ -3,6 +3,9 @@ import type { NodeNFT } from '@/types/nft';
 import {
   calculateRefinement,
   formatCountdown,
+  getAfterLabel,
+  getBeforeLabel,
+  isRefinementStatus,
   getRefinementPhase,
   isRefinementCountdownActive,
   isRefinementSnapshotTaken,
@@ -111,5 +114,25 @@ describe('formatCountdown', () => {
     const now = new Date('2026-08-20T12:00:00-04:00');
     const end = new Date('2026-08-23T12:00:00-04:00');
     expect(formatCountdown(end, now)).toBe('3d 0h 0m');
+  });
+});
+
+describe('before/after labels', () => {
+  it('stays generic for The Refinement', () => {
+    expect(getBeforeLabel('The Refinement')).toBe('BEFORE');
+    expect(getAfterLabel('The Refinement')).toBe('AFTER');
+  });
+
+  it('keeps the previous behaviour for earlier interferences', () => {
+    for (const status of ['Genesis Interference', 'Digital Renaissance', 'The Convergence']) {
+      expect(getBeforeLabel(status)).toBe('LEGACY');
+      expect(getAfterLabel(status)).toBe(status.toUpperCase());
+    }
+  });
+
+  it('handles a missing network status', () => {
+    expect(getBeforeLabel(undefined)).toBe('LEGACY');
+    expect(getAfterLabel(undefined)).toBe('');
+    expect(isRefinementStatus(undefined)).toBe(false);
   });
 });

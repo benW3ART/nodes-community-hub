@@ -4,6 +4,10 @@ export const NODES_CONTRACT = process.env.NEXT_PUBLIC_NODES_CONTRACT || '0x95bc4
 export const ALCHEMY_API_KEY = process.env.NEXT_PUBLIC_ALCHEMY_API_KEY || '';
 export const ALCHEMY_RPC_URL = process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL || '';
 
+// Contract tokenURI base. `{NODES_METADATA_API}/{tokenId}` returns current metadata,
+// `{NODES_METADATA_API}/{tokenId}/before` the previous version (The Refinement).
+export const NODES_METADATA_API = 'https://nodes-metadata-api.10amstudios.xyz/metadata';
+
 // Inner State values for Full Set tracking (8 states for complete set)
 export const INNER_STATES = [
   'Ascended',

@@ -10,6 +10,7 @@ import { ViewOnlyLink, ViewOnlyInput } from '@/components/ViewOnlyInput';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
+import { CACHE_VERSION } from '@/lib/nft-cache';
 import {
   Image as ImageIcon,
   Grid3X3,
@@ -109,7 +110,7 @@ export default function Home() {
     };
     fetchImages();
 
-    fetch('/data/rarity.json')
+    fetch(`/data/rarity.json?v=${CACHE_VERSION}`)
       .then(res => res.json())
       .then(data => {
         if (data?.traitCounts?.Type) setTypeCounts(data.traitCounts.Type);

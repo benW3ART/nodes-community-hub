@@ -1,4 +1,5 @@
 import type { NodeNFT } from '@/types/nft';
+import { CACHE_VERSION } from './nft-cache';
 
 // Exported type for components
 export interface RarityScore {
@@ -38,7 +39,8 @@ export async function loadRarityData(): Promise<RarityData | null> {
   try {
     // In browser, fetch from public folder
     if (typeof window !== 'undefined') {
-      const response = await fetch('/data/rarity.json');
+      // Versioned so a regenerated rarity.json is not served from the browser cache
+      const response = await fetch(`/data/rarity.json?v=${CACHE_VERSION}`);
       if (!response.ok) return null;
       cachedRarityData = await response.json();
       return cachedRarityData;

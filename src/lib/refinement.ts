@@ -10,6 +10,27 @@ export const REFINEMENT_SNAPSHOT_AT = new Date('2026-08-23T12:00:00-04:00');
 export const REFINEMENT_BEGINS_AT = new Date('2026-08-25T12:00:00-04:00');
 export const REFINEMENT_REVEAL_AT = new Date('2026-08-27T13:00:00-04:00');
 
+export const REFINEMENT_STATUS = 'The Refinement';
+
+export function isRefinementStatus(networkStatus?: string): boolean {
+  return networkStatus === REFINEMENT_STATUS;
+}
+
+/**
+ * Labels for the before/after comparison.
+ *
+ * Earlier interferences all evolved from the original art, so the left side is
+ * labelled LEGACY. The Refinement redraws whatever version a token was already
+ * on — which differs from token to token — so both sides stay generic.
+ */
+export function getBeforeLabel(networkStatus?: string): string {
+  return isRefinementStatus(networkStatus) ? 'BEFORE' : 'LEGACY';
+}
+
+export function getAfterLabel(networkStatus?: string): string {
+  return isRefinementStatus(networkStatus) ? 'AFTER' : (networkStatus || '').toUpperCase();
+}
+
 export type RefinementPhaseId = 'snapshot' | 'begins' | 'redrawn' | 'done';
 
 export interface RefinementPhase {
